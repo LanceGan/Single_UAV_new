@@ -1,7 +1,7 @@
 import math
 from dataclasses import replace
 
-from journal.sequence import EdgeEstimator
+from journal.sequence import DataAwareIGA, EdgeEstimator
 from journal.scenario import load_scenario
 
 
@@ -22,3 +22,9 @@ def test_qos_infeasible_edge_is_rejected():
     scenario = replace(load_scenario("low"), outage_max_s=1.0)
     edge = EdgeEstimator(scenario, ConstantRadio(rate=10, outage=True)).estimate(0, 1, 100)
     assert not edge.feasible and math.isinf(edge.cost)
+
+
+def test_iga_returns_each_inspection_node_once():
+    scenario = load_scenario("low")
+    result = DataAwareIGA(scenario, ConstantRadio(rate=1000)).solve()
+    assert sorted(result) == list(range(len(scenario.inspection_xy)))

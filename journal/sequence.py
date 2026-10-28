@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import itertools
 from dataclasses import dataclass
 
 import numpy as np
@@ -32,3 +33,28 @@ class EdgeEstimator:
         feasible = outages <= self.scenario.outage_max_s and service >= payload_mb and rate > 0
         cost = distance * outages * payload_mb / rate if feasible else math.inf
         return EdgeEstimate(distance, rate, outages, payload_mb, feasible, cost)
+
+
+class DataAwareIGA:
+    """Exact small-instance oracle for the six-node IGA objective.
+
+    The current conference scenario has six inspection nodes, so enumerating
+    720 orders provides a deterministic reference before replacing this oracle
+    with the legacy GA operators for larger instances.
+    """
+
+    def __init__(self, scenario, radio) -> None:
+        self.scenario, self.radio = scenario, radio
+        self.estimator = EdgeEstimator(scenario, radio)
+
+    def solve(self) -> list[int]:
+        nodes = tuple(range(len(self.scenario.inspection_xy)))
+        best_order, best_cost = list(nodes), math.inf
+        for order in itertools.permutations(nodes):
+            cost = 0.0
+            for source, target in zip(order, order[1:]):
+                edge = self.estimator.estimate(source, target, float(self.scenario.payload_mb[source]))
+                cost += edge.cost
+            if cost < best_cost:
+                best_order, best_cost = list(order), cost
+        return best_order
