@@ -78,3 +78,14 @@ def test_world_terminates_when_g2a_outage_budget_is_exceeded(monkeypatch):
     assert not done and not terminal and world.out_time == 0.5
     _, _, done, _, terminal = world.step_inside(np.array([0.0, 0.0]), np.zeros(5), t)
     assert done and not terminal and world.out_time == 1.0
+
+
+def test_world_records_named_reward_terms():
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    reward = world.get_reward(0.0, 0.0, 1.0, 1.0, 0.1, 10.0, 10.0)
+
+    assert reward == pytest.approx(sum(world.last_reward_terms.values()))
+    assert set(world.last_reward_terms) == {"progress", "idle", "boundary", "communication"}

@@ -200,8 +200,14 @@ class World(object):
         # if SINR_G2A < self.SIR_THRESHOLD_COVER:
         #     comm_penalty += self.NON_COVER_PENALTY
         
-        total_reward = progress_reward - fa + stay_penalty + comm_penalty   
-                         
+        self.last_reward_terms = {
+            "progress": progress_reward,
+            "idle": stay_penalty,
+            "boundary": -fa,
+            "communication": comm_penalty,
+        }
+        total_reward = sum(self.last_reward_terms.values())
+
         return total_reward
 
 
