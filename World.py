@@ -289,7 +289,7 @@ class World(object):
                 
             self.target_pre_loc = self.target_loc #更新上一个目标点的位置        
             self.transmit = False
-            self.data_size = self.data_size_ini # 重置数据量  
+            self.data_size = self.payload_for_user(self.Traverse[self.Traverse_order])
             self.trans_delay_start = self.t
             
             if self.Traverse_order == len(self.Traverse): #到达终点了
