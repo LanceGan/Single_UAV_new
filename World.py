@@ -37,6 +37,7 @@ class World(object):
         self.delta_T = delta_t # 时隙长度
         self.fa = 0.0  # 出界
         self.r = 0.0  # 奖励
+        self.reward_term_totals = {"progress": 0.0, "idle": 0.0, "boundary": 0.0, "communication": 0.0}
         self.terminal = False
         self.total_engy = 0.0
         self.out_time = 0.0
@@ -127,6 +128,7 @@ class World(object):
         self.fa = 0
         self.out_time = 0
         self.total_engy = 0.0
+        self.reward_term_totals = {"progress": 0.0, "idle": 0.0, "boundary": 0.0, "communication": 0.0}
         state = self.reset_state()
         return state,self.t
 
@@ -206,6 +208,8 @@ class World(object):
             "boundary": -fa,
             "communication": comm_penalty,
         }
+        for name, value in self.last_reward_terms.items():
+            self.reward_term_totals[name] = self.reward_term_totals.get(name, 0.0) + value
         total_reward = sum(self.last_reward_terms.values())
 
         return total_reward
