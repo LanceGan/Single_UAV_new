@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from World import World
 
@@ -44,3 +45,20 @@ def test_arrival_loads_payload_for_departed_inspection_point(monkeypatch):
     assert world.data_size == 51.0
     assert world.transmit is False
     assert state[4] == 51.0
+
+
+def test_upload_uses_data_rate_times_slot_duration(monkeypatch):
+    payloads = np.array([51.0, 62.0, 73.0, 84.0, 95.0, 106.0])
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  data_sizes=payloads, ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_date_rate_G2A", lambda _location: 10.0)
+    world.reset(); world.distance = 100.0
+    _, _, _, t, _ = world.step_inside(np.array([0.0, 0.0]), np.zeros(5), 0)
+    world.distance = 0.1
+    world.step_inside(np.array([0.0, 0.0]), np.zeros(5), t)
+
+    rate = world.BandWidth * np.log2(1 + 10 ** (10.0 / 10.0))
+    assert world.data_size == pytest.approx(51.0 - rate * world.delta_T)

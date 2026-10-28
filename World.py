@@ -259,7 +259,7 @@ class World(object):
         #在空对地Radio Map中进行传输 
         if not self.transmit:
             # print(self.data_rate)
-            self.data_size -= self.data_rate
+            self.data_size -= self.data_rate * self.delta_T
             if self.data_size <=0:
                 self.data_size = 0
                 self.transmit = True
