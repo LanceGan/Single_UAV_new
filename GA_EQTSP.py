@@ -465,6 +465,7 @@ class GA(object):
             self.best_record.append(1./best_score)
             #print(i,1./best_score)
         #print(1./best_score)
+        self.best_indices = list(BEST_LIST)
         return self.location[BEST_LIST], 1. / best_score
 
 def get_path_len(path):

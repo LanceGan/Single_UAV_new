@@ -5,6 +5,7 @@ import ReplayBuffer
 from World import World
 from reward_logging import log_reward_terms
 from training_config import build_output_paths, load_fixed_payloads
+from sequence_runner import solve_ga_order
 import numpy as np
 import time
 from tqdm import tqdm
@@ -30,6 +31,7 @@ def create_parser():
     parser.add_argument("--data_level", choices=["low", "medium", "high"], default="medium")
     parser.add_argument("--episodes", help="training episode count", type=int, default=2000)
     parser.add_argument("--output_root", default="journal_results")
+    parser.add_argument("--ga_iterations", type=int, default=500)
     return parser
 
 class AdaptiveExploration:
@@ -185,10 +187,7 @@ data_size = 300
 ini_loc = [2.62, 2.65]
 end_loc = [18.95, 11.12]
 BS_loc = np.array([[4.77,4.56,0.25],[14.89,4.89,0.25],[4.63,13.78,0.25],[13.48,14.89,0.25]])
-# trave_order = [1,6,5,2,3,4]#Ours
-trave_order = [1,6,2,3,5,4]#GA
-# trave_order = [1,2,3,4,5,6]#PSO
-# trave_order = [6,5,4,3,2,1]#ACO
+trave_order = solve_ga_order(payloads, iterations=args.ga_iterations)
 
 world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, delta_t=delta_t, t=T, uav_h=uav_h,
               data_size=data_size, ini_loc=ini_loc, end_loc=end_loc,
