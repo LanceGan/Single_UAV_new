@@ -308,6 +308,11 @@ class World(object):
             else:
                 print("arrive but not transmit complete, data size:",self.data_size)
                 reward -= self.data_size*3   
+                self.terminal = False
+                done = True
+                state_ = self.update_state(fly_energy,self.target_loc,self.target_dis)
+                self.r = reward
+                return state_, self.r, done, self.t, self.terminal
                      
                 
             self.target_pre_loc = self.target_loc #更新上一个目标点的位置        
