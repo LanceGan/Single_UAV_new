@@ -142,7 +142,7 @@ class GA(object):
                     continue
                 a = location[i]
                 b = location[j]
-                tmp = self.weight_mec_mat[i][j] * np.sqrt(sum([(x[0] - x[1]) ** 2 for x in zip(a, b)]))
+                tmp = self.weight_mec_mat[i][j]
 
                 # tmp = path_Dji.compt_dis_Dji(a * 10, b * 10)  # 注意数据的单位
                 dis_mat[i][j] = tmp
@@ -185,7 +185,9 @@ class GA(object):
                 if not (np.isfinite(Engy[i][j]) and np.isfinite(Throught[i][j]) and np.isfinite(Outage[i][j])):
                     matrix_weight[i][j] = np.inf
                     continue
-                matrix_weight[i][j] = Data_size[i] * Engy[i][j] * (1 + Outage[i][j]) / max(Throught[i][j], 1e-9)
+                flight_time = Engy[i][j] / power(18.2)
+                upload_delay = Data_size[i] / max(Throught[i][j], 1e-9)
+                matrix_weight[i][j] = flight_time + upload_delay + Outage[i][j]
 
         return matrix_weight
 
