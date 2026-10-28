@@ -59,12 +59,14 @@ class GA(object):
 
 
 
-        self.fruits = self.greedy_init(self.dis_mat,num_total,num_city)
+        self.fruits = self.random_init(num_total, num_city)
         # 显示初始化后的最佳路径
         scores = self.compute_adp(self.fruits)
         sort_index = np.argsort(-scores)
         init_best = self.fruits[sort_index[0]]
         init_best = self.location[init_best]
+        self.global_best_gene = list(self.fruits[sort_index[0]])
+        self.global_best_score = float(scores[sort_index[0]])
 
         # 存储每个iteration的结果，画出收敛图
         self.iter_x = [0]
@@ -77,11 +79,11 @@ class GA(object):
 
 
     def random_init(self, num_total, num_city):
-        tmp = [x for x in range(num_city)]
+        middle = list(range(1, num_city - 1))
         result = []
         for i in range(num_total):
-            random.shuffle(tmp)
-            result.append(tmp.copy())
+            random.shuffle(middle)
+            result.append([0] + middle.copy() + [num_city - 1])
         return result
 
     def greedy_init(self, dis_mat, num_total, num_city):
@@ -409,20 +411,24 @@ class GA(object):
         return list(genes_choose[index1]), list(genes_choose[index2])
 
     def ga_mutate(self, gene):
-        path_list = [t for t in range(len(gene))]
-        order = list(random.sample(path_list, 2))
+        start_node, end_node = gene[0], gene[-1]
+        middle = gene[1:-1]
+        order = list(random.sample(range(len(middle)), 2))
         start, end = min(order), max(order)
-        tmp = gene[start:end]
+        tmp = middle[start:end]
         # np.random.shuffle(tmp)
         tmp = tmp[::-1]
-        gene[start:end] = tmp
-        return list(gene)
+        middle[start:end] = tmp
+        return [start_node] + list(middle) + [end_node]
 
     def ga(self):
         # 获得优质父代
         scores = self.compute_adp(self.fruits)
         # 选择部分优秀个体作为父代候选集合
         parents, parents_score = self.ga_parent(scores, self.ga_choose_ratio)
+        if self.global_best_score > parents_score[0]:
+            parents.insert(0, list(self.global_best_gene))
+            parents_score.insert(0, self.global_best_score)
         tmp_best_one = parents[0]
         tmp_best_score = parents_score[0]
         # 新的种群fruits
@@ -456,7 +462,13 @@ class GA(object):
 
         self.fruits = fruits
 
-        return tmp_best_one, tmp_best_score
+        current_scores = self.compute_adp(self.fruits)
+        current_index = int(np.argmax(current_scores))
+        if current_scores[current_index] > self.global_best_score:
+            self.global_best_score = float(current_scores[current_index])
+            self.global_best_gene = list(self.fruits[current_index])
+
+        return list(self.global_best_gene), self.global_best_score
 
     def run(self):
         BEST_LIST = None
