@@ -189,9 +189,7 @@ class World(object):
          # 前进奖励（只奖励正向前进）
         progress_reward = max(0, dis_forward * 100)
         # 停留惩罚
-        stay_penalty = -10 if abs(dis_forward) < 0.05 else 0
-        if self.transmit:
-            stay_penalty *=2 
+        stay_penalty = -0.1 if abs(dis_forward) < 0.05 else 0
         
         comm_penalty = 0  
         

@@ -36,3 +36,19 @@ def test_edge_weight_matches_flight_upload_and_outage_time_sum():
     outage = np.zeros((2, 2)); outage[0, 1] = 3.0
     weights = ga.compute_weight_mec(2, energy, np.array([100.0, 0.0]), throughput, outage)
     assert weights[0, 1] == pytest.approx(15.0)
+
+
+def test_ga_mutation_preserves_fixed_start_and_end():
+    ga = GA.__new__(GA)
+    for _ in range(20):
+        result = ga.ga_mutate([0, 1, 2, 3, 4, 5, 6, 7])
+        assert result[0] == 0
+        assert result[-1] == 7
+
+
+def test_ga_crossover_preserves_fixed_start_and_end():
+    ga = GA.__new__(GA)
+    for _ in range(20):
+        left, right = ga.ga_cross([0, 1, 2, 3, 4, 5, 6, 7], [0, 6, 5, 4, 3, 2, 1, 7])
+        assert left[0] == right[0] == 0
+        assert left[-1] == right[-1] == 7
