@@ -4,6 +4,7 @@ from DDPG import DDPG
 import ReplayBuffer
 from World import World
 from reward_logging import log_reward_terms
+from training_config import load_fixed_payloads
 import numpy as np
 import time
 from tqdm import tqdm
@@ -26,6 +27,8 @@ def create_parser():
     parser.add_argument("--exploration_strategy", help="exploration strategy", type=str, default="adaptive")
     parser.add_argument("--min_exploration", help="minimum exploration noise", type=float, default=0.2)
     parser.add_argument("--max_exploration", help="maximum exploration noise", type=float, default=0.6)
+    parser.add_argument("--data_level", choices=["low", "medium", "high"], default="medium")
+    parser.add_argument("--episodes", help="training episode count", type=int, default=2000)
     return parser
 
 class AdaptiveExploration:
@@ -147,6 +150,8 @@ uav_h = args.uav_h
 exploration_strategy = args.exploration_strategy
 min_exploration = args.min_exploration
 max_exploration = args.max_exploration
+data_level = args.data_level
+payloads = load_fixed_payloads(data_level)
 
 train_path = 'logs/exp/'
 mkdir(train_path)
@@ -167,7 +172,7 @@ dist_max = delta_t * V_max
 
 max_action = np.array([math.pi, dist_max])
 min_action = np.array([-math.pi, 0])
-total_episode = 2000
+total_episode = args.episodes
 sample_episode = 1000
 
 # 改进的训练参数
@@ -186,7 +191,7 @@ trave_order = [1,6,2,3,5,4]#GA
 world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, delta_t=delta_t, t=T, uav_h=uav_h,
               data_size=data_size, ini_loc=ini_loc, end_loc=end_loc,
               users_name='results/datas/Users_'+str(user_num)+'.txt',
-              BS_loc=BS_loc, traverse_sequence=trave_order)
+              BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads)
 
 # 初始化探索策略
 if exploration_strategy == "adaptive":
