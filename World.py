@@ -15,7 +15,7 @@ from rural_world import Rural_world
 class World(object):
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
-                 data_size = 250,ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
+                 data_size = 250, data_sizes=None, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
                  users_name='Users.txt'
                  ,BS_loc=[],
                  traverse_sequence=[]):
@@ -52,6 +52,7 @@ class World(object):
         self.SIR_THRESHOLD_COVER = 2 # dB 通信阈值
         self.data_size_ini = data_size # 每个巡检点的数据量
         self.data_size = self.data_size_ini  # 每个巡检点的数据量
+        self.data_sizes = data_sizes
         self.data_rate = 0
         self.BandWidth = 1
         self.transmit = False # 是否完成数据传输
@@ -66,6 +67,12 @@ class World(object):
         
         self.GT_loc = BS_loc # 用户位置
         self.set_users()
+        if self.data_sizes is None:
+            self.data_sizes = np.full(len(self.Users), float(self.data_size_ini))
+        else:
+            self.data_sizes = np.asarray(self.data_sizes, dtype=float)
+            if len(self.data_sizes) != len(self.Users):
+                raise ValueError("data_sizes must provide one payload for each inspection user")
         self.target = self.Users[self.Traverse[self.Traverse_order]-1]
         self.target_loc = np.array([self.target.x, self.target.y])  # 目标位置
         self.target_dis = LA.norm(self.initial_loc - self.target_loc) # 距离目标的距离
@@ -95,6 +102,9 @@ class World(object):
                 f.close()
         else:
            assert False, "Users file not found: " + self.users_path
+
+    def payload_for_user(self, user_index):
+        return float(self.data_sizes[user_index - 1])
 
     def reset_target(self):
         self.Traverse_order = 0

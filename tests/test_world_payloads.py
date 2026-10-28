@@ -1,0 +1,25 @@
+import numpy as np
+
+from World import World
+
+
+def test_world_uses_per_inspection_payload_vector():
+    payloads = np.array([51.0, 62.0, 73.0, 84.0, 95.0, 106.0])
+    world = World(
+        length=20,
+        width=20,
+        uav_num=1,
+        dist_max=0.25,
+        delta_t=0.5,
+        t=100,
+        data_size=300,
+        data_sizes=payloads,
+        ini_loc=[2.62, 2.65],
+        end_loc=[18.95, 11.12],
+        users_name="results/datas/Users_6.txt",
+        BS_loc=np.array([[4.77, 4.56, 0.25], [14.89, 4.89, 0.25], [4.63, 13.78, 0.25], [13.48, 14.89, 0.25]]),
+        traverse_sequence=[1, 2, 3, 4, 5, 6],
+    )
+
+    assert world.payload_for_user(1) == 51.0
+    assert world.payload_for_user(6) == 106.0
