@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import radio_map_A2G as rad_env
+import radio_map_G2A as g2a_env
 from numpy import linalg as LA
 def power(v):
     P0 = 79.8563
@@ -21,7 +22,7 @@ def power(v):
 
 
 class GA(object):
-    def __init__(self, num_city, num_total, iteration, data):
+    def __init__(self, num_city, num_total, iteration, data, data_sizes=None):
         self.num_city = num_city
         self.num_total = num_total
         self.scores = []
@@ -30,6 +31,9 @@ class GA(object):
         self.ga_choose_ratio = 0.2
         self.mutate_ratio = 0.05
         self.Data_size =300# 数据量
+        self.payload_by_node = np.full(num_city, self.Data_size, dtype=float) if data_sizes is None else np.asarray(data_sizes, dtype=float)
+        if len(self.payload_by_node) != num_city:
+            raise ValueError("data_sizes must align with all start, inspection, and end nodes")
         self.THREHOLD = 1
         # fruits中存每一个个体是下标的list
 
@@ -37,7 +41,8 @@ class GA(object):
         self.dis_mat_initial = self.compute_dis_mat_for_weight(num_city, data) # 距离矩阵
         self.engy_mat = self.comput_engy(num_city,self.dis_mat_initial) # 计算能耗
         self.throught_mat  = self.comput_thought(num_city,self.location) # 计算吞吐量
-        self.weight_mec_mat = self.compute_weight_mec(num_city,self.engy_mat, self.Data_size, self.throught_mat)
+        self.outage_mat = self.comput_outage(num_city, self.location)
+        self.weight_mec_mat = self.compute_weight_mec(num_city,self.engy_mat, self.payload_by_node, self.throught_mat, self.outage_mat)
         # print(" self.dis_mat_initial", self.dis_mat_initial)
         # print(" self.engy_mat", self.engy_mat)
         # print(" self.throught_mat", self.throught_mat)
@@ -164,14 +169,14 @@ class GA(object):
         return dis_mat_ini
 
     # 计算权重矩阵s
-    def compute_weight_mec(self, num_city, Engy, Data_size, Throught):
+    def compute_weight_mec(self, num_city, Engy, Data_size, Throught, Outage):
         matrix_weight = np.zeros([num_city, num_city])
         for i in range(num_city):
             for j in range(num_city):
                 if i == j:
                     matrix_weight[i][j] = np.inf
                     continue
-                matrix_weight[i][j] = Data_size *Engy[i][j] / Throught[i][j]
+                matrix_weight[i][j] = Data_size[i] * Engy[i][j] * (1 + Outage[i][j]) / max(Throught[i][j], 1e-9)
 
         return matrix_weight
 
@@ -259,6 +264,24 @@ class GA(object):
         # Q print("获取速率的位置：",location)
         dateRate = rad_env.getPointDateRate(loc_km) # 信噪比
         return dateRate
+
+    def comput_outage(self, num_city, location):
+        outage_mat = np.zeros((num_city, num_city))
+        for i in range(num_city):
+            for j in range(num_city):
+                if i == j:
+                    outage_mat[i][j] = np.inf
+                    continue
+                distance = LA.norm(location[j][0:2] - location[i][0:2])
+                steps = max(1, int(np.ceil(distance / 0.0915)))
+                points = np.linspace(location[i][0:2], location[j][0:2], steps + 1)[1:]
+                outages = 0
+                for point in points:
+                    loc_km = np.array([[point[0] / 10, point[1] / 10, 0.1]])
+                    outage_prob, _ = g2a_env.getPointMiniOutage(loc_km)
+                    outages += float(outage_prob[0]) >= 0.5
+                outage_mat[i][j] = outages * 0.5
+        return outage_mat
 
     # 计算路径长度
     def compute_pathlen(self, path, dis_mat,goback=False):
