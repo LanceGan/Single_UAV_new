@@ -14,3 +14,7 @@ def test_edge_weight_reflects_source_payload_and_g2a_outage():
 
     assert weights[1, 2] > weights[2, 1]
     assert weights[1, 2] > weights[1, 0]
+
+
+def test_node_payloads_add_zero_payloads_for_start_and_end():
+    assert GA.build_node_payloads(np.array([50, 60, 70, 80, 90, 100])).tolist() == [0, 50, 60, 70, 80, 90, 100, 0]

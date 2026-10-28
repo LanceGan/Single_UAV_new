@@ -32,6 +32,8 @@ class GA(object):
         self.mutate_ratio = 0.05
         self.Data_size =300# 数据量
         self.payload_by_node = np.full(num_city, self.Data_size, dtype=float) if data_sizes is None else np.asarray(data_sizes, dtype=float)
+        if len(self.payload_by_node) == num_city - 2:
+            self.payload_by_node = self.build_node_payloads(self.payload_by_node)
         if len(self.payload_by_node) != num_city:
             raise ValueError("data_sizes must align with all start, inspection, and end nodes")
         self.THREHOLD = 1
@@ -65,6 +67,10 @@ class GA(object):
         # 存储每个iteration的结果，画出收敛图
         self.iter_x = [0]
         self.iter_y = [1. / scores[sort_index[0]]]
+
+    @staticmethod
+    def build_node_payloads(inspection_payloads):
+        return np.concatenate(([0.0], np.asarray(inspection_payloads, dtype=float), [0.0]))
 
 
 
@@ -242,7 +248,8 @@ class GA(object):
                     next_loc[1] = currect_loc[1] + np.sin(drec) * distance
                     sinr_n = self.get_date_rate(next_loc) # 数据吞吐量
                     if(sinr_n >= self.THREHOLD ):
-                        sum_data += sinr_n
+                        rate = np.log2(1 + 10 ** (sinr_n / 10.0))
+                        sum_data += rate * Delta_T
                         #print("throught_mat:",throught_mat,sinr_n)
                     else :
                         sum_data += 0  # 计算吞吐量（选择信号最好的那个）
@@ -253,7 +260,7 @@ class GA(object):
                         break
                     else:
                         currect_loc = next_loc
-                    throught_mat[i][j] = min(self.Data_size,sum_data)
+                    throught_mat[i][j] = max(sum_data, 1e-9)
         return throught_mat
 
     def get_date_rate(self, location):
