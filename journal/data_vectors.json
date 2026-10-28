@@ -1,14 +1,14 @@
 {
   "selection_method": "balanced three-high-point combination search under a fixed radio-map seed",
   "high_payload_nodes": {
-    "low": [1, 4, 5],
-    "medium": [2, 3, 4],
-    "high": [1, 2, 3]
+    "low": [1, 2, 5],
+    "medium": [1, 2, 3],
+    "high": [2, 3, 4]
   },
   "units": "MB",
   "vectors_mb": {
-    "low": [90.0, 60.0, 60.0, 90.0, 90.0, 60.0],
-    "medium": [120.0, 180.0, 180.0, 180.0, 120.0, 120.0],
-    "high": [290.0, 290.0, 290.0, 210.0, 210.0, 210.0]
+    "low": [90.0, 90.0, 60.0, 60.0, 90.0, 60.0],
+    "medium": [180.0, 180.0, 180.0, 120.0, 120.0, 120.0],
+    "high": [210.0, 290.0, 290.0, 290.0, 210.0, 210.0]
   }
 }
