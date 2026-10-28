@@ -214,6 +214,9 @@ class World(object):
 
         return total_reward
 
+    def reward_summary(self):
+        return self.reward_term_totals.copy()
+
 
     def get_date_rate_A2G(self, location): #空对地
         loc_km=np.zeros(shape=(1,3))

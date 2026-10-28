@@ -101,3 +101,14 @@ def test_world_accumulates_reward_terms_within_episode():
     world.get_reward(0.0, 0.0, 1.0, 1.0, 0.1, 10.0, 10.0)
 
     assert world.reward_term_totals["progress"] == pytest.approx(20.0)
+
+
+def test_reward_summary_returns_a_copy_of_episode_totals():
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    world.reset()
+    summary = world.reward_summary()
+    summary["progress"] = 99.0
+    assert world.reward_term_totals["progress"] == 0.0
