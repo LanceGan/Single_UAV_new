@@ -6,6 +6,7 @@ from tqdm import tqdm
 import radio_map_A2G as rad_env
 import radio_map_G2A as g2a_env
 from numpy import linalg as LA
+from fixed_radio_maps import FixedRadioMaps
 def power(v):
     P0 = 79.8563
     Pi = 88.6279
@@ -37,6 +38,7 @@ class GA(object):
         if len(self.payload_by_node) != num_city:
             raise ValueError("data_sizes must align with all start, inspection, and end nodes")
         self.THREHOLD = 1
+        self.radio_maps = FixedRadioMaps('results/datas')
         # fruits中存每一个个体是下标的list
 
 
@@ -269,13 +271,7 @@ class GA(object):
         return throught_mat
 
     def get_date_rate(self, location):
-        loc_km = np.zeros(shape=(1, 3))
-        loc_km[0, :2] = location / 10
-        loc_km[0, 2] = 0.1
-        # Pout,Pout_SINR=rad_env.getPointMiniOutage(loc_km)
-        # Q print("获取速率的位置：",location)
-        dateRate = rad_env.getPointDateRate(loc_km) # 信噪比
-        return dateRate
+        return self.radio_maps.a2g_snr_db(location[0:2])
 
     def comput_outage(self, num_city, location):
         outage_mat = np.zeros((num_city, num_city))
@@ -289,9 +285,7 @@ class GA(object):
                 points = np.linspace(location[i][0:2], location[j][0:2], steps + 1)[1:]
                 outages = 0
                 for point in points:
-                    loc_km = np.array([[point[0] / 10, point[1] / 10, 0.1]])
-                    outage_prob, _ = g2a_env.getPointMiniOutage(loc_km)
-                    outages += float(outage_prob[0]) >= 0.5
+                    outages += self.radio_maps.g2a_outage_probability(point) >= 0.5
                 outage_mat[i][j] = outages * 0.5
         return outage_mat
 
