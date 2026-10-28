@@ -427,8 +427,16 @@ class GA(object):
         tmp_best_score = parents_score[0]
         # 新的种群fruits
         fruits = parents.copy()
+        attempts = 0
+        max_attempts = self.num_total * 100
         # 生成新的种群
         while len(fruits) < self.num_total:
+            attempts += 1
+            if attempts > max_attempts:
+                candidate = [0] + random.sample(list(range(1, self.num_city - 1)), self.num_city - 2) + [self.num_city - 1]
+                if candidate not in fruits:
+                    fruits.append(candidate)
+                continue
             # 轮盘赌方式对父代进行选择
             gene_x, gene_y = self.ga_choose(parents_score, parents)
             # 交叉
