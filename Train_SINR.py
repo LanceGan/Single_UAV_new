@@ -4,7 +4,7 @@ from DDPG import DDPG
 import ReplayBuffer
 from World import World
 from reward_logging import log_reward_terms
-from training_config import load_fixed_payloads
+from training_config import build_output_paths, load_fixed_payloads
 import numpy as np
 import time
 from tqdm import tqdm
@@ -29,6 +29,7 @@ def create_parser():
     parser.add_argument("--max_exploration", help="maximum exploration noise", type=float, default=0.6)
     parser.add_argument("--data_level", choices=["low", "medium", "high"], default="medium")
     parser.add_argument("--episodes", help="training episode count", type=int, default=2000)
+    parser.add_argument("--output_root", default="journal_results")
     return parser
 
 class AdaptiveExploration:
@@ -152,8 +153,9 @@ min_exploration = args.min_exploration
 max_exploration = args.max_exploration
 data_level = args.data_level
 payloads = load_fixed_payloads(data_level)
+output_paths = build_output_paths(args.output_root, data_level)
 
-train_path = 'logs/exp/'
+train_path = str(output_paths["logs"])
 mkdir(train_path)
 writer = SummaryWriter(train_path)
 
@@ -218,8 +220,8 @@ kwargs = {
 }
 model = TD3(**kwargs)
 # model = DDPG(**kwargs)
-model_path = 'Model/DDPG'
-mkdir(model_path[:-1])
+model_path = str(output_paths["model_prefix"])
+mkdir(str(output_paths["model_prefix"].parent))
 replay_buffer = ReplayBuffer.ReplayBuffer(s_dim, a_dim, max_size=int(buffer))
 
 # 早停和最佳模型保存
@@ -396,16 +398,16 @@ ax2.set_title('Exploration Noise Decay')
 ax2.grid()
 
 plt.tight_layout()
-plt.savefig('training_results.jpg', dpi=300, bbox_inches='tight')
+plt.savefig(output_paths["root"] / 'training_results.jpg', dpi=300, bbox_inches='tight')
 plt.close()
 
 # 保存数据
 if len(ep_rewards) > 200:
     return_mov_avg = get_moving_average(ep_rewards, 200)
-    np.savez('UAV_TD3_improved', return_mov_avg=return_mov_avg, 
+    np.savez(output_paths["root"] / 'UAV_TD3_improved', return_mov_avg=return_mov_avg, 
              ep_rewards=ep_rewards, exploration_noise=ep_exploration_noise)
 else:
-    np.savez('UAV_TD3_improved', ep_rewards=ep_rewards, 
+    np.savez(output_paths["root"] / 'UAV_TD3_improved', ep_rewards=ep_rewards, 
              exploration_noise=ep_exploration_noise)
 
 writer.close()
