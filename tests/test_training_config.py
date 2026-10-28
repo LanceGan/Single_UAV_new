@@ -17,6 +17,6 @@ def test_each_level_has_three_high_and_three_low_payloads():
 
 
 def test_training_outputs_are_isolated_by_data_level(tmp_path):
-    paths = build_output_paths(tmp_path, "low")
-    assert paths["root"] == tmp_path / "low"
-    assert paths["model_prefix"].parent == tmp_path / "low" / "models"
+    paths = build_output_paths(tmp_path, "low", "ddpg")
+    assert paths["root"] == tmp_path / "low" / "ddpg"
+    assert paths["model_prefix"].parent == tmp_path / "low" / "ddpg" / "models"

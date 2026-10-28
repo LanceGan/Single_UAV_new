@@ -17,6 +17,6 @@ def load_fixed_payloads(level):
     return np.asarray(vectors[level], dtype=float)
 
 
-def build_output_paths(output_root, level):
-    root = Path(output_root) / level
-    return {"root": root, "logs": root / "logs", "model_prefix": root / "models" / "ddpg_"}
+def build_output_paths(output_root, level, algorithm):
+    root = Path(output_root) / level / algorithm
+    return {"root": root, "logs": root / "logs", "model_prefix": root / "models" / f"{algorithm}_"}

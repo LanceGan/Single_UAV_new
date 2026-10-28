@@ -32,6 +32,7 @@ def create_parser():
     parser.add_argument("--episodes", help="training episode count", type=int, default=2000)
     parser.add_argument("--output_root", default="journal_results")
     parser.add_argument("--ga_iterations", type=int, default=500)
+    parser.add_argument("--algorithm", choices=["td3", "ddpg"], default="td3")
     return parser
 
 class AdaptiveExploration:
@@ -154,8 +155,9 @@ exploration_strategy = args.exploration_strategy
 min_exploration = args.min_exploration
 max_exploration = args.max_exploration
 data_level = args.data_level
+algorithm = args.algorithm
 payloads = load_fixed_payloads(data_level)
-output_paths = build_output_paths(args.output_root, data_level)
+output_paths = build_output_paths(args.output_root, data_level, algorithm)
 
 train_path = str(output_paths["logs"])
 mkdir(train_path)
@@ -217,8 +219,7 @@ kwargs = {
     "c_lr": 1e-3,
     "Q_batchsize": 256,
 }
-model = TD3(**kwargs)
-# model = DDPG(**kwargs)
+model = TD3(**kwargs) if algorithm == "td3" else DDPG(**kwargs)
 model_path = str(output_paths["model_prefix"])
 mkdir(str(output_paths["model_prefix"].parent))
 replay_buffer = ReplayBuffer.ReplayBuffer(s_dim, a_dim, max_size=int(buffer))
