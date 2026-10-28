@@ -37,7 +37,7 @@ class World(object):
         self.delta_T = delta_t # 时隙长度
         self.fa = 0.0  # 出界
         self.r = 0.0  # 奖励
-        self.reward_term_totals = {"progress": 0.0, "idle": 0.0, "boundary": 0.0, "communication": 0.0}
+        self.reward_term_totals = self._empty_reward_terms()
         self.terminal = False
         self.total_engy = 0.0
         self.out_time = 0.0
@@ -128,7 +128,7 @@ class World(object):
         self.fa = 0
         self.out_time = 0
         self.total_engy = 0.0
-        self.reward_term_totals = {"progress": 0.0, "idle": 0.0, "boundary": 0.0, "communication": 0.0}
+        self.reward_term_totals = self._empty_reward_terms()
         state = self.reset_state()
         return state,self.t
 
@@ -209,13 +209,20 @@ class World(object):
             "communication": comm_penalty,
         }
         for name, value in self.last_reward_terms.items():
-            self.reward_term_totals[name] = self.reward_term_totals.get(name, 0.0) + value
+            self.add_reward_term(name, value)
         total_reward = sum(self.last_reward_terms.values())
 
         return total_reward
 
     def reward_summary(self):
         return self.reward_term_totals.copy()
+
+    @staticmethod
+    def _empty_reward_terms():
+        return {name: 0.0 for name in ("progress", "idle", "boundary", "communication", "arrival_upload", "completion", "timeout", "qos")}
+
+    def add_reward_term(self, name, value):
+        self.reward_term_totals[name] = self.reward_term_totals.get(name, 0.0) + value
 
 
     def get_date_rate_A2G(self, location): #空对地
@@ -305,9 +312,11 @@ class World(object):
             if self.transmit:  
                 print("arrive and transmit complete")
                 reward += 1000      
+                self.add_reward_term("arrival_upload", 1000)
             else:
                 print("arrive but not transmit complete, data size:",self.data_size)
                 reward -= self.data_size*3   
+                self.add_reward_term("arrival_upload", -self.data_size*3)
                 self.terminal = False
                 done = True
                 state_ = self.update_state(fly_energy,self.target_loc,self.target_dis)
@@ -344,11 +353,15 @@ class World(object):
             done = True
             if self.terminal:
                 print("完成任务所用时间为：",self.t*self.delta_T)
-                reward += 2000+(self.T-self.t)
+                completion_reward = 2000+(self.T-self.t)
+                reward += completion_reward
+                self.add_reward_term("completion", completion_reward)
             if self.t >= self.T:
                 reward -= 1000
+                self.add_reward_term("timeout", -1000)
             if self.out_time > self.outage_max_s:
                 reward -= 1000
+                self.add_reward_term("qos", -1000)
             
         state_ = self.update_state(fly_energy,self.target_loc,self.target_dis)  # 进入下一状态
         self.r = reward

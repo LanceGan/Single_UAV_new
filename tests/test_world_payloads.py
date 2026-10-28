@@ -128,3 +128,13 @@ def test_arrival_with_pending_upload_does_not_advance_to_next_target(monkeypatch
     assert done and not terminal
     assert world.Traverse_order == 0
     assert world.data_size > 0
+
+
+def test_sparse_reward_terms_are_accumulated():
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    world.reset()
+    world.add_reward_term("arrival_upload", -30.0)
+    assert world.reward_summary()["arrival_upload"] == pytest.approx(-30.0)
