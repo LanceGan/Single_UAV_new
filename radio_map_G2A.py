@@ -180,7 +180,8 @@ def getLargeScalePowerFromBS(PointLoc, BS, Theta_deg, Phi_deg, LoS, Fc=2.0, H_u=
 
     ChGain_dB = np.zeros((1, Sector_num))
     for i in range(Sector_num):
-        ChGain_dB[0, i], _ = getAntennaGain(Theta_deg, Phi_Sector_ref[i])
+        gain_db, _ = getAntennaGain(Theta_deg, Phi_Sector_ref[i])
+        ChGain_dB[0, i] = float(np.asarray(gain_db).squeeze())
     ChGain=np.power(10,ChGain_dB/10)  # convert from dB to linear
 
     # Compute 3D distance in meters
