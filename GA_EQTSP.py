@@ -182,6 +182,9 @@ class GA(object):
                 if i == j:
                     matrix_weight[i][j] = np.inf
                     continue
+                if not (np.isfinite(Engy[i][j]) and np.isfinite(Throught[i][j]) and np.isfinite(Outage[i][j])):
+                    matrix_weight[i][j] = np.inf
+                    continue
                 matrix_weight[i][j] = Data_size[i] * Engy[i][j] * (1 + Outage[i][j]) / max(Throught[i][j], 1e-9)
 
         return matrix_weight
