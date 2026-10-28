@@ -36,6 +36,7 @@ def test_arrival_loads_payload_for_departed_inspection_point(monkeypatch):
     )
     monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 10.0)
     monkeypatch.setattr(world, "get_date_rate_G2A", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_g2a_outage", lambda _location: False)
     world.reset()
     world.distance = 100.0
 
@@ -55,6 +56,7 @@ def test_upload_uses_data_rate_times_slot_duration(monkeypatch):
                   traverse_sequence=[1, 2, 3, 4, 5, 6])
     monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 10.0)
     monkeypatch.setattr(world, "get_date_rate_G2A", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_g2a_outage", lambda _location: False)
     world.reset(); world.distance = 100.0
     _, _, _, t, _ = world.step_inside(np.array([0.0, 0.0]), np.zeros(5), 0)
     world.distance = 0.1
@@ -62,3 +64,17 @@ def test_upload_uses_data_rate_times_slot_duration(monkeypatch):
 
     rate = world.BandWidth * np.log2(1 + 10 ** (10.0 / 10.0))
     assert world.data_size == pytest.approx(51.0 - rate * world.delta_T)
+
+
+def test_world_terminates_when_g2a_outage_budget_is_exceeded(monkeypatch):
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  outage_max_s=0.5, ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_g2a_outage", lambda _location: True)
+    world.reset()
+    _, _, done, t, terminal = world.step_inside(np.array([0.0, 0.0]), np.zeros(5), 0)
+    assert not done and not terminal and world.out_time == 0.5
+    _, _, done, _, terminal = world.step_inside(np.array([0.0, 0.0]), np.zeros(5), t)
+    assert done and not terminal and world.out_time == 1.0

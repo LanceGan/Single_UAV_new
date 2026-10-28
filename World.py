@@ -15,7 +15,7 @@ from rural_world import Rural_world
 class World(object):
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
-                 data_size = 250, data_sizes=None, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
+                 data_size = 250, data_sizes=None, outage_max_s=80.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
                  users_name='Users.txt'
                  ,BS_loc=[],
                  traverse_sequence=[]):
@@ -40,6 +40,7 @@ class World(object):
         self.terminal = False
         self.total_engy = 0.0
         self.out_time = 0.0
+        self.outage_max_s = outage_max_s
         self.NON_COMM_PENALTY = -5 # 不满足通信阈值的惩罚
         self.NON_COVER_PENALTY = -10 # 不满足覆盖阈值的惩罚
         
@@ -218,6 +219,13 @@ class World(object):
         dateRate=G2A.getPointDateRate(loc_km)
         return dateRate
 
+    def get_g2a_outage(self, location):
+        loc_km=np.zeros(shape=(1,3))
+        loc_km[0,:2]=location/10
+        loc_km[0,2]=0.1
+        outage_prob, _ = G2A.getPointMiniOutage(loc_km)
+        return float(outage_prob[0]) >= 0.5
+
     def step_inside(self, actions,s,t): # 输入动作，状态值，时间步,输出下一状态和其他标志
         fa = 0.0
         reward = 0.0
@@ -254,6 +262,8 @@ class World(object):
         MaxSINR_A2G = self.get_date_rate_A2G(uav_location)  # 空对地的最大dB
         
         MaxSINR_G2A = self.get_date_rate_G2A(uav_location)  # 地对空的最大dB
+        if self.get_g2a_outage(uav_location):
+            self.out_time += self.delta_T
         self.data_rate = self.BandWidth * np.log2(1 + 10**(MaxSINR_A2G/10.0))
         
         #在空对地Radio Map中进行传输 
@@ -312,12 +322,14 @@ class World(object):
             self.terminal = False
             done = False
 
-        if self.terminal or self.t >= self.T: # 如果任务完成，或者飞行时间步已经满了
+        if self.terminal or self.t >= self.T or self.out_time > self.outage_max_s:
             done = True
             if self.terminal:
                 print("完成任务所用时间为：",self.t*self.delta_T)
                 reward += 2000+(self.T-self.t)
             if self.t >= self.T:
+                reward -= 1000
+            if self.out_time > self.outage_max_s:
                 reward -= 1000
             
         state_ = self.update_state(fly_energy,self.target_loc,self.target_dis)  # 进入下一状态
