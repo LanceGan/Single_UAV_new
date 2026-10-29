@@ -175,6 +175,22 @@ def test_state_exposes_qos_usage_and_penalizes_each_outage_slot(monkeypatch):
     assert world.last_reward_terms["communication"] == pytest.approx(-5.0)
 
 
+def test_final_payload_upload_allows_terminal_completion(monkeypatch):
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  data_sizes=np.array([1.0, 60, 60, 60, 60, 60]),
+                  ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1])
+    monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 100.0)
+    monkeypatch.setattr(world, "get_date_rate_G2A", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_g2a_outage", lambda _location: False)
+    state, _ = world.reset(); world.distance = 100.0
+    state, _, done, t, terminal = world.step_inside(np.array([0.0, 0.0]), state, 0)
+    assert not done and not terminal and world.Traverse_order == 1
+    _, _, done, _, terminal = world.step_inside(np.array([0.0, 0.0]), state, t)
+    assert done and terminal
+
+
 def test_reward_scales_make_qos_violation_more_costly_than_two_arrivals():
     world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
                   ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],

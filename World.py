@@ -325,24 +325,23 @@ class World(object):
                 return state_, self.r, done, self.t, self.terminal
                      
                 
-            self.target_pre_loc = self.target_loc #更新上一个目标点的位置        
-            self.transmit = False
-            self.data_size = self.payload_for_user(self.Traverse[self.Traverse_order])
-            self.trans_delay_start = self.t
-            
-            if self.Traverse_order == len(self.Traverse): #到达终点了
+            if self.Traverse_order == len(self.Traverse): #到达终点且最终数据已上传
                 self.terminal = True
-                done = True    
-                print("=================================complete task!!========================")      
-            else :                              
+                done = True
+                print("=================================complete task!!========================")
+            else:
+                self.target_pre_loc = self.target_loc #更新上一个目标点的位置
+                self.transmit = False
+                self.data_size = self.payload_for_user(self.Traverse[self.Traverse_order])
+                self.trans_delay_start = self.t
                 self.terminal = False
-                done = False               
+                done = False
                 if self.Traverse_order < len(self.Traverse) - 1:  # 如果还有下一个目标点
                     print("=================================arrive point:",self.Traverse[self.Traverse_order])
                     self.Traverse_order += 1 #更新目标点
                     self.target = self.Users[self.Traverse[self.Traverse_order]-1]  # 更新目标点
                     self.target_loc = np.array([self.target.x, self.target.y])
-                elif self.Traverse_order == len(self.Traverse) - 1:
+                else:
                     print("=================================arrive point:",self.Traverse[self.Traverse_order])
                     self.Traverse_order += 1 #更新目标点
                     self.target_loc = self.end_loc
