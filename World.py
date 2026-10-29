@@ -4,10 +4,6 @@ import os
 import sys
 import math
 import copy
-# import Radio_env_BS as rad_env
-# import radio_map as rad_env
-import radio_map_A2G as A2G#A2G
-import radio_map_G2A as G2A #
 from fixed_radio_maps import FixedRadioMaps
 from numpy import linalg as LA
 from rural_world import Rural_world
@@ -138,6 +134,7 @@ class World(object):
     def reset(self):
         self.reset_target()
         self.set_uavs_loc()
+        self.terminal = False
         self.trans_delay_start = 0
         self.trans_delay_end = self.T
         self.trans_delay = 0
@@ -337,6 +334,14 @@ class World(object):
         time_reward = -self.TIME_STEP_PENALTY
         reward += time_reward
         self.add_reward_term("time", time_reward)
+
+        # A QoS violation is failure even when it coincides with endpoint arrival.
+        if self.out_time > self.outage_max_s:
+            reward -= self.QOS_TERMINATION_PENALTY
+            self.add_reward_term("qos", -self.QOS_TERMINATION_PENALTY)
+            self.terminal = False
+            self.r = reward
+            return self.update_state(fly_energy,self.target_loc,self.target_dis), reward, True, self.t, False
                 
         if step_cur<=self.distance : # 达到检查点
             #只要到目标点了，就换下一个目标点，根据传输完成情况进行奖惩

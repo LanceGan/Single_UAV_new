@@ -240,3 +240,26 @@ def test_reward_scales_make_qos_violation_more_costly_than_two_arrivals():
                   users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
                   traverse_sequence=[1, 2, 3, 4, 5, 6])
     assert 2 * world.ARRIVAL_REWARD < world.QOS_TERMINATION_PENALTY + 200 * world.OUTAGE_STEP_PENALTY
+
+
+def test_endpoint_cannot_report_success_after_exceeding_qos(monkeypatch):
+    world = World(length=20, width=20, uav_num=1, delta_t=0.5, t=1000,
+                  ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1])
+    state, _ = world.reset()
+    world.Traverse_order = 1
+    world.target_loc = np.array(world.end_loc)
+    world.UAVs[0].x, world.UAVs[0].y = world.end_loc
+    world.out_time = world.outage_max_s
+    monkeypatch.setattr(world, "get_g2a_outage_probability", lambda _: 1.0)
+    _, _, done, _, success = world.step_inside(np.zeros(2), state, 0)
+    assert done and not success
+    assert world.reward_summary()["completion"] == 0.0
+
+
+def test_reset_clears_previous_success_flag():
+    world = World(users_name="results/datas/Users_6.txt", traverse_sequence=[1], BS_loc=np.zeros((4, 3)))
+    world.terminal = True
+    world.reset()
+    assert not world.terminal

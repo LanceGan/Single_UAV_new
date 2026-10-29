@@ -141,14 +141,14 @@ class TD3(object):
 			smoothed_target_a = torch.maximum(self.min_action, torch.minimum(
 					self.actor_target(s_prime) + noise, self.max_action))
 
-		# Compute the target Q value
-		target_Q1, target_Q2 = self.q_critic_target(s_prime, smoothed_target_a)
-		target_Q = torch.min(target_Q1, target_Q2)
-		'''DEAD OR NOT'''
-		if self.env_with_Dead:
-			target_Q = r + (1 - dead_mask) * self.gamma * target_Q  # env with dead
-		else:
-			target_Q = r + self.gamma * target_Q  # env without dead
+		# Bellman targets are constants in the current critic update.
+		with torch.no_grad():
+			target_Q1, target_Q2 = self.q_critic_target(s_prime, smoothed_target_a)
+			target_Q = torch.min(target_Q1, target_Q2)
+			if self.env_with_Dead:
+				target_Q = r + (1 - dead_mask) * self.gamma * target_Q
+			else:
+				target_Q = r + self.gamma * target_Q
 
 
 		# Get current Q estimates
