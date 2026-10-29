@@ -173,8 +173,10 @@ def test_state_exposes_qos_usage_and_penalizes_each_outage_slot(monkeypatch):
     next_state, _, _, _, _ = world.step_inside(np.array([0.1, 0.1]), state, 0)
     assert len(next_state) == 8
     assert next_state[5] == pytest.approx(0.5 / 100.0)
-    assert next_state[6] == pytest.approx(10.0)
+    expected_snr = (10.0 - world.a2g_snr_min) / (world.a2g_snr_max - world.a2g_snr_min)
+    assert next_state[6] == pytest.approx(expected_snr)
     assert next_state[7] == pytest.approx(0.8)
+    assert np.all((next_state >= 0.0) & (next_state <= 1.0))
     assert world.last_reward_terms["communication"] == pytest.approx(-5.0)
 
 

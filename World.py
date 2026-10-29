@@ -66,6 +66,8 @@ class World(object):
         self.data_rate = 0
         self.BandWidth = 1
         self.radio_maps = FixedRadioMaps('results/datas')
+        self.a2g_snr_min = float(self.radio_maps.a2g_snr.min())
+        self.a2g_snr_max = float(self.radio_maps.a2g_snr.max())
         self.current_a2g_snr = 0.0
         self.current_g2a_outage_probability = 0.0
         self.transmit = False # 是否完成数据传输
@@ -86,6 +88,7 @@ class World(object):
             self.data_sizes = np.asarray(self.data_sizes, dtype=float)
             if len(self.data_sizes) != len(self.Users):
                 raise ValueError("data_sizes must provide one payload for each inspection user")
+        self.max_payload = max(float(np.max(self.data_sizes)), 1.0)
         self.target = self.Users[self.Traverse[self.Traverse_order]-1]
         self.target_loc = np.array([self.target.x, self.target.y])  # 目标位置
         self.target_dis = LA.norm(self.initial_loc - self.target_loc) # 距离目标的距离
@@ -168,15 +171,15 @@ class World(object):
         s = np.zeros(State_dim)  
         # UAV location
         for i,uav in enumerate(self.UAVs):
-            s[2*i] = uav.x                      
-            s[2*i+1] = uav.y
+            s[2*i] = uav.x / self.length
+            s[2*i+1] = uav.y / self.width
         target_index = self.uav_num * 2
-        s[target_index] = self.target_loc[0]
-        s[target_index + 1] = self.target_loc[1]
-        s[target_index + 2] = self.data_size
+        s[target_index] = self.target_loc[0] / self.length
+        s[target_index + 1] = self.target_loc[1] / self.width
+        s[target_index + 2] = self.data_size / self.max_payload
         s[target_index + 3] = self.out_time / self.outage_max_s
-        s[target_index + 4] = self.current_a2g_snr
-        s[target_index + 5] = self.current_g2a_outage_probability
+        s[target_index + 4] = np.clip((self.current_a2g_snr - self.a2g_snr_min) / (self.a2g_snr_max - self.a2g_snr_min), 0.0, 1.0)
+        s[target_index + 5] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)
         # s[5] = self.T-self.t #剩余可用时间步
         return s
 
@@ -184,15 +187,15 @@ class World(object):
         State_dim = self.uav_num*2+2+4
         s_ = np.zeros(State_dim) 
         for i,uav in enumerate(self.UAVs):
-            s_[i*2] = uav.x
-            s_[i*2+1] = uav.y     
+            s_[i*2] = uav.x / self.length
+            s_[i*2+1] = uav.y / self.width
         target_index = self.uav_num * 2
-        s_[target_index] = tar_loc[0]
-        s_[target_index + 1] = tar_loc[1]
-        s_[target_index + 2] = self.data_size
+        s_[target_index] = tar_loc[0] / self.length
+        s_[target_index + 1] = tar_loc[1] / self.width
+        s_[target_index + 2] = self.data_size / self.max_payload
         s_[target_index + 3] = self.out_time / self.outage_max_s
-        s_[target_index + 4] = self.current_a2g_snr
-        s_[target_index + 5] = self.current_g2a_outage_probability
+        s_[target_index + 4] = np.clip((self.current_a2g_snr - self.a2g_snr_min) / (self.a2g_snr_max - self.a2g_snr_min), 0.0, 1.0)
+        s_[target_index + 5] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)
         # s_[5] = self.T-self.t #剩余可用时间步
         return s_
 
