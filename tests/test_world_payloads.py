@@ -176,6 +176,19 @@ def test_uploaded_data_receives_bounded_immediate_reward(monkeypatch):
     assert world.reward_summary()["upload"] == pytest.approx(world.UPLOAD_REWARD_PER_MB)
 
 
+def test_each_environment_step_records_time_cost(monkeypatch):
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_date_rate_G2A", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_g2a_outage_probability", lambda _location: 0.0)
+    state, _ = world.reset()
+    world.step_inside(np.array([0.1, 0.1]), state, 0)
+    assert world.reward_summary()["time"] == pytest.approx(-world.TIME_STEP_PENALTY)
+
+
 def test_world_defaults_to_fixed_maps_and_100_second_qos_budget():
     world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
                   ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],

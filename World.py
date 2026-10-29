@@ -18,6 +18,7 @@ class World(object):
     IDLE_PENALTY = 0.1
     OUTAGE_STEP_PENALTY = 5.0
     UPLOAD_REWARD_PER_MB = 2.0
+    TIME_STEP_PENALTY = 0.5
     ARRIVAL_REWARD = 300.0
     COMPLETION_REWARD = 1000.0
     TIMEOUT_PENALTY = 1000.0
@@ -245,7 +246,7 @@ class World(object):
 
     @staticmethod
     def _empty_reward_terms():
-        return {name: 0.0 for name in ("progress", "idle", "boundary", "communication", "upload", "arrival_upload", "completion", "timeout", "qos")}
+        return {name: 0.0 for name in ("progress", "idle", "boundary", "communication", "upload", "time", "arrival_upload", "completion", "timeout", "qos")}
 
     def add_reward_term(self, name, value):
         self.reward_term_totals[name] = self.reward_term_totals.get(name, 0.0) + value
@@ -333,6 +334,9 @@ class World(object):
         upload_reward = self.last_uploaded_data * self.UPLOAD_REWARD_PER_MB
         reward += upload_reward
         self.add_reward_term("upload", upload_reward)
+        time_reward = -self.TIME_STEP_PENALTY
+        reward += time_reward
+        self.add_reward_term("time", time_reward)
                 
         if step_cur<=self.distance : # 达到检查点
             #只要到目标点了，就换下一个目标点，根据传输完成情况进行奖惩
