@@ -92,6 +92,7 @@ class World(object):
         self.target = self.Users[self.Traverse[self.Traverse_order]-1]
         self.target_loc = np.array([self.target.x, self.target.y])  # 目标位置
         self.target_dis = LA.norm(self.initial_loc - self.target_loc) # 距离目标的距离
+        self.min_target_distance = self.target_dis
         self.target_pre_loc = np.array([self.initial_loc[0],self.initial_loc[1]]) #上一个目标的位置，初始为起点
         
         
@@ -127,6 +128,7 @@ class World(object):
         self.target = self.Users[self.Traverse[self.Traverse_order]-1]
         self.target_loc = np.array([self.target.x, self.target.y])  # 目标位置
         self.target_dis = LA.norm(self.initial_loc - self.target_loc) # 距离目标的距离
+        self.min_target_distance = self.target_dis
         self.target_pre_loc = np.array([self.initial_loc[0],self.initial_loc[1]]) #上一个目标的位置，初始为起点
         
     # 重置位置，各种时间清0
@@ -210,7 +212,7 @@ class World(object):
             SINR: 信噪比
         """
          # 前进奖励（只奖励正向前进）
-        progress_reward = max(0, dis_forward * self.PROGRESS_SCALE)
+        progress_reward = dis_forward * self.PROGRESS_SCALE
         # 停留惩罚
         stay_penalty = -self.IDLE_PENALTY if abs(dis_forward) < 0.05 else 0
         
@@ -289,6 +291,7 @@ class World(object):
 
         step_cur = LA.norm(uav_location - self.target_loc)  # 此位置与目标点距离
         self.target_dis = step_cur #更新目标距离
+        self.min_target_distance = min(self.min_target_distance, step_cur)
                 
         step_pre = LA.norm(uav_location_pre - self.target_loc)  # 前一位置与目标点距离
         step_cur_pre = LA.norm(uav_location - self.target_pre_loc) # 此位置与前一目标点距离         

@@ -357,6 +357,9 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
                      np.linalg.norm(np.array(end_loc) - np.array(ini_loc)) / max(fly_dis, 1e-6), 
                      episode)
     log_reward_terms(writer, world.reward_summary(), episode)
+    writer.add_scalar('episode/min_target_distance', world.min_target_distance, episode)
+    writer.add_scalar('episode/outage_time', world.out_time, episode)
+    writer.add_scalar('episode/visited_inspection_points', world.Traverse_order, episode)
     
     if episode % 50 == 0:
         model.save(episode, model_path)

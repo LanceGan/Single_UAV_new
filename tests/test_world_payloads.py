@@ -151,6 +151,15 @@ def test_idle_penalty_is_bounded_when_no_payload_is_pending():
     assert world.last_reward_terms["idle"] == pytest.approx(-0.1)
 
 
+def test_progress_reward_penalizes_motion_away_from_target():
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    world.get_reward(0.0, 0.0, 1.1, 1.0, -0.1, 10.0, 10.0)
+    assert world.last_reward_terms["progress"] == pytest.approx(-1.0)
+
+
 def test_world_defaults_to_fixed_maps_and_100_second_qos_budget():
     world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
                   ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
