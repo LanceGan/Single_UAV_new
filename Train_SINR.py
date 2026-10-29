@@ -6,6 +6,7 @@ from World import World
 from reward_logging import log_reward_terms
 from training_config import build_output_paths, load_fixed_payloads
 from sequence_runner import solve_ga_order
+from training_transitions import replay_terminal_mask
 import numpy as np
 import time
 from tqdm import tqdm
@@ -307,7 +308,7 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         s_, r, done, t, terminal = world.step_inside(a, s, t)
         sum_reward += r
         data_total += world.data_rate
-        replay_buffer.add(s, a, r, s_, terminal)
+        replay_buffer.add(s, a, r, s_, replay_terminal_mask(done))
         
         # 训练模型
         if replay_buffer.size > train_memory_size and step_count % train_freq == 0:
