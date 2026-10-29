@@ -100,7 +100,7 @@ def test_world_accumulates_reward_terms_within_episode():
     world.get_reward(0.0, 0.0, 1.0, 1.0, 0.1, 10.0, 10.0)
     world.get_reward(0.0, 0.0, 1.0, 1.0, 0.1, 10.0, 10.0)
 
-    assert world.reward_term_totals["progress"] == pytest.approx(20.0)
+    assert world.reward_term_totals["progress"] == pytest.approx(2.0)
 
 
 def test_reward_summary_returns_a_copy_of_episode_totals():
@@ -172,4 +172,12 @@ def test_state_exposes_qos_usage_and_penalizes_each_outage_slot(monkeypatch):
     next_state, _, _, _, _ = world.step_inside(np.array([0.1, 0.1]), state, 0)
     assert len(next_state) == 6
     assert next_state[5] == pytest.approx(0.5 / 100.0)
-    assert world.last_reward_terms["communication"] == pytest.approx(-1.0)
+    assert world.last_reward_terms["communication"] == pytest.approx(-5.0)
+
+
+def test_reward_scales_make_qos_violation_more_costly_than_two_arrivals():
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    assert 2 * world.ARRIVAL_REWARD < world.QOS_TERMINATION_PENALTY + 200 * world.OUTAGE_STEP_PENALTY

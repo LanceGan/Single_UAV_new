@@ -14,6 +14,13 @@ from rural_world import Rural_world
 
 
 class World(object):
+    PROGRESS_SCALE = 10.0
+    IDLE_PENALTY = 0.1
+    OUTAGE_STEP_PENALTY = 5.0
+    ARRIVAL_REWARD = 300.0
+    COMPLETION_REWARD = 1000.0
+    TIMEOUT_PENALTY = 1000.0
+    QOS_TERMINATION_PENALTY = 1000.0
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
                  data_size = 250, data_sizes=None, outage_max_s=100.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
@@ -191,11 +198,11 @@ class World(object):
             SINR: 信噪比
         """
          # 前进奖励（只奖励正向前进）
-        progress_reward = max(0, dis_forward * 100)
+        progress_reward = max(0, dis_forward * self.PROGRESS_SCALE)
         # 停留惩罚
-        stay_penalty = -0.1 if abs(dis_forward) < 0.05 else 0
+        stay_penalty = -self.IDLE_PENALTY if abs(dis_forward) < 0.05 else 0
         
-        comm_penalty = -1.0 if g2a_outage else 0.0
+        comm_penalty = -self.OUTAGE_STEP_PENALTY if g2a_outage else 0.0
         
         
         # if SINR_A2G < self.SIR_THRESHOLD_COMM and not self.transmit:
@@ -305,8 +312,8 @@ class World(object):
             #只要到目标点了，就换下一个目标点，根据传输完成情况进行奖惩
             if self.transmit:  
                 print("arrive and transmit complete")
-                reward += 1000      
-                self.add_reward_term("arrival_upload", 1000)
+                reward += self.ARRIVAL_REWARD
+                self.add_reward_term("arrival_upload", self.ARRIVAL_REWARD)
             else:
                 print("arrive but not transmit complete, data size:",self.data_size)
                 reward -= self.data_size*3   
@@ -347,15 +354,15 @@ class World(object):
             done = True
             if self.terminal:
                 print("完成任务所用时间为：",self.t*self.delta_T)
-                completion_reward = 2000+(self.T-self.t)
+                completion_reward = self.COMPLETION_REWARD + 0.1 * (self.T-self.t)
                 reward += completion_reward
                 self.add_reward_term("completion", completion_reward)
             if self.t >= self.T:
-                reward -= 1000
-                self.add_reward_term("timeout", -1000)
+                reward -= self.TIMEOUT_PENALTY
+                self.add_reward_term("timeout", -self.TIMEOUT_PENALTY)
             if self.out_time > self.outage_max_s:
-                reward -= 1000
-                self.add_reward_term("qos", -1000)
+                reward -= self.QOS_TERMINATION_PENALTY
+                self.add_reward_term("qos", -self.QOS_TERMINATION_PENALTY)
             
         state_ = self.update_state(fly_energy,self.target_loc,self.target_dis)  # 进入下一状态
         self.r = reward
