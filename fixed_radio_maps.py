@@ -12,6 +12,7 @@ class FixedRadioMaps:
         g2a = np.load(data_dir / "Radio_datas.npz")
         self.a2g_snr = a2g["arr_1"]
         self.g2a_outage = g2a["arr_0"]
+        self.g2a_snr = g2a["arr_1"]
 
     @staticmethod
     def _index(location_km):
@@ -25,3 +26,7 @@ class FixedRadioMaps:
     def g2a_outage_probability(self, location_km):
         x, y = self._index(location_km)
         return float(self.g2a_outage[x, y])
+
+    def g2a_snr_db(self, location_km):
+        x, y = self._index(location_km)
+        return float(self.g2a_snr[x, y])

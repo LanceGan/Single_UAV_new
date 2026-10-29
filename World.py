@@ -8,6 +8,7 @@ import copy
 # import radio_map as rad_env
 import radio_map_A2G as A2G#A2G
 import radio_map_G2A as G2A #
+from fixed_radio_maps import FixedRadioMaps
 from numpy import linalg as LA
 from rural_world import Rural_world
 
@@ -15,7 +16,7 @@ from rural_world import Rural_world
 class World(object):
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
-                 data_size = 250, data_sizes=None, outage_max_s=80.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
+                 data_size = 250, data_sizes=None, outage_max_s=100.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
                  users_name='Users.txt'
                  ,BS_loc=[],
                  traverse_sequence=[]):
@@ -57,6 +58,7 @@ class World(object):
         self.data_sizes = data_sizes
         self.data_rate = 0
         self.BandWidth = 1
+        self.radio_maps = FixedRadioMaps('results/datas')
         self.transmit = False # 是否完成数据传输
         self.trans_delay_start = 0
         self.trans_delay_end = self.T
@@ -224,25 +226,16 @@ class World(object):
 
 
     def get_date_rate_A2G(self, location): #空对地
-        loc_km=np.zeros(shape=(1,3))
-        loc_km[0,:2]=location/10
-        loc_km[0,2]=0.1
-        dateRate=A2G.getPointDateRate(loc_km)
-        return dateRate
+        point_km = np.asarray(location, dtype=float).reshape(-1)[:2] / 10
+        return self.radio_maps.a2g_snr_db(point_km)
     
     def get_date_rate_G2A(self, location): #地对空
-        loc_km=np.zeros(shape=(1,3))
-        loc_km[0,:2]=location/10
-        loc_km[0,2]=0.1
-        dateRate=G2A.getPointDateRate(loc_km)
-        return dateRate
+        point_km = np.asarray(location, dtype=float).reshape(-1)[:2] / 10
+        return self.radio_maps.g2a_snr_db(point_km)
 
     def get_g2a_outage(self, location):
-        loc_km=np.zeros(shape=(1,3))
-        loc_km[0,:2]=location/10
-        loc_km[0,2]=0.1
-        outage_prob, _ = G2A.getPointMiniOutage(loc_km)
-        return float(outage_prob[0]) >= 0.5
+        point_km = np.asarray(location, dtype=float).reshape(-1)[:2] / 10
+        return self.radio_maps.g2a_outage_probability(point_km) >= 0.5
 
     def step_inside(self, actions,s,t): # 输入动作，状态值，时间步,输出下一状态和其他标志
         fa = 0.0
