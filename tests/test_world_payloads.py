@@ -45,7 +45,7 @@ def test_arrival_loads_payload_for_departed_inspection_point(monkeypatch):
     assert t == 1
     assert world.data_size == 51.0
     assert world.transmit is False
-    assert state[4] == 51.0
+    assert state[4] == pytest.approx(51.0 / 106.0)
 
 
 def test_upload_uses_data_rate_times_slot_duration(monkeypatch):
