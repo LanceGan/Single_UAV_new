@@ -33,6 +33,7 @@ def create_parser():
     parser.add_argument("--output_root", default="journal_results")
     parser.add_argument("--ga_iterations", type=int, default=500)
     parser.add_argument("--algorithm", choices=["td3", "ddpg"], default="td3")
+    parser.add_argument("--outage_max_s", type=float, default=100.0)
     return parser
 
 class AdaptiveExploration:
@@ -156,6 +157,7 @@ min_exploration = args.min_exploration
 max_exploration = args.max_exploration
 data_level = args.data_level
 algorithm = args.algorithm
+outage_max_s = args.outage_max_s
 payloads = load_fixed_payloads(data_level)
 output_paths = build_output_paths(args.output_root, data_level, algorithm)
 
@@ -194,7 +196,7 @@ trave_order = solve_ga_order(payloads, iterations=args.ga_iterations)
 world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, delta_t=delta_t, t=T, uav_h=uav_h,
               data_size=data_size, ini_loc=ini_loc, end_loc=end_loc,
               users_name='results/datas/Users_'+str(user_num)+'.txt',
-              BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads)
+              BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads, outage_max_s=outage_max_s)
 
 # 初始化探索策略
 if exploration_strategy == "adaptive":
