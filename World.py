@@ -66,6 +66,8 @@ class World(object):
         self.data_rate = 0
         self.BandWidth = 1
         self.radio_maps = FixedRadioMaps('results/datas')
+        self.current_a2g_snr = 0.0
+        self.current_g2a_outage_probability = 0.0
         self.transmit = False # 是否完成数据传输
         self.trans_delay_start = 0
         self.trans_delay_end = self.T
@@ -138,6 +140,9 @@ class World(object):
         self.out_time = 0
         self.total_engy = 0.0
         self.reward_term_totals = self._empty_reward_terms()
+        initial_location = np.array([[self.UAVs[0].x, self.UAVs[0].y]])
+        self.current_a2g_snr = self.get_date_rate_A2G(initial_location)
+        self.current_g2a_outage_probability = self.get_g2a_outage_probability(initial_location)
         state = self.reset_state()
         return state,self.t
 
@@ -159,7 +164,7 @@ class World(object):
             self.UAVs.append(UAV(x, y, h))
     
     def reset_state(self):
-        State_dim = self.uav_num*2+2+2
+        State_dim = self.uav_num*2+2+4
         s = np.zeros(State_dim)  
         # UAV location
         for i,uav in enumerate(self.UAVs):
@@ -170,11 +175,13 @@ class World(object):
         s[target_index + 1] = self.target_loc[1]
         s[target_index + 2] = self.data_size
         s[target_index + 3] = self.out_time / self.outage_max_s
+        s[target_index + 4] = self.current_a2g_snr
+        s[target_index + 5] = self.current_g2a_outage_probability
         # s[5] = self.T-self.t #剩余可用时间步
         return s
 
     def update_state(self, engy,tar_loc,tar_dis):
-        State_dim = self.uav_num*2+2+2
+        State_dim = self.uav_num*2+2+4
         s_ = np.zeros(State_dim) 
         for i,uav in enumerate(self.UAVs):
             s_[i*2] = uav.x
@@ -184,6 +191,8 @@ class World(object):
         s_[target_index + 1] = tar_loc[1]
         s_[target_index + 2] = self.data_size
         s_[target_index + 3] = self.out_time / self.outage_max_s
+        s_[target_index + 4] = self.current_a2g_snr
+        s_[target_index + 5] = self.current_g2a_outage_probability
         # s_[5] = self.T-self.t #剩余可用时间步
         return s_
 
@@ -243,8 +252,11 @@ class World(object):
         return self.radio_maps.g2a_snr_db(point_km)
 
     def get_g2a_outage(self, location):
+        return self.get_g2a_outage_probability(location) >= 0.5
+
+    def get_g2a_outage_probability(self, location):
         point_km = np.asarray(location, dtype=float).reshape(-1)[:2] / 10
-        return self.radio_maps.g2a_outage_probability(point_km) >= 0.5
+        return self.radio_maps.g2a_outage_probability(point_km)
 
     def step_inside(self, actions,s,t): # 输入动作，状态值，时间步,输出下一状态和其他标志
         fa = 0.0
@@ -252,7 +264,7 @@ class World(object):
         fly_energy = 0.0
         done = False
         self.t = t+1 # 时间步+1
-        state_ = np.zeros(self.uav_num*2 +2+2)
+        state_ = np.zeros(self.uav_num*2 +2+4)
         uav_location_pre = np.zeros([self.uav_num, 2])  # make a copy of the uav's location
         uav_location = np.zeros([self.uav_num, 2]) # uav current location
         for i, uav in enumerate(self.UAVs):
@@ -280,9 +292,10 @@ class World(object):
         reduce_dis = step_pre - step_cur #推进距离
         
         MaxSINR_A2G = self.get_date_rate_A2G(uav_location)  # 空对地的最大dB
-        
         MaxSINR_G2A = self.get_date_rate_G2A(uav_location)  # 地对空的最大dB
-        g2a_outage = self.get_g2a_outage(uav_location)
+        self.current_a2g_snr = MaxSINR_A2G
+        self.current_g2a_outage_probability = self.get_g2a_outage_probability(uav_location)
+        g2a_outage = self.current_g2a_outage_probability >= 0.5
         if g2a_outage:
             self.out_time += self.delta_T
         self.data_rate = self.BandWidth * np.log2(1 + 10**(MaxSINR_A2G/10.0))

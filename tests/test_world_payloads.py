@@ -167,11 +167,14 @@ def test_state_exposes_qos_usage_and_penalizes_each_outage_slot(monkeypatch):
                   traverse_sequence=[1, 2, 3, 4, 5, 6])
     monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 10.0)
     monkeypatch.setattr(world, "get_date_rate_G2A", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_g2a_outage_probability", lambda _location: 0.8)
     monkeypatch.setattr(world, "get_g2a_outage", lambda _location: True)
     state, _ = world.reset()
     next_state, _, _, _, _ = world.step_inside(np.array([0.1, 0.1]), state, 0)
-    assert len(next_state) == 6
+    assert len(next_state) == 8
     assert next_state[5] == pytest.approx(0.5 / 100.0)
+    assert next_state[6] == pytest.approx(10.0)
+    assert next_state[7] == pytest.approx(0.8)
     assert world.last_reward_terms["communication"] == pytest.approx(-5.0)
 
 
