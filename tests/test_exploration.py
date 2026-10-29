@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from exploration import guided_action, exploration_scales
+from exploration import guided_action, exploration_scales, upload_guided_action
 
 
 def test_exploration_scales_decay_and_switch_to_precise_control_near_target():
@@ -17,5 +17,13 @@ def test_exploration_scales_decay_and_switch_to_precise_control_near_target():
 
 def test_guided_action_points_toward_target_and_has_legal_distance():
     action = guided_action(np.array([0.0, 0.0]), np.array([1.0, 0.0]), 0.0, 0.25, np.random.default_rng(1))
+    assert action[0] == 0.0
+    assert action[1] == 0.25
+
+
+def test_upload_guided_action_selects_high_rate_low_outage_direction():
+    def score(location):
+        return location[0]
+    action = upload_guided_action(np.array([0.0, 0.0]), 0.0, 0.25, score, np.random.default_rng(1))
     assert action[0] == 0.0
     assert action[1] == 0.25

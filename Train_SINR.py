@@ -7,7 +7,7 @@ from reward_logging import log_reward_terms
 from training_config import build_output_paths, load_fixed_payloads
 from sequence_runner import solve_ga_order
 from training_transitions import replay_terminal_mask
-from exploration import exploration_scales, guided_action
+from exploration import exploration_scales, guided_action, upload_guided_action
 import numpy as np
 import time
 from tqdm import tqdm
@@ -284,7 +284,16 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
 
         if exploration_strategy == "guided":
             if episode <= guided_warmup_episodes and np.random.random() < 0.5:
-                a = guided_action([world.UAVs[0].x, world.UAVs[0].y], world.target_loc, angle_noise, dist_max, np.random)
+                current_pos = [world.UAVs[0].x, world.UAVs[0].y]
+                if world.transmit:
+                    a = guided_action(current_pos, world.target_loc, angle_noise, dist_max, np.random)
+                else:
+                    def upload_score(candidate):
+                        snr = world.get_date_rate_A2G(np.array([candidate]))
+                        snr_score = (snr - world.a2g_snr_min) / (world.a2g_snr_max - world.a2g_snr_min)
+                        outage = world.get_g2a_outage_probability(np.array([candidate]))
+                        return snr_score - outage
+                    a = upload_guided_action(current_pos, angle_noise, dist_max, upload_score, np.random)
             else:
                 a = model.select_action(s) + np.random.normal(0, [angle_noise, distance_noise], size=a_dim)
             current_noise = angle_noise

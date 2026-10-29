@@ -19,3 +19,11 @@ def guided_action(current_pos, target_pos, angle_noise, max_distance, rng):
     delta = np.asarray(target_pos, dtype=float) - np.asarray(current_pos, dtype=float)
     heading = math.atan2(delta[1], delta[0]) + rng.normal(0.0, angle_noise)
     return np.array([np.clip(heading, -math.pi, math.pi), max_distance])
+
+
+def upload_guided_action(current_pos, angle_noise, max_distance, location_score, rng):
+    current_pos = np.asarray(current_pos, dtype=float)
+    headings = np.linspace(-math.pi, math.pi, 16, endpoint=False)
+    scores = [location_score(current_pos + max_distance * np.array([math.cos(h), math.sin(h)])) for h in headings]
+    heading = headings[int(np.argmax(scores))] + rng.normal(0.0, angle_noise)
+    return np.array([np.clip(heading, -math.pi, math.pi), max_distance])
