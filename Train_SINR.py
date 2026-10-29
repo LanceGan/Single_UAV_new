@@ -7,7 +7,11 @@ from reward_logging import log_reward_terms
 from training_config import build_output_paths, load_fixed_payloads
 from sequence_runner import solve_ga_order
 from training_transitions import replay_terminal_mask
-from exploration import exploration_scales, guided_action, upload_guided_action
+from exploration import exploration_scales
+from map_guidance import MapGuide
+from mission_preflight import run_preflight
+import json
+import random
 import numpy as np
 import time
 from tqdm import tqdm
@@ -38,6 +42,8 @@ def create_parser():
     parser.add_argument("--outage_max_s", type=float, default=100.0)
     parser.add_argument("--train_memory_size", type=int, default=2000)
     parser.add_argument("--guided_warmup_episodes", type=int, default=200)
+    parser.add_argument("--preflight_only", action="store_true")
+    parser.add_argument("--seed", type=int, default=1)
     return parser
 
 class AdaptiveExploration:
@@ -152,6 +158,11 @@ def draw_location(x_uav, y_uav, t, savepath):
 # 参数解析
 parser = create_parser()
 args = parser.parse_args()
+random.seed(args.seed)
+np.random.seed(args.seed)
+torch.manual_seed(args.seed)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(args.seed)
 gamma = args.gamma
 net_width = args.net_width
 buffer = args.buffer
@@ -205,6 +216,26 @@ world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, de
               users_name='results/datas/Users_'+str(user_num)+'.txt',
               BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads, outage_max_s=outage_max_s)
 
+preflight = run_preflight(data_level, output_paths["root"] / "preflight", order=trave_order,
+                          outage_max_s=outage_max_s, total_steps=T)
+print("Mission preflight:", {k: preflight[k] for k in ("success", "time_s", "outage_s", "uploaded_mb", "visited_points")}, flush=True)
+writer.flush()
+if not preflight["success"]:
+    writer.close()
+    raise RuntimeError("Full mission preflight failed; training was not started. See preflight.json.")
+if args.preflight_only:
+    writer.close()
+    raise SystemExit(0)
+
+# Legacy terrain constructors seed NumPy internally; restore the run seed.
+np.random.seed(args.seed)
+random.seed(args.seed)
+(output_paths["root"] / "run_config.json").write_text(json.dumps({
+    **vars(args), "state_dim": s_dim, "order": trave_order, "payloads_mb": payloads.tolist(),
+    "map_hashes": preflight["map_hashes"], "sequence_method": "GA with exact verification/fallback",
+    "state_schema": "normalized eight-dimensional dual-radio observation",
+}, indent=2), encoding="utf-8")
+
 # 初始化探索策略
 if exploration_strategy == "adaptive":
     explorer = AdaptiveExploration(initial_noise=max_exploration, min_noise=min_exploration)
@@ -253,6 +284,7 @@ print(f"初始探索噪声: {max_exploration}, 最小探索噪声: {min_explorat
 for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     t3 = time.time()
     s, t = world.reset()
+    map_guide = MapGuide(world)
     fly_dis = 0.0
     data_total = 0.0
     
@@ -274,6 +306,8 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     sum_fly_v = 0
     done = False
     step_count = 0
+    angle_noise_sum = distance_noise_sum = 0.0
+    guidance_steps = 0
     
     while not done:
         step_count += 1
@@ -284,16 +318,8 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
 
         if exploration_strategy == "guided":
             if episode <= guided_warmup_episodes and np.random.random() < 0.5:
-                current_pos = [world.UAVs[0].x, world.UAVs[0].y]
-                if world.transmit:
-                    a = guided_action(current_pos, world.target_loc, angle_noise, dist_max, np.random)
-                else:
-                    def upload_score(candidate):
-                        snr = world.get_date_rate_A2G(np.array([candidate]))
-                        snr_score = (snr - world.a2g_snr_min) / (world.a2g_snr_max - world.a2g_snr_min)
-                        outage = world.get_g2a_outage_probability(np.array([candidate]))
-                        return snr_score - outage
-                    a = upload_guided_action(current_pos, angle_noise, dist_max, upload_score, np.random)
+                guidance_steps += 1
+                a = map_guide.action(angle_noise, distance_noise, np.random)
             else:
                 a = model.select_action(s) + np.random.normal(0, [angle_noise, distance_noise], size=a_dim)
             current_noise = angle_noise
@@ -318,6 +344,8 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         
         # 动作裁剪
         a = np.clip(a, min_action, max_action)
+        angle_noise_sum += angle_noise
+        distance_noise_sum += distance_noise
         
         fly_dis += a[1]
         sum_fly_v += a[1] * 100 / delta_t
@@ -378,6 +406,11 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     writer.add_scalar('episode/min_target_distance', world.min_target_distance, episode)
     writer.add_scalar('episode/outage_time', world.out_time, episode)
     writer.add_scalar('episode/visited_inspection_points', world.Traverse_order, episode)
+    writer.add_scalar('exploration/angle_std_mean', angle_noise_sum / step_count, episode)
+    writer.add_scalar('exploration/distance_std_mean', distance_noise_sum / step_count, episode)
+    writer.add_scalar('exploration/guidance_fraction', guidance_steps / step_count, episode)
+    writer.add_scalar('training/critic_updates', model.q_iteration, episode)
+    writer.add_scalar('training/actor_updates', model.a_iteration, episode)
     
     if episode % 50 == 0:
         model.save(episode, model_path)
