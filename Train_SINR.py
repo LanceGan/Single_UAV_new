@@ -315,7 +315,7 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         
         s_, r, done, t, terminal = world.step_inside(a, s, t)
         sum_reward += r
-        data_total += world.data_rate
+        data_total += world.last_uploaded_data
         replay_buffer.add(s, a, r, s_, replay_terminal_mask(done))
         
         # 训练模型

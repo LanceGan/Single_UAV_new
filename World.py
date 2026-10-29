@@ -17,6 +17,7 @@ class World(object):
     PROGRESS_SCALE = 10.0
     IDLE_PENALTY = 0.1
     OUTAGE_STEP_PENALTY = 5.0
+    UPLOAD_REWARD_PER_MB = 2.0
     ARRIVAL_REWARD = 300.0
     COMPLETION_REWARD = 1000.0
     TIMEOUT_PENALTY = 1000.0
@@ -64,6 +65,7 @@ class World(object):
         self.data_size = self.data_size_ini  # 每个巡检点的数据量
         self.data_sizes = data_sizes
         self.data_rate = 0
+        self.last_uploaded_data = 0.0
         self.BandWidth = 1
         self.radio_maps = FixedRadioMaps('results/datas')
         self.a2g_snr_min = float(self.radio_maps.a2g_snr.min())
@@ -139,6 +141,7 @@ class World(object):
         self.trans_delay_end = self.T
         self.trans_delay = 0
         self.data_size = 0
+        self.last_uploaded_data = 0.0
         self.transmit = True  
         self.t = 0
         self.fa = 0
@@ -242,7 +245,7 @@ class World(object):
 
     @staticmethod
     def _empty_reward_terms():
-        return {name: 0.0 for name in ("progress", "idle", "boundary", "communication", "arrival_upload", "completion", "timeout", "qos")}
+        return {name: 0.0 for name in ("progress", "idle", "boundary", "communication", "upload", "arrival_upload", "completion", "timeout", "qos")}
 
     def add_reward_term(self, name, value):
         self.reward_term_totals[name] = self.reward_term_totals.get(name, 0.0) + value
@@ -305,11 +308,12 @@ class World(object):
         if g2a_outage:
             self.out_time += self.delta_T
         self.data_rate = self.BandWidth * np.log2(1 + 10**(MaxSINR_A2G/10.0))
+        self.last_uploaded_data = 0.0
         
         #在空对地Radio Map中进行传输 
         if not self.transmit:
-            # print(self.data_rate)
-            self.data_size -= self.data_rate * self.delta_T
+            self.last_uploaded_data = min(self.data_size, self.data_rate * self.delta_T)
+            self.data_size -= self.last_uploaded_data
             if self.data_size <=0:
                 self.data_size = 0
                 self.transmit = True
@@ -326,6 +330,9 @@ class World(object):
         #             self.data_size = 0
    
         reward += self.get_reward(fa,fly_energy,step_cur,step_cur_pre,reduce_dis,MaxSINR_A2G,MaxSINR_G2A,g2a_outage) 
+        upload_reward = self.last_uploaded_data * self.UPLOAD_REWARD_PER_MB
+        reward += upload_reward
+        self.add_reward_term("upload", upload_reward)
                 
         if step_cur<=self.distance : # 达到检查点
             #只要到目标点了，就换下一个目标点，根据传输完成情况进行奖惩
