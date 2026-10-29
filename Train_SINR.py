@@ -7,6 +7,7 @@ from reward_logging import log_reward_terms
 from training_config import build_output_paths, load_fixed_payloads
 from sequence_runner import solve_ga_order
 from training_transitions import replay_terminal_mask
+from exploration import exploration_scales, guided_action
 import numpy as np
 import time
 from tqdm import tqdm
@@ -26,7 +27,7 @@ def create_parser():
     parser.add_argument("--gamma", help="set the gamma", type=float,default=0.99)
     parser.add_argument("--buffer", help="set the buffer", type=int,default=200000)
     parser.add_argument("--net_width", help="set the net width",type=int,default=256)
-    parser.add_argument("--exploration_strategy", help="exploration strategy", type=str, default="adaptive")
+    parser.add_argument("--exploration_strategy", help="exploration strategy", type=str, default="guided")
     parser.add_argument("--min_exploration", help="minimum exploration noise", type=float, default=0.2)
     parser.add_argument("--max_exploration", help="maximum exploration noise", type=float, default=0.6)
     parser.add_argument("--data_level", choices=["low", "medium", "high"], default="medium")
@@ -36,6 +37,7 @@ def create_parser():
     parser.add_argument("--algorithm", choices=["td3", "ddpg"], default="td3")
     parser.add_argument("--outage_max_s", type=float, default=100.0)
     parser.add_argument("--train_memory_size", type=int, default=2000)
+    parser.add_argument("--guided_warmup_episodes", type=int, default=200)
     return parser
 
 class AdaptiveExploration:
@@ -161,6 +163,7 @@ data_level = args.data_level
 algorithm = args.algorithm
 outage_max_s = args.outage_max_s
 train_memory_size_arg = args.train_memory_size
+guided_warmup_episodes = args.guided_warmup_episodes
 payloads = load_fixed_payloads(data_level)
 output_paths = build_output_paths(args.output_root, data_level, algorithm)
 
@@ -276,17 +279,22 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         step_count += 1
         
         # 选择动作和探索策略
-        if exploration_strategy == "adaptive":
+        target_distance = np.linalg.norm(np.array([world.UAVs[0].x, world.UAVs[0].y]) - world.target_loc)
+        angle_noise, distance_noise = exploration_scales(episode, total_episode, target_distance)
+
+        if exploration_strategy == "guided":
+            if episode <= guided_warmup_episodes and np.random.random() < 0.5:
+                a = guided_action([world.UAVs[0].x, world.UAVs[0].y], world.target_loc, angle_noise, dist_max, np.random)
+            else:
+                a = model.select_action(s) + np.random.normal(0, [angle_noise, distance_noise], size=a_dim)
+            current_noise = angle_noise
+        elif exploration_strategy == "adaptive":
             current_noise = explorer.get_noise()
-            # 基于距离的探索调整
-            current_pos = [world.UAVs[0].x, world.UAVs[0].y]
-            target_pos = world.target_loc
-            current_noise = distance_based_exploration(current_pos, target_pos, current_noise)
-            
-            a = model.select_action(s) + np.random.normal(0, [current_noise, min(distance_noise_cap, current_noise * 0.1)], size=a_dim)
+            current_noise = min(current_noise, angle_noise)
+            a = model.select_action(s) + np.random.normal(0, [current_noise, distance_noise], size=a_dim)
             
         elif exploration_strategy == "ou_noise":
-            noise = ou_noise.sample() * np.array([expl_noise, min(distance_noise_cap, expl_noise * 0.1)])
+            noise = ou_noise.sample() * np.array([angle_noise, distance_noise])
             a = model.select_action(s) + noise
             current_noise = expl_noise
             
@@ -297,7 +305,7 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
             
         else:  # 线性衰减
             current_noise = max(min_exploration, max_exploration * (1 - episode / total_episode))
-            a = model.select_action(s) + np.random.normal(0, [current_noise, min(distance_noise_cap, current_noise * 0.1)], size=a_dim)
+            a = model.select_action(s) + np.random.normal(0, [angle_noise, distance_noise], size=a_dim)
         
         # 动作裁剪
         a = np.clip(a, min_action, max_action)
