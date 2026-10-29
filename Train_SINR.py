@@ -179,6 +179,7 @@ a_dim = uav_num*2
 V_max = 0.50
 delta_t = 0.5
 dist_max = delta_t * V_max
+distance_noise_cap = min(0.05, dist_max)
 
 max_action = np.array([math.pi, dist_max])
 min_action = np.array([-math.pi, 0])
@@ -281,10 +282,10 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
             target_pos = world.target_loc
             current_noise = distance_based_exploration(current_pos, target_pos, current_noise)
             
-            a = model.select_action(s) + np.random.normal(0, current_noise, size=a_dim)
+            a = model.select_action(s) + np.random.normal(0, [current_noise, min(distance_noise_cap, current_noise * 0.1)], size=a_dim)
             
         elif exploration_strategy == "ou_noise":
-            noise = ou_noise.sample() * expl_noise
+            noise = ou_noise.sample() * np.array([expl_noise, min(distance_noise_cap, expl_noise * 0.1)])
             a = model.select_action(s) + noise
             current_noise = expl_noise
             
@@ -295,7 +296,7 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
             
         else:  # 线性衰减
             current_noise = max(min_exploration, max_exploration * (1 - episode / total_episode))
-            a = model.select_action(s) + np.random.normal(0, current_noise, size=a_dim)
+            a = model.select_action(s) + np.random.normal(0, [current_noise, min(distance_noise_cap, current_noise * 0.1)], size=a_dim)
         
         # 动作裁剪
         a = np.clip(a, min_action, max_action)

@@ -28,8 +28,10 @@ class Actor(nn.Module):
 		a = torch.tanh(self.l1(state))
 		a = torch.tanh(self.l2(a))
 		a = torch.tanh(self.l3(a))
-		a = torch.tanh(self.l4(a)) * self.maxaction
-		return a
+		raw = torch.tanh(self.l4(a))
+		angle = raw[:, :1] * self.maxaction[0]
+		distance = (raw[:, 1:2] + 1.0) * 0.5 * self.maxaction[1]
+		return torch.cat([angle, distance], dim=1)
 
 
 class Q_Critic(nn.Module):
@@ -113,6 +115,7 @@ class TD3(object):
 		self.env_with_Dead = env_with_Dead
 		self.action_dim = action_dim
 		self.max_action = max_action
+		self.min_action = torch.stack((-max_action[0], torch.zeros_like(max_action[1])))
 		self.gamma = gamma
 		self.policy_noise = 0.2*max_action
 		self.noise_clip = 0.5*max_action
@@ -135,7 +138,7 @@ class TD3(object):
 		with torch.no_grad():
 			s, a, r, s_prime, dead_mask = replay_buffer.sample(self.Q_batchsize)
 			noise = torch.max(-self.noise_clip, torch.min(torch.randn_like(a) * self.policy_noise, self.noise_clip))
-			smoothed_target_a = torch.max(-self.max_action,torch.min(
+			smoothed_target_a = torch.maximum(self.min_action, torch.minimum(
 					self.actor_target(s_prime) + noise, self.max_action))
 
 		# Compute the target Q value

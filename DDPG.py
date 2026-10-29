@@ -24,8 +24,10 @@ class DDPG_Actor(nn.Module):
         a = torch.tanh(self.l1(state))
         a = torch.tanh(self.l2(a))
         a = torch.tanh(self.l3(a))
-        a = torch.tanh(self.l4(a)) * self.maxaction
-        return a
+        raw = torch.tanh(self.l4(a))
+        angle = raw[:, :1] * self.maxaction[0]
+        distance = (raw[:, 1:2] + 1.0) * 0.5 * self.maxaction[1]
+        return torch.cat([angle, distance], dim=1)
 
 
 class DDPG_Critic(nn.Module):
@@ -93,7 +95,8 @@ class DDPG(object):
             if noise > 0:
                 a = a + np.random.normal(0, noise, size=a.shape)
             # clip to action bounds
-            a = np.clip(a, -self.max_action.cpu().numpy(), self.max_action.cpu().numpy())
+            lower = np.array([-self.max_action.cpu().numpy()[0], 0.0])
+            a = np.clip(a, lower, self.max_action.cpu().numpy())
         return a
 
     def train(self, replay_buffer):
