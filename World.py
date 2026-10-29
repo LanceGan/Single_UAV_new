@@ -152,34 +152,36 @@ class World(object):
             self.UAVs.append(UAV(x, y, h))
     
     def reset_state(self):
-        State_dim = self.uav_num*2+2+1
+        State_dim = self.uav_num*2+2+2
         s = np.zeros(State_dim)  
         # UAV location
         for i,uav in enumerate(self.UAVs):
             s[2*i] = uav.x                      
             s[2*i+1] = uav.y
-        s[2] = self.target_loc[0]
-        s[3] = self.target_loc[1]
-        # s[4] = self.target_dis
-        s[4] = self.data_size
+        target_index = self.uav_num * 2
+        s[target_index] = self.target_loc[0]
+        s[target_index + 1] = self.target_loc[1]
+        s[target_index + 2] = self.data_size
+        s[target_index + 3] = self.out_time / self.outage_max_s
         # s[5] = self.T-self.t #剩余可用时间步
         return s
 
     def update_state(self, engy,tar_loc,tar_dis):
-        State_dim = self.uav_num*2+2+1
+        State_dim = self.uav_num*2+2+2
         s_ = np.zeros(State_dim) 
         for i,uav in enumerate(self.UAVs):
             s_[i*2] = uav.x
             s_[i*2+1] = uav.y     
-        s_[2] = tar_loc[0]
-        s_[3] = tar_loc[1]
-        # s_[4] = tar_dis
-        s_[4] = self.data_size
+        target_index = self.uav_num * 2
+        s_[target_index] = tar_loc[0]
+        s_[target_index + 1] = tar_loc[1]
+        s_[target_index + 2] = self.data_size
+        s_[target_index + 3] = self.out_time / self.outage_max_s
         # s_[5] = self.T-self.t #剩余可用时间步
         return s_
 
     # 奖励表达式 平滑处理
-    def get_reward(self,fa,fly_engy,dis_target,dis_pre_target,dis_forward,SINR_A2G,SINR_G2A):
+    def get_reward(self,fa,fly_engy,dis_target,dis_pre_target,dis_forward,SINR_A2G,SINR_G2A,g2a_outage=False):
         """
             fa: 出界惩罚
             fly_engy: 飞行能量
@@ -193,7 +195,7 @@ class World(object):
         # 停留惩罚
         stay_penalty = -0.1 if abs(dis_forward) < 0.05 else 0
         
-        comm_penalty = 0  
+        comm_penalty = -1.0 if g2a_outage else 0.0
         
         
         # if SINR_A2G < self.SIR_THRESHOLD_COMM and not self.transmit:
@@ -243,7 +245,7 @@ class World(object):
         fly_energy = 0.0
         done = False
         self.t = t+1 # 时间步+1
-        state_ = np.zeros(self.uav_num*2 +2+1)
+        state_ = np.zeros(self.uav_num*2 +2+2)
         uav_location_pre = np.zeros([self.uav_num, 2])  # make a copy of the uav's location
         uav_location = np.zeros([self.uav_num, 2]) # uav current location
         for i, uav in enumerate(self.UAVs):
@@ -273,7 +275,8 @@ class World(object):
         MaxSINR_A2G = self.get_date_rate_A2G(uav_location)  # 空对地的最大dB
         
         MaxSINR_G2A = self.get_date_rate_G2A(uav_location)  # 地对空的最大dB
-        if self.get_g2a_outage(uav_location):
+        g2a_outage = self.get_g2a_outage(uav_location)
+        if g2a_outage:
             self.out_time += self.delta_T
         self.data_rate = self.BandWidth * np.log2(1 + 10**(MaxSINR_A2G/10.0))
         
@@ -296,7 +299,7 @@ class World(object):
         #             self.transmit = True
         #             self.data_size = 0
    
-        reward += self.get_reward(fa,fly_energy,step_cur,step_cur_pre,reduce_dis,MaxSINR_A2G,MaxSINR_G2A) 
+        reward += self.get_reward(fa,fly_energy,step_cur,step_cur_pre,reduce_dis,MaxSINR_A2G,MaxSINR_G2A,g2a_outage) 
                 
         if step_cur<=self.distance : # 达到检查点
             #只要到目标点了，就换下一个目标点，根据传输完成情况进行奖惩

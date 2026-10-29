@@ -171,7 +171,7 @@ user_num = 6
 T = 1000
 Length = 20
 Width = 20
-s_dim = uav_num*2 +2 +1 #[uav.x,uav.y,tar.x,tar.y,data_size]
+s_dim = uav_num*2 +2 +2 #[uav.x,uav.y,tar.x,tar.y,data_size,qos_usage]
 a_dim = uav_num*2
 
 V_max = 0.50

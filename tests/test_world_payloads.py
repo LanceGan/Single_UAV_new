@@ -158,3 +158,18 @@ def test_world_defaults_to_fixed_maps_and_100_second_qos_budget():
                   traverse_sequence=[1, 2, 3, 4, 5, 6])
     assert world.outage_max_s == 100.0
     assert world.get_date_rate_A2G(np.array([[0.0, 0.0]])) == world.radio_maps.a2g_snr_db(np.array([0.0, 0.0]))
+
+
+def test_state_exposes_qos_usage_and_penalizes_each_outage_slot(monkeypatch):
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_date_rate_G2A", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_g2a_outage", lambda _location: True)
+    state, _ = world.reset()
+    next_state, _, _, _, _ = world.step_inside(np.array([0.1, 0.1]), state, 0)
+    assert len(next_state) == 6
+    assert next_state[5] == pytest.approx(0.5 / 100.0)
+    assert world.last_reward_terms["communication"] == pytest.approx(-1.0)
