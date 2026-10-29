@@ -34,6 +34,7 @@ def create_parser():
     parser.add_argument("--ga_iterations", type=int, default=500)
     parser.add_argument("--algorithm", choices=["td3", "ddpg"], default="td3")
     parser.add_argument("--outage_max_s", type=float, default=100.0)
+    parser.add_argument("--train_memory_size", type=int, default=2000)
     return parser
 
 class AdaptiveExploration:
@@ -158,6 +159,7 @@ max_exploration = args.max_exploration
 data_level = args.data_level
 algorithm = args.algorithm
 outage_max_s = args.outage_max_s
+train_memory_size_arg = args.train_memory_size
 payloads = load_fixed_payloads(data_level)
 output_paths = build_output_paths(args.output_root, data_level, algorithm)
 
@@ -184,7 +186,7 @@ total_episode = args.episodes
 sample_episode = 1000
 
 # 改进的训练参数
-train_memory_size = min(10000, buffer // 10)  # 更合理的训练开始条件
+train_memory_size = min(train_memory_size_arg, buffer // 10)
 train_freq = 2  # 每4步训练一次
 data_size = 300
 
