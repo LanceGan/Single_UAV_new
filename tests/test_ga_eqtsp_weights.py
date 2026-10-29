@@ -31,11 +31,26 @@ def test_forbidden_edge_with_zero_payload_stays_infinite_not_nan():
 def test_edge_weight_matches_flight_upload_and_outage_time_sum():
     ga = GA.__new__(GA)
     energy = np.full((2, 2), np.inf)
-    energy[0, 1] = power(18.2) * 2.0
+    energy[0, 1] = power(50.0) * 2.0
     throughput = np.full((2, 2), 10.0)
     outage = np.zeros((2, 2)); outage[0, 1] = 3.0
     weights = ga.compute_weight_mec(2, energy, np.array([100.0, 0.0]), throughput, outage)
     assert weights[0, 1] == pytest.approx(15.0)
+
+
+def test_leg_estimator_uses_kilometres_seconds_and_average_rate():
+    ga = GA.__new__(GA)
+    ga.reference_speed_m_s = 50.0
+    ga.delta_t = 0.5
+    ga.get_date_rate = lambda _: 10 * np.log10(3.0)  # 2 units/s
+    ga.radio_maps = type("Maps", (), {"g2a_outage_probability": lambda self, p: 1.0})()
+    locations = np.array([[0.0, 0.0], [0.1, 0.0], [0.1, 0.1]])
+    rate = ga.comput_thought(3, locations)
+    outage = ga.comput_outage(3, locations)
+    assert rate[0, 1] == pytest.approx(2.0)
+    assert outage[0, 1] == pytest.approx(2.0)  # 100 metres / 50 m/s
+    assert rate[1, 2] == pytest.approx(2.0)  # vertical legs cannot divide by zero
+    assert np.isfinite(rate[0, 2])
 
 
 def test_ga_mutation_preserves_fixed_start_and_end():

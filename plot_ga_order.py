@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from sequence_runner import solve_ga_order
+from sequence_runner import solve_ga_order, load_planning_nodes
 from training_config import load_fixed_payloads
 
 
@@ -15,8 +15,7 @@ ROOT = Path(__file__).resolve().parent
 
 
 def load_nodes():
-    rows = np.loadtxt(ROOT / "results" / "datas" / "Users_7.txt")
-    return rows[:, :2]
+    return load_planning_nodes()
 
 
 def draw_order(axis, background, x_vec, y_vec, label, nodes, order):

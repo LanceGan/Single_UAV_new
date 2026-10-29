@@ -21,12 +21,12 @@ class FixedRadioMaps:
 
     def a2g_snr_db(self, location_km):
         x, y = self._index(location_km)
-        return float(self.a2g_snr[x, y])
+        return float(self.a2g_snr[y, x])
 
     def g2a_outage_probability(self, location_km):
         x, y = self._index(location_km)
-        return float(self.g2a_outage[x, y])
+        return float(self.g2a_outage[y, x])
 
     def g2a_snr_db(self, location_km):
         x, y = self._index(location_km)
-        return float(self.g2a_snr[x, y])
+        return float(self.g2a_snr[y, x])

@@ -3,8 +3,6 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-import radio_map_A2G as rad_env
-import radio_map_G2A as g2a_env
 from numpy import linalg as LA
 from fixed_radio_maps import FixedRadioMaps
 def power(v):
@@ -23,6 +21,8 @@ def power(v):
 
 
 class GA(object):
+    reference_speed_m_s = 50.0
+    delta_t = 0.5
     def __init__(self, num_city, num_total, iteration, data, data_sizes=None):
         self.num_city = num_city
         self.num_total = num_total
@@ -189,7 +189,7 @@ class GA(object):
                 if not (np.isfinite(Engy[i][j]) and np.isfinite(Throught[i][j]) and np.isfinite(Outage[i][j])):
                     matrix_weight[i][j] = np.inf
                     continue
-                flight_time = Engy[i][j] / power(18.2)
+                flight_time = Engy[i][j] / power(self.reference_speed_m_s)
                 upload_delay = Data_size[i] / max(Throught[i][j], 1e-9)
                 matrix_weight[i][j] = flight_time + upload_delay + Outage[i][j]
 
@@ -204,7 +204,7 @@ class GA(object):
                 if i == j:
                     enengy_mat[i][j] = np.inf
                     continue
-                enengy_mat[i][j] = power(18.2) * (dis_matrix[i][j] / 18.2)  # 计算每条边的能量
+                enengy_mat[i][j] = power(self.reference_speed_m_s) * (dis_matrix[i][j] * 1000 / self.reference_speed_m_s)
 
         return enengy_mat
 
@@ -214,63 +214,30 @@ class GA(object):
     """
 
     def comput_thought(self, num_city, location):
-
-        Delta_T = 0.5  # 一步的时间
-        distance = 0.0915  # 一步距离最佳速度的距离
-        DIST_TOLERANCE = 0.200 #
-        next_loc = np.zeros(2)
-        Phi = 0
-
-        throught_mat = np.zeros((num_city, num_city))  #
-        # print("location函数里面:",location[1][1])
-        # print("location[j][0:2]",location[1][0:2])
+        # Historical name retained; values are mean rates, not total data.
+        throught_mat = np.full((num_city, num_city), np.inf)
+        self.service_mat = np.zeros((num_city, num_city))
         for i in range(num_city):
             for j in range(num_city):
                 if i == j:
-                    throught_mat[i][j] = np.inf
                     continue
-
-
-               # 计算方向
-                if ( i== j ):
-                    Phi = 0
-                    continue
-                else:
-                    Phi = np.arctan((location[j][1] - location[i][1]) / (
-                            location[j][0] - location[i][0]))  # to avoid dividing by 0
-                    # print("Phi", Phi)
-                Phi_deg = np.rad2deg(Phi)
-
-                if (location[j][1] >= location[i][1]) & (location[j][0] < location[i][0]):  # 第二象限
-                    Phi_deg = 180 + Phi_deg
-                elif (location[j][1] < location[i][1]) & (location[j][0] < location[i][0]): # 第三象限
-                    Phi_deg = Phi_deg - 180
-
-                drec = np.deg2rad(Phi_deg)  # 输出方向
-                #print("Phi_deg", Phi_deg,drec,np.cos(drec))
-                currect_loc = location[i]
-                sum_data = 0
-                # print("currect_loc",currect_loc)
-                while (True):
-                    # print("coming tio this ")
-                    next_loc[0] = currect_loc[0] + np.cos(drec) * distance
-                    next_loc[1] = currect_loc[1] + np.sin(drec) * distance
-                    sinr_n = self.get_date_rate(next_loc) # 数据吞吐量
-                    if(sinr_n >= self.THREHOLD ):
-                        rate = np.log2(1 + 10 ** (sinr_n / 10.0))
-                        sum_data += rate * Delta_T
-                        #print("throught_mat:",throught_mat,sinr_n)
-                    else :
-                        sum_data += 0  # 计算吞吐量（选择信号最好的那个）
-                    #print("next_loc：", next_loc,location[j])
-                    if LA.norm(next_loc - location[j][0:2]) <= DIST_TOLERANCE:
-                        print("=================done=================")
-                        # print("EndLoc：", currect_loc,next_loc,location[i],location[j],LA.norm(next_loc - location[j][0:2]))
-                        break
-                    else:
-                        currect_loc = next_loc
-                    throught_mat[i][j] = max(sum_data, 1e-9)
+                points, durations = self._leg_samples(location[i], location[j])
+                rates = np.array([np.log2(1 + 10 ** (self.get_date_rate(point) / 10)) for point in points])
+                service = float(np.dot(rates, durations))
+                self.service_mat[i, j] = service
+                throught_mat[i, j] = service / durations.sum()
         return throught_mat
+
+    def _leg_samples(self, source, target):
+        source, target = np.asarray(source)[:2], np.asarray(target)[:2]
+        duration = float(LA.norm(target - source)) * 1000 / self.reference_speed_m_s
+        if duration <= 0:
+            raise ValueError("Distinct planning nodes must have different coordinates")
+        count = max(1, int(np.ceil(duration / self.delta_t)))
+        times = np.minimum(np.arange(1, count + 1) * self.delta_t, duration)
+        durations = np.diff(np.concatenate(([0.0], times)))
+        points = source + (target - source) * (times / duration)[:, None]
+        return points, durations
 
     def get_date_rate(self, location):
         return self.radio_maps.a2g_snr_db(location[0:2])
@@ -282,13 +249,9 @@ class GA(object):
                 if i == j:
                     outage_mat[i][j] = np.inf
                     continue
-                distance = LA.norm(location[j][0:2] - location[i][0:2])
-                steps = max(1, int(np.ceil(distance / 0.0915)))
-                points = np.linspace(location[i][0:2], location[j][0:2], steps + 1)[1:]
-                outages = 0
-                for point in points:
-                    outages += self.radio_maps.g2a_outage_probability(point) >= 0.5
-                outage_mat[i][j] = outages * 0.5
+                points, durations = self._leg_samples(location[i], location[j])
+                outages = np.array([self.radio_maps.g2a_outage_probability(point) >= 0.5 for point in points])
+                outage_mat[i][j] = float(np.dot(outages, durations))
         return outage_mat
 
     # 计算路径长度

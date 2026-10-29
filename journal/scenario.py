@@ -71,6 +71,6 @@ def load_scenario(load_level: Literal["low", "medium", "high"]) -> Scenario:
         gbs_xyz=np.asarray(values["BS_loc"], dtype=float),
         delta_t=float(values["delta_t"]),
         speed_max=float(values["V_max"]),
-        outage_max_s=80.0,
+        outage_max_s=100.0,
         payload_mb=payload,
     )
