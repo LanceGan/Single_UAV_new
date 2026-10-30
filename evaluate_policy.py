@@ -97,10 +97,22 @@ def checkpoint_paths(run_dir, algorithm, episodes):
         raise ValueError(f"unsupported algorithm: {algorithm!r}")
     model_dir = Path(run_dir) / "models"
     prefix = f"{algorithm}_{algorithm}_actor"
-    return {
+    paths = {
         "final": model_dir / f"{prefix}{episodes}.pth",
         "training_best": model_dir / f"{prefix}best.pth",
     }
+    if (model_dir / f"{prefix}eval_best.pth").is_file():
+        paths["eval_best"] = model_dir / f"{prefix}eval_best.pth"
+    return paths
+
+
+def selection_key(report):
+    """Sort key: feasible first, then lower T + tau, then more mission progress."""
+    objective = report["task_time_s"] + report["transmission_delay_s"]
+    progress = (report["visited_inspection_points"], report["uploaded_mb"])
+    if report["success"]:
+        return (0, objective, 0.0, 0.0)
+    return (1, 0.0, -progress[0], -progress[1])
 
 
 def load_actor(checkpoint, state_dim, net_width):
@@ -171,6 +183,19 @@ def evaluate_checkpoint(context, checkpoint):
     actor = load_actor(checkpoint, context.state_dim, context.net_width)
     with contextlib.redirect_stdout(io.StringIO()):
         world = _build_world(context)
+
+    def act(state):
+        with torch.no_grad():
+            return actor(torch.as_tensor(state, dtype=torch.float32).unsqueeze(0))[0].numpy()
+
+    report, trace = rollout(context, world, act)
+    report["checkpoint"] = str(Path(checkpoint).resolve())
+    return report, trace
+
+
+def rollout(context, world, act):
+    """Run one deterministic episode; ``act`` maps a state to a raw action."""
+    with contextlib.redirect_stdout(io.StringIO()):
         state, step = world.reset()
     positions = [[world.UAVs[0].x, world.UAVs[0].y]]
     times = [0.0]
@@ -188,9 +213,7 @@ def evaluate_checkpoint(context, checkpoint):
     terminal = False
 
     while not done:
-        with torch.no_grad():
-            action = actor(torch.as_tensor(state, dtype=torch.float32).unsqueeze(0))[0].numpy()
-        action = np.clip(action, [-math.pi, 0.0], [math.pi, context.dist_max])
+        action = np.clip(np.asarray(act(state), dtype=float), [-math.pi, 0.0], [math.pi, context.dist_max])
         previous_position = np.array([world.UAVs[0].x, world.UAVs[0].y])
         previous_visit = world.Traverse_order
         with contextlib.redirect_stdout(io.StringIO()):
@@ -242,7 +265,7 @@ def evaluate_checkpoint(context, checkpoint):
         "actions": np.asarray(actions, dtype=float),
     }
     report = {
-        "checkpoint": str(Path(checkpoint).resolve()),
+        "checkpoint": None,
         "algorithm": context.algorithm,
         "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
         "success": success,

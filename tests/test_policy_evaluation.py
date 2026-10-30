@@ -132,3 +132,34 @@ def test_load_actor_rejects_checkpoint_with_wrong_state_dimension(tmp_path):
     with pytest.raises(ValueError, match="incompatible"):
         load_actor(checkpoint, state_dim=8, net_width=256)
 
+
+
+def _report(success, visited=6, uploaded=450.0, time_s=150.0, delay_s=100.0):
+    return {"success": success, "visited_inspection_points": visited, "uploaded_mb": uploaded,
+            "task_time_s": time_s, "transmission_delay_s": delay_s}
+
+
+def test_selection_key_prefers_feasible_then_lower_objective_then_progress():
+    from evaluate_policy import selection_key
+
+    ranked = sorted(
+        [
+            _report(False, visited=2, uploaded=150.0),
+            _report(True, time_s=160.0, delay_s=100.0),
+            _report(False, visited=5, uploaded=380.0),
+            _report(True, time_s=140.0, delay_s=100.0),
+        ],
+        key=selection_key,
+    )
+
+    assert [(r["success"], r["task_time_s"], r["visited_inspection_points"]) for r in ranked] == [
+        (True, 140.0, 6), (True, 160.0, 6), (False, 150.0, 5), (False, 150.0, 2)]
+
+
+def test_checkpoint_paths_include_eval_best_only_when_saved(tmp_path):
+    from evaluate_policy import checkpoint_paths
+
+    assert "eval_best" not in checkpoint_paths(tmp_path, "td3", 1000)
+    (tmp_path / "models").mkdir()
+    (tmp_path / "models" / "td3_td3_actoreval_best.pth").write_bytes(b"")
+    assert checkpoint_paths(tmp_path, "td3", 1000)["eval_best"].name == "td3_td3_actoreval_best.pth"

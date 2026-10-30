@@ -10,6 +10,7 @@ from training_transitions import replay_terminal_mask
 from exploration import exploration_scales
 from map_guidance import MapGuide
 from mission_preflight import run_preflight
+from evaluate_policy import load_run_context, _build_world, rollout, selection_key
 import json
 import random
 import numpy as np
@@ -44,6 +45,7 @@ def create_parser():
     parser.add_argument("--guided_warmup_episodes", type=int, default=200)
     parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--eval_interval", type=int, default=25)
     return parser
 
 class AdaptiveExploration:
@@ -227,14 +229,21 @@ if args.preflight_only:
     writer.close()
     raise SystemExit(0)
 
-# Legacy terrain constructors seed NumPy internally; restore the run seed.
-np.random.seed(args.seed)
-random.seed(args.seed)
 (output_paths["root"] / "run_config.json").write_text(json.dumps({
     **vars(args), "state_dim": s_dim, "order": trave_order, "payloads_mb": payloads.tolist(),
     "map_hashes": preflight["map_hashes"], "sequence_method": "GA with exact verification/fallback",
     "state_schema": "normalized eight-dimensional dual-radio observation",
+    "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
 }, indent=2), encoding="utf-8")
+# A separate world keeps evaluation from disturbing the training episode state.
+eval_context = load_run_context(output_paths["root"])
+eval_world = _build_world(eval_context)
+eval_best_report = None
+eval_history = []
+
+# Legacy terrain constructors seed NumPy internally; restore the run seed.
+np.random.seed(args.seed)
+random.seed(args.seed)
 
 # 初始化探索策略
 if exploration_strategy == "adaptive":
@@ -403,6 +412,21 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
                      np.linalg.norm(np.array(end_loc) - np.array(ini_loc)) / max(fly_dis, 1e-6), 
                      episode)
     log_reward_terms(writer, world.reward_summary(), episode)
+    if episode % args.eval_interval == 0 or episode == total_episode:
+        report, _ = rollout(eval_context, eval_world, model.select_action)
+        eval_history.append({"episode": episode, **{k: report[k] for k in (
+            "success", "termination_reason", "visited_inspection_points", "uploaded_mb",
+            "task_time_s", "transmission_delay_s", "outage_time_s", "total_return")}})
+        writer.add_scalar('eval/success', float(report["success"]), episode)
+        writer.add_scalar('eval/visited_inspection_points', report["visited_inspection_points"], episode)
+        writer.add_scalar('eval/objective_s', report["task_time_s"] + report["transmission_delay_s"], episode)
+        writer.add_scalar('eval/outage_time', report["outage_time_s"], episode)
+        if eval_best_report is None or selection_key(report) < selection_key(eval_best_report):
+            eval_best_report = {**report, "episode": episode}
+            model.save("eval_best", model_path)
+        (output_paths["root"] / "eval_history.json").write_text(json.dumps(
+            {"eval_best": {k: v for k, v in eval_best_report.items() if k not in ("visits", "reward_terms", "map_hashes")},
+             "history": eval_history}, indent=2, ensure_ascii=False), encoding="utf-8")
     writer.add_scalar('episode/min_target_distance', world.min_target_distance, episode)
     writer.add_scalar('episode/outage_time', world.out_time, episode)
     writer.add_scalar('episode/visited_inspection_points', world.Traverse_order, episode)
