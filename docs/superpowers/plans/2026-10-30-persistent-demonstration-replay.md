@@ -38,5 +38,5 @@
 - [x] Run targeted tests and full suite.
 - [x] Run short TD3-BC and DDPG-BC integration smokes.
 - [x] Commit with a Chinese message.
-- [ ] Launch four hidden formal-v5 processes and report PID/log/result paths.
+- [x] Launch four hidden formal-v5 processes and report PID/log/result paths.
 
