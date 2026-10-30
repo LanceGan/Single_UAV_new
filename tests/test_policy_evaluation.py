@@ -1,0 +1,61 @@
+import json
+from pathlib import Path
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "overrides,expected",
+    [
+        ({"terminal": True}, (True, "success")),
+        ({"outage_s": 100.5}, (False, "qos_violation")),
+        ({"step": 1000}, (False, "timeout")),
+        ({"uploaded_mb": 449.0}, (False, "incomplete_upload_at_target")),
+    ],
+)
+def test_classify_termination_prioritizes_mission_constraints(overrides, expected):
+    from evaluate_policy import classify_termination
+
+    values = {
+        "terminal": False,
+        "step": 500,
+        "max_steps": 1000,
+        "outage_s": 10.0,
+        "outage_max_s": 100.0,
+        "visited_points": 6,
+        "expected_points": 6,
+        "uploaded_mb": 450.0,
+        "expected_upload_mb": 450.0,
+    }
+    values.update(overrides)
+
+    assert classify_termination(**values) == expected
+
+
+def test_load_run_context_requires_a_complete_td3_configuration(tmp_path):
+    from evaluate_policy import load_run_context
+
+    with pytest.raises(FileNotFoundError, match="run_config.json"):
+        load_run_context(tmp_path)
+
+    (tmp_path / "run_config.json").write_text(
+        json.dumps({"algorithm": "td3", "state_dim": 8}), encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="missing required fields"):
+        load_run_context(tmp_path)
+
+
+def test_load_actor_rejects_checkpoint_with_wrong_state_dimension(tmp_path):
+    import numpy as np
+    import torch
+
+    from TD3 import Actor
+    from evaluate_policy import load_actor
+
+    wrong_actor = Actor(7, 2, 256, torch.tensor([np.pi, 0.25]))
+    checkpoint = Path(tmp_path) / "wrong.pth"
+    torch.save(wrong_actor.state_dict(), checkpoint)
+
+    with pytest.raises(ValueError, match="incompatible"):
+        load_actor(checkpoint, state_dim=8, net_width=256)
+
