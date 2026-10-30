@@ -1,7 +1,26 @@
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
+
+
+def test_evaluator_import_does_not_initialize_cuda():
+    environment = os.environ.copy()
+    environment["CUDA_VISIBLE_DEVICES"] = "-1"
+
+    result = subprocess.run(
+        [sys.executable, "-c", "import evaluate_policy; print('cpu-safe')"],
+        cwd=Path(__file__).resolve().parents[1],
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "cpu-safe"
 
 
 @pytest.mark.parametrize(
@@ -49,8 +68,8 @@ def test_load_actor_rejects_checkpoint_with_wrong_state_dimension(tmp_path):
     import numpy as np
     import torch
 
-    from TD3 import Actor
     from evaluate_policy import load_actor
+    from td3_actor import Actor
 
     wrong_actor = Actor(7, 2, 256, torch.tensor([np.pi, 0.25]))
     checkpoint = Path(tmp_path) / "wrong.pth"

@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from TD3 import Actor
 from World import World
+from td3_actor import Actor
 
 
 ROOT = Path(__file__).resolve().parent

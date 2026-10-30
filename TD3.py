@@ -4,34 +4,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
+from td3_actor import Actor
 
 torch.cuda.set_device(0)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-class Actor(nn.Module):
-	def __init__(self, state_dim, action_dim, net_width, maxaction):
-		super(Actor, self).__init__()
-		#self.fc_t_sprend = nn.Linear(1, user_num) # 信息素维度扩展至 user num
-		# self.fc_loc_sprend = nn.Linear(2, user_num) # 位置维度扩展
-		self.l1 = nn.Linear(state_dim, net_width) #  set model net width
-		self.l2 = nn.Linear(net_width, net_width)
-		self.l3 = nn.Linear(net_width, net_width)
-		self.l4 = nn.Linear(net_width, action_dim)
-
-		self.maxaction = maxaction
-
-	def forward(self, state):
-		#t = self.fc_t_sprend(state[:, -1:])
-		#loc = self.fc_loc_sprend(state[:, -1:]) # 位置
-		#a = torch.cat([t, loc, state[:, :-4]], 1) # 除了位置和信息素 len(state[:, :-4])=19
-		a = torch.tanh(self.l1(state))
-		a = torch.tanh(self.l2(a))
-		a = torch.tanh(self.l3(a))
-		raw = torch.tanh(self.l4(a))
-		angle = raw[:, :1] * self.maxaction[0]
-		distance = (raw[:, 1:2] + 1.0) * 0.5 * self.maxaction[1]
-		return torch.cat([angle, distance], dim=1)
 
 
 class Q_Critic(nn.Module):
