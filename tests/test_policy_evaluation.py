@@ -44,6 +44,23 @@ def test_checkpoint_paths_use_algorithm_specific_training_names(tmp_path):
     assert paths["training_best"].name == "ddpg_ddpg_actorbest.pth"
 
 
+@pytest.mark.parametrize(
+    "best_episode,expected",
+    [(45, True), (885, False), (None, None)],
+)
+def test_training_provenance_flags_guidance_eligible_best_episode(best_episode, expected):
+    from evaluate_policy import training_provenance
+
+    provenance = training_provenance(
+        {"exploration_strategy": "guided", "guided_warmup_episodes": 200},
+        best_episode,
+    )
+
+    assert provenance["exploration_strategy"] == "guided"
+    assert provenance["guided_warmup_episodes"] == 200
+    assert provenance["training_best_in_guided_period"] is expected
+
+
 def test_evaluator_import_does_not_initialize_cuda():
     environment = os.environ.copy()
     environment["CUDA_VISIBLE_DEVICES"] = "-1"

@@ -335,6 +335,26 @@ def _save_evaluation(context, checkpoint, label, output_dir):
     return report
 
 
+def training_provenance(config, best_episode):
+    strategy = config.get("exploration_strategy")
+    warmup = int(config.get("guided_warmup_episodes", 0))
+    in_guided_period = None
+    if best_episode is not None:
+        in_guided_period = bool(strategy == "guided" and best_episode <= warmup)
+    return {
+        "exploration_strategy": strategy,
+        "guided_warmup_episodes": warmup,
+        "training_best_in_guided_period": in_guided_period,
+        "training_best_guidance_note": (
+            "The episode was eligible for per-step MapGuide sampling; this does not mean every action was guided."
+            if in_guided_period
+            else "The episode was outside the configured MapGuide warmup period."
+            if in_guided_period is False
+            else "Training history was unavailable, so guidance eligibility is unknown."
+        ),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run_dir", default="journal_results/formal-v2/low/td3")
@@ -356,6 +376,7 @@ def main():
         "run_dir": str(context.run_dir),
         "algorithm": context.algorithm,
         "training_best_episode": training_best_episode,
+        **training_provenance(context.config, training_best_episode),
         "evaluation": {
             label: {
                 key: report[key]
