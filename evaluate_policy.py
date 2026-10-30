@@ -21,6 +21,9 @@ from td3_actor import Actor
 
 
 ROOT = Path(__file__).resolve().parent
+# Checkpoints trained on a different observation layout cannot be replayed in the current World.
+STATE_SCHEMA = ("v3: uav xy, target-minus-uav xy, pending payload, outage usage, A2G SNR, G2A outage probability"
+                "; AB adds 8 target-frame one-step A2G SNR then 8 G2A outage samples")
 REQUIRED_CONFIG_FIELDS = {
     "algorithm",
     "data_level",
@@ -32,6 +35,7 @@ REQUIRED_CONFIG_FIELDS = {
     "payloads_mb",
     "state_dim",
     "uav_h",
+    "variant",
 }
 
 
@@ -42,6 +46,7 @@ class RunContext:
     algorithm: str
     state_dim: int
     net_width: int
+    variant: str
     order: tuple
     payloads_mb: np.ndarray
     outage_max_s: float
@@ -71,8 +76,13 @@ def load_run_context(run_dir):
         raise ValueError(f"run_config.json missing required fields: {', '.join(missing)}")
     if config["algorithm"] not in {"td3", "ddpg"}:
         raise ValueError(f"unsupported algorithm: {config['algorithm']!r}")
-    if int(config["state_dim"]) != 8:
-        raise ValueError(f"expected the current 8-dimensional state, got {config['state_dim']}")
+    if config["variant"] not in World.VARIANTS:
+        raise ValueError(f"unsupported variant: {config['variant']!r}")
+    expected_dim = World.BASE_STATE_DIM + (2 * World.NEIGHBOR_DIRECTIONS if config["variant"] == "AB" else 0)
+    if int(config["state_dim"]) != expected_dim:
+        raise ValueError(f"variant {config['variant']} expects state_dim {expected_dim}, got {config['state_dim']}")
+    if config.get("state_schema") != STATE_SCHEMA:
+        raise ValueError(f"run was trained with state schema {config.get('state_schema')!r}, current is {STATE_SCHEMA!r}")
     order = tuple(int(value) for value in config["order"])
     payloads = np.asarray(config["payloads_mb"], dtype=float)
     if len(order) != len(payloads) or sorted(order) != list(range(1, len(payloads) + 1)):
@@ -85,6 +95,7 @@ def load_run_context(run_dir):
         config=config,
         algorithm=config["algorithm"],
         state_dim=int(config["state_dim"]),
+        variant=config["variant"],
         net_width=int(config["net_width"]),
         order=order,
         payloads_mb=payloads,
@@ -176,6 +187,7 @@ def _build_world(context):
             [[4.77, 4.56, 0.25], [14.89, 4.89, 0.25], [4.63, 13.78, 0.25], [13.48, 14.89, 0.25]]
         ),
         traverse_sequence=list(context.order),
+        variant=context.variant,
     )
 
 

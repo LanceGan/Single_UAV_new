@@ -9,7 +9,7 @@ import pytest
 
 
 def test_load_run_context_accepts_ddpg_configuration(tmp_path):
-    from evaluate_policy import load_run_context
+    from evaluate_policy import STATE_SCHEMA, load_run_context
 
     data_dir = Path(__file__).resolve().parents[1] / "results" / "datas"
     map_hashes = {
@@ -27,10 +27,16 @@ def test_load_run_context_accepts_ddpg_configuration(tmp_path):
         "payloads_mb": [90.0, 90.0, 60.0, 60.0, 90.0, 60.0],
         "state_dim": 8,
         "uav_h": 1.0,
+        "state_schema": STATE_SCHEMA,
+        "variant": "baseline",
     }
     (tmp_path / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
 
     context = load_run_context(tmp_path)
+    config["state_schema"] = "legacy"
+    (tmp_path / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
+    with pytest.raises(ValueError, match="state schema"):
+        load_run_context(tmp_path)
 
     assert context.algorithm == "ddpg"
 

@@ -142,8 +142,9 @@ def test_state_exposes_qos_usage_and_penalizes_each_outage_slot(monkeypatch):
     expected_snr = (10.0 - world.a2g_snr_min) / (world.a2g_snr_max - world.a2g_snr_min)
     assert next_state[6] == pytest.approx(expected_snr)
     assert next_state[7] == pytest.approx(0.8)
-    assert np.all((next_state >= 0.0) & (next_state <= 1.0))
-    assert world.reward_summary()["communication"] == pytest.approx(-0.5 * world.REWARD_SCALE)
+    assert np.all((next_state[2:4] >= -1.0) & (next_state[2:4] <= 1.0))
+    assert np.all((next_state[[0, 1, 4, 5, 6, 7]] >= 0.0) & (next_state[[0, 1, 4, 5, 6, 7]] <= 1.0))
+    assert "communication" not in world.reward_summary()
 
 
 def test_final_payload_upload_allows_terminal_completion(monkeypatch):
@@ -208,15 +209,15 @@ def test_reward_terms_sum_to_step_reward(monkeypatch):
     assert reward == pytest.approx(sum(world.reward_summary().values()))
 
 
-def test_full_speed_progress_offsets_time_cost(monkeypatch):
+def test_full_speed_progress_outweighs_time_cost(monkeypatch):
     world = _world()
     _constant_radio(monkeypatch, world)
     state, _ = world.reset()
     heading = np.arctan2(*(world.target_loc - np.array(world.initial_loc))[::-1])
     world.step_inside(np.array([heading, world.dist_max]), state, 0)
     terms = world.reward_summary()
-    assert terms["progress"] == pytest.approx(world.delta_T * world.REWARD_SCALE, rel=1e-6)
-    assert terms["progress"] + terms["time"] == pytest.approx(0.0, abs=1e-9)
+    assert terms["progress"] == pytest.approx(world.PROGRESS_WEIGHT * world.delta_T * world.REWARD_SCALE, rel=1e-6)
+    assert terms["progress"] + terms["time"] == pytest.approx(world.delta_T * world.REWARD_SCALE, rel=1e-6)
 
 
 def test_pending_upload_slot_is_charged_as_transmission_delay(monkeypatch):
@@ -273,3 +274,41 @@ def test_infeasible_penalty_exceeds_worst_feasible_objective():
     worst_feasible_cost = horizon_s + horizon_s + world.outage_max_s  # T + tau + T_out
     milestones = 7 * world.ARRIVAL_REWARD + 6 * world.UPLOAD_LEG_REWARD + world.COMPLETION_REWARD
     assert world.INFEASIBLE_PENALTY > worst_feasible_cost - milestones
+
+
+def test_state_encodes_target_relative_to_uav():
+    world = _world()
+    state, _ = world.reset()
+    expected = (world.target_loc - np.array(world.initial_loc)) / np.array([world.length, world.width])
+    np.testing.assert_allclose(state[2:4], expected)
+
+
+def test_outage_slots_are_not_rewarded_per_slot(monkeypatch):
+    world = _world()
+    _constant_radio(monkeypatch, world, outage_probability=1.0)
+    state, _ = world.reset()
+    _, reward, _, _, _ = world.step_inside(np.zeros(2), state, 0)
+    assert world.out_time == world.delta_T
+    assert reward == pytest.approx(sum(world.reward_summary().values()))
+    assert set(world.reward_summary()) == {"time", "delay", "progress", "boundary", "upload", "arrival",
+                                            "completion", "incomplete_upload", "timeout", "qos"}
+
+
+def test_zero_payload_point_needs_no_upload_and_never_divides_by_zero(monkeypatch):
+    world = _world(data_sizes=np.array([0.0, 60, 60, 60, 60, 60]))
+    _constant_radio(monkeypatch, world, snr_db=10.0)
+    state, _ = world.reset(); world.distance = 100.0
+    state, _, done, t, _ = world.step_inside(np.zeros(2), state, 0)
+    assert not done and world.transmit and world.data_size == 0.0
+    world.step_inside(np.zeros(2), state, t)
+    assert world.reward_summary()["delay"] == 0.0
+    assert world.reward_summary()["upload"] == 0.0
+
+
+def test_upload_reward_is_safe_when_payload_size_is_unknown(monkeypatch):
+    world = _world()
+    _constant_radio(monkeypatch, world, snr_db=100.0)
+    state, _ = world.reset()
+    world.transmit = False; world.data_size = 2.0; world.current_payload = 0.0
+    world.step_inside(np.zeros(2), state, 0)
+    assert np.isfinite(world.reward_summary()["upload"])

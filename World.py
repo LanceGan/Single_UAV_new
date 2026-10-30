@@ -18,12 +18,24 @@ class World(object):
     COMPLETION_REWARD = 200.0
     INFEASIBLE_PENALTY = 1000.0  # QoS violation, timeout, or early arrival
     BOUNDARY_SCALE = 0.01
+    PROGRESS_WEIGHT = 2.0  # full-speed approach nets +dt per slot, hovering -dt
+    # Ablation variants: baseline = absolute heading; A = heading relative to the
+    # target bearing; AB = A plus dual-map samples on a target-frame ring.
+    VARIANTS = ("baseline", "A", "AB")
+    BASE_STATE_DIM = 8
+    NEIGHBOR_DIRECTIONS = 8
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
                  data_size = 250, data_sizes=None, outage_max_s=100.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
                  users_name='Users.txt'
                  ,BS_loc=[],
-                 traverse_sequence=[]):
+                 traverse_sequence=[], variant="baseline"):
+        if variant not in self.VARIANTS:
+            raise ValueError(f"unknown variant {variant!r}; expected one of {self.VARIANTS}")
+        self.variant = variant
+        self.relative_heading = variant in ("A", "AB")
+        self.map_neighborhood = variant == "AB"
+        self.state_dim = self.BASE_STATE_DIM + (2 * self.NEIGHBOR_DIRECTIONS if self.map_neighborhood else 0)
         self.length = length # 区域大小
         self.width = width
         self.uav_num = uav_num  # 总的无人机数目
@@ -170,46 +182,63 @@ class World(object):
             self.UAVs.append(UAV(x, y, h))
     
     def reset_state(self):
-        State_dim = self.uav_num*2+2+4
-        s = np.zeros(State_dim)  
-        # UAV location
-        for i,uav in enumerate(self.UAVs):
-            s[2*i] = uav.x / self.length
-            s[2*i+1] = uav.y / self.width
-        target_index = self.uav_num * 2
-        s[target_index] = self.target_loc[0] / self.length
-        s[target_index + 1] = self.target_loc[1] / self.width
-        s[target_index + 2] = self.data_size / self.max_payload
-        s[target_index + 3] = self.out_time / self.outage_max_s
-        s[target_index + 4] = np.clip((self.current_a2g_snr - self.a2g_snr_min) / (self.a2g_snr_max - self.a2g_snr_min), 0.0, 1.0)
-        s[target_index + 5] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)
-        # s[5] = self.T-self.t #剩余可用时间步
+        return self.observe(self.target_loc)
+
+    def update_state(self, engy, tar_loc, tar_dis):
+        return self.observe(tar_loc)
+
+    def target_bearing(self, target_loc=None):
+        target = self.target_loc if target_loc is None else target_loc
+        return math.atan2(target[1] - self.UAVs[0].y, target[0] - self.UAVs[0].x)
+
+    def observe(self, target_loc):
+        uav = self.UAVs[0]
+        snr_span = self.a2g_snr_max - self.a2g_snr_min
+        s = np.zeros(self.state_dim)
+        s[0] = uav.x / self.length
+        s[1] = uav.y / self.width
+        # Target relative to the UAV, so one heading rule generalizes across legs.
+        s[2] = (target_loc[0] - uav.x) / self.length
+        s[3] = (target_loc[1] - uav.y) / self.width
+        s[4] = self.data_size / self.max_payload
+        s[5] = self.out_time / self.outage_max_s
+        s[6] = np.clip((self.current_a2g_snr - self.a2g_snr_min) / snr_span, 0.0, 1.0)
+        s[7] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)
+        if self.map_neighborhood:
+            # Ring of one-step candidates, starting at the target bearing and turning counter-clockwise.
+            bearing = self.target_bearing(target_loc)
+            for k in range(self.NEIGHBOR_DIRECTIONS):
+                angle = bearing + 2 * math.pi * k / self.NEIGHBOR_DIRECTIONS
+                point = np.array([[uav.x + self.dist_max * math.cos(angle), uav.y + self.dist_max * math.sin(angle)]])
+                point = np.clip(point, [self.min_x, self.min_y], [self.max_x, self.max_y])
+                s[8 + k] = np.clip((self.get_date_rate_A2G(point) - self.a2g_snr_min) / snr_span, 0.0, 1.0)
+                s[8 + self.NEIGHBOR_DIRECTIONS + k] = np.clip(self.get_g2a_outage_probability(point), 0.0, 1.0)
         return s
 
-    def update_state(self, engy,tar_loc,tar_dis):
-        State_dim = self.uav_num*2+2+4
-        s_ = np.zeros(State_dim) 
-        for i,uav in enumerate(self.UAVs):
-            s_[i*2] = uav.x / self.length
-            s_[i*2+1] = uav.y / self.width
-        target_index = self.uav_num * 2
-        s_[target_index] = tar_loc[0] / self.length
-        s_[target_index + 1] = tar_loc[1] / self.width
-        s_[target_index + 2] = self.data_size / self.max_payload
-        s_[target_index + 3] = self.out_time / self.outage_max_s
-        s_[target_index + 4] = np.clip((self.current_a2g_snr - self.a2g_snr_min) / (self.a2g_snr_max - self.a2g_snr_min), 0.0, 1.0)
-        s_[target_index + 5] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)
-        # s_[5] = self.T-self.t #剩余可用时间步
-        return s_
+    def action_to_absolute(self, action):
+        """Convert a policy action to the absolute [heading, distance] World executes."""
+        heading, distance = float(action[0]), float(action[1])
+        if self.relative_heading:
+            heading = self.target_bearing() + heading
+        return np.array([math.atan2(math.sin(heading), math.cos(heading)), distance])
 
-    def get_reward(self, fa, dis_forward, g2a_outage, pending_upload):
-        """Per-slot shaping in seconds: -T, -tau, -T_out, plus progress and boundary terms."""
+    def absolute_to_action(self, absolute):
+        """Inverse of action_to_absolute; used to label demonstrations in policy coordinates."""
+        heading, distance = float(absolute[0]), float(absolute[1])
+        if self.relative_heading:
+            heading -= self.target_bearing()
+        return np.array([math.atan2(math.sin(heading), math.cos(heading)), distance])
+
+    def get_reward(self, fa, dis_forward, pending_upload):
+        """Per-slot shaping in seconds: -T and -tau, plus progress and boundary terms.
+
+        T_out is a hard constraint enforced by termination, not a per-slot cost.
+        """
         speed = self.dist_max / self.delta_T
         terms = {
             "time": -self.delta_T,
             "delay": -self.delta_T if pending_upload else 0.0,
-            "communication": -self.delta_T if g2a_outage else 0.0,
-            "progress": dis_forward / speed,
+            "progress": self.PROGRESS_WEIGHT * dis_forward / speed,
             "boundary": -fa * self.BOUNDARY_SCALE,
         }
         return sum(self.add_scaled_term(name, value) for name, value in terms.items())
@@ -224,7 +253,7 @@ class World(object):
 
     @staticmethod
     def _empty_reward_terms():
-        return {name: 0.0 for name in ("time", "delay", "communication", "progress", "boundary", "upload",
+        return {name: 0.0 for name in ("time", "delay", "progress", "boundary", "upload",
                                        "arrival", "completion", "incomplete_upload", "timeout", "qos")}
 
     def add_reward_term(self, name, value):
@@ -252,7 +281,7 @@ class World(object):
         fly_energy = 0.0
         done = False
         self.t = t+1 # 时间步+1
-        state_ = np.zeros(self.uav_num*2 +2+4)
+        actions = self.action_to_absolute(actions)
         uav_location_pre = np.zeros([self.uav_num, 2])  # make a copy of the uav's location
         uav_location = np.zeros([self.uav_num, 2]) # uav current location
         for i, uav in enumerate(self.UAVs):
@@ -301,8 +330,8 @@ class World(object):
                 self.trans_delay_end = self.t
                 self.trans_delay += self.trans_delay_end-self.trans_delay_start
 
-        reward += self.get_reward(fa, reduce_dis, g2a_outage, pending_upload)
-        if self.last_uploaded_data > 0:
+        reward += self.get_reward(fa, reduce_dis, pending_upload)
+        if self.last_uploaded_data > 0 and self.current_payload > 0:
             reward += self.add_scaled_term("upload", self.UPLOAD_LEG_REWARD * self.last_uploaded_data / self.current_payload)
 
         # A QoS violation is failure even when it coincides with endpoint arrival.
@@ -333,9 +362,10 @@ class World(object):
                 print("=================================complete task!!========================")
             else:
                 self.target_pre_loc = self.target_loc #更新上一个目标点的位置
-                self.transmit = False
                 self.data_size = self.payload_for_user(self.Traverse[self.Traverse_order])
                 self.current_payload = self.data_size
+                # A point with no data needs no upload, so the next leg starts clear.
+                self.transmit = self.data_size <= 0
                 self.trans_delay_start = self.t
                 self.terminal = False
                 done = False

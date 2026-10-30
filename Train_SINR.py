@@ -9,8 +9,9 @@ from sequence_runner import solve_ga_order
 from training_transitions import replay_terminal_mask
 from exploration import exploration_scales
 from map_guidance import MapGuide
+from demonstration import linear_decay
 from mission_preflight import run_preflight
-from evaluate_policy import load_run_context, _build_world, rollout, selection_key
+from evaluate_policy import STATE_SCHEMA, load_run_context, _build_world, rollout, selection_key
 import json
 import random
 import numpy as np
@@ -29,7 +30,7 @@ def create_parser():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--uav_h", help="set the UAV height", type=float,default=1.0)
-    parser.add_argument("--gamma", help="set the gamma", type=float,default=0.99)
+    parser.add_argument("--gamma", help="set the gamma", type=float,default=0.995)
     parser.add_argument("--buffer", help="set the buffer", type=int,default=200000)
     parser.add_argument("--net_width", help="set the net width",type=int,default=256)
     parser.add_argument("--exploration_strategy", help="exploration strategy", type=str, default="guided")
@@ -42,10 +43,16 @@ def create_parser():
     parser.add_argument("--algorithm", choices=["td3", "ddpg"], default="td3")
     parser.add_argument("--outage_max_s", type=float, default=100.0)
     parser.add_argument("--train_memory_size", type=int, default=2000)
-    parser.add_argument("--guided_warmup_episodes", type=int, default=200)
+    parser.add_argument("--guided_warmup_episodes", type=int, default=400,
+                        help="episodes over which the whole-episode MapGuide probability decays to zero")
+    parser.add_argument("--guide_prob", type=float, default=0.5, help="initial whole-episode MapGuide probability")
+    parser.add_argument("--bc_weight", type=float, default=1.0, help="initial imitation weight on demonstrated samples")
+    parser.add_argument("--bc_decay_episodes", type=int, default=600, help="episodes over which bc_weight decays to zero")
     parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--eval_interval", type=int, default=25)
+    parser.add_argument("--variant", choices=World.VARIANTS, default="baseline",
+                        help="ablation: baseline (absolute heading), A (target-relative heading), AB (A + map neighborhood)")
     return parser
 
 class AdaptiveExploration:
@@ -178,7 +185,7 @@ outage_max_s = args.outage_max_s
 train_memory_size_arg = args.train_memory_size
 guided_warmup_episodes = args.guided_warmup_episodes
 payloads = load_fixed_payloads(data_level)
-output_paths = build_output_paths(args.output_root, data_level, algorithm)
+output_paths = build_output_paths(args.output_root, data_level, algorithm, variant=args.variant)
 
 train_path = str(output_paths["logs"])
 mkdir(train_path)
@@ -190,7 +197,6 @@ user_num = 6
 T = 1000
 Length = 20
 Width = 20
-s_dim = uav_num*2 +2 +4 #[uav.x,uav.y,tar.x,tar.y,data_size,qos_usage,a2g_snr,g2a_outage_prob]
 a_dim = uav_num*2
 
 V_max = 0.50
@@ -216,7 +222,9 @@ trave_order = solve_ga_order(payloads, iterations=args.ga_iterations)
 world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, delta_t=delta_t, t=T, uav_h=uav_h,
               data_size=data_size, ini_loc=ini_loc, end_loc=end_loc,
               users_name='results/datas/Users_'+str(user_num)+'.txt',
-              BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads, outage_max_s=outage_max_s)
+              BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads, outage_max_s=outage_max_s,
+              variant=args.variant)
+s_dim = world.state_dim
 
 preflight = run_preflight(data_level, output_paths["root"] / "preflight", order=trave_order,
                           outage_max_s=outage_max_s, total_steps=T)
@@ -232,9 +240,10 @@ if args.preflight_only:
 (output_paths["root"] / "run_config.json").write_text(json.dumps({
     **vars(args), "state_dim": s_dim, "order": trave_order, "payloads_mb": payloads.tolist(),
     "map_hashes": preflight["map_hashes"], "sequence_method": "GA with exact verification/fallback",
-    "state_schema": "normalized eight-dimensional dual-radio observation",
+    "state_schema": STATE_SCHEMA,
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
-    "reward_schema": "v2-seconds: -(T + tau + T_out) shaping + progress + milestones, x0.01",
+    "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
+    "demonstration": "whole-episode MapGuide with decaying probability; behavior cloning on demo samples with decaying weight",
 }, indent=2), encoding="utf-8")
 # A separate world keeps evaluation from disturbing the training episode state.
 eval_context = load_run_context(output_paths["root"])
@@ -295,6 +304,10 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     t3 = time.time()
     s, t = world.reset()
     map_guide = MapGuide(world)
+    # Whole demonstration episodes avoid a guide silently repairing actor mistakes.
+    guide_probability = linear_decay(args.guide_prob, episode - 1, guided_warmup_episodes) if exploration_strategy == "guided" else 0.0
+    guided_episode = np.random.random() < guide_probability
+    model.bc_weight = linear_decay(args.bc_weight, episode - 1, args.bc_decay_episodes)
     fly_dis = 0.0
     data_total = 0.0
     
@@ -327,9 +340,10 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         angle_noise, distance_noise = exploration_scales(episode, total_episode, target_distance)
 
         if exploration_strategy == "guided":
-            if episode <= guided_warmup_episodes and np.random.random() < 0.5:
+            if guided_episode:
                 guidance_steps += 1
-                a = map_guide.action(angle_noise, distance_noise, np.random)
+                # MapGuide plans absolute headings; store them in the policy's action frame.
+                a = world.absolute_to_action(map_guide.action(angle_noise, distance_noise, np.random))
             else:
                 a = model.select_action(s) + np.random.normal(0, [angle_noise, distance_noise], size=a_dim)
             current_noise = angle_noise
@@ -363,7 +377,7 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         s_, r, done, t, terminal = world.step_inside(a, s, t)
         sum_reward += r
         data_total += world.last_uploaded_data
-        replay_buffer.add(s, a, r, s_, replay_terminal_mask(done))
+        replay_buffer.add(s, a, r, s_, replay_terminal_mask(done), demo=guided_episode)
         
         # 训练模型
         if replay_buffer.size > train_memory_size and step_count % train_freq == 0:
@@ -434,6 +448,8 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     writer.add_scalar('exploration/angle_std_mean', angle_noise_sum / step_count, episode)
     writer.add_scalar('exploration/distance_std_mean', distance_noise_sum / step_count, episode)
     writer.add_scalar('exploration/guidance_fraction', guidance_steps / step_count, episode)
+    writer.add_scalar('exploration/guide_probability', guide_probability, episode)
+    writer.add_scalar('training/bc_weight', model.bc_weight, episode)
     writer.add_scalar('training/critic_updates', model.q_iteration, episode)
     writer.add_scalar('training/actor_updates', model.a_iteration, episode)
     
