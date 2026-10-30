@@ -1,10 +1,47 @@
 import json
+import hashlib
 import os
 from pathlib import Path
 import subprocess
 import sys
 
 import pytest
+
+
+def test_load_run_context_accepts_ddpg_configuration(tmp_path):
+    from evaluate_policy import load_run_context
+
+    data_dir = Path(__file__).resolve().parents[1] / "results" / "datas"
+    map_hashes = {
+        name: hashlib.sha256((data_dir / name).read_bytes()).hexdigest()
+        for name in ("Radio_datas.npz", "Radio_datas_A2G.npz")
+    }
+    config = {
+        "algorithm": "ddpg",
+        "data_level": "low",
+        "episodes": 1000,
+        "map_hashes": map_hashes,
+        "net_width": 256,
+        "order": [1, 6, 2, 3, 5, 4],
+        "outage_max_s": 100.0,
+        "payloads_mb": [90.0, 90.0, 60.0, 60.0, 90.0, 60.0],
+        "state_dim": 8,
+        "uav_h": 1.0,
+    }
+    (tmp_path / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
+
+    context = load_run_context(tmp_path)
+
+    assert context.algorithm == "ddpg"
+
+
+def test_checkpoint_paths_use_algorithm_specific_training_names(tmp_path):
+    from evaluate_policy import checkpoint_paths
+
+    paths = checkpoint_paths(tmp_path, "ddpg", 1000)
+
+    assert paths["final"].name == "ddpg_ddpg_actor1000.pth"
+    assert paths["training_best"].name == "ddpg_ddpg_actorbest.pth"
 
 
 def test_evaluator_import_does_not_initialize_cuda():

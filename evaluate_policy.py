@@ -1,4 +1,4 @@
-"""Deterministic, guide-free evaluation for trained TD3 inspection policies."""
+"""Deterministic, guide-free evaluation for trained continuous-control policies."""
 
 import argparse
 import contextlib
@@ -39,6 +39,7 @@ REQUIRED_CONFIG_FIELDS = {
 class RunContext:
     run_dir: Path
     config: dict
+    algorithm: str
     state_dim: int
     net_width: int
     order: tuple
@@ -68,8 +69,8 @@ def load_run_context(run_dir):
     missing = sorted(REQUIRED_CONFIG_FIELDS - config.keys())
     if missing:
         raise ValueError(f"run_config.json missing required fields: {', '.join(missing)}")
-    if config["algorithm"] != "td3":
-        raise ValueError(f"expected a TD3 run, got {config['algorithm']!r}")
+    if config["algorithm"] not in {"td3", "ddpg"}:
+        raise ValueError(f"unsupported algorithm: {config['algorithm']!r}")
     if int(config["state_dim"]) != 8:
         raise ValueError(f"expected the current 8-dimensional state, got {config['state_dim']}")
     order = tuple(int(value) for value in config["order"])
@@ -82,12 +83,24 @@ def load_run_context(run_dir):
     return RunContext(
         run_dir=run_dir,
         config=config,
+        algorithm=config["algorithm"],
         state_dim=int(config["state_dim"]),
         net_width=int(config["net_width"]),
         order=order,
         payloads_mb=payloads,
         outage_max_s=float(config["outage_max_s"]),
     )
+
+
+def checkpoint_paths(run_dir, algorithm, episodes):
+    if algorithm not in {"td3", "ddpg"}:
+        raise ValueError(f"unsupported algorithm: {algorithm!r}")
+    model_dir = Path(run_dir) / "models"
+    prefix = f"{algorithm}_{algorithm}_actor"
+    return {
+        "final": model_dir / f"{prefix}{episodes}.pth",
+        "training_best": model_dir / f"{prefix}best.pth",
+    }
 
 
 def load_actor(checkpoint, state_dim, net_width):
@@ -230,6 +243,7 @@ def evaluate_checkpoint(context, checkpoint):
     }
     report = {
         "checkpoint": str(Path(checkpoint).resolve()),
+        "algorithm": context.algorithm,
         "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
         "success": success,
         "termination_reason": termination_reason,
@@ -281,7 +295,13 @@ def plot_trajectory(context, trace, output_stem, title):
             background,
             levels=30,
         )
-        axis.plot(trajectory[:, 0], trajectory[:, 1], color="white", linewidth=2.0, label="TD3 trajectory")
+        axis.plot(
+            trajectory[:, 0],
+            trajectory[:, 1],
+            color="white",
+            linewidth=2.0,
+            label=f"{context.algorithm.upper()} trajectory",
+        )
         axis.scatter(users[:, 0], users[:, 1], c="black", marker="^", s=55, label="Inspection point", zorder=3)
         axis.scatter(*start, c="red", s=70, label="Start", zorder=4)
         axis.scatter(*end, c="orange", s=70, label="End", zorder=4)
@@ -310,7 +330,7 @@ def _save_evaluation(context, checkpoint, label, output_dir):
         context,
         trace,
         target / "trajectory_dual_maps",
-        f"TD3 {label}: {report['termination_reason']}",
+        f"{context.algorithm.upper()} {label}: {report['termination_reason']}",
     )
     return report
 
@@ -324,10 +344,7 @@ def main():
     context = load_run_context(args.run_dir)
     output_dir = Path(args.output_dir).resolve() if args.output_dir else context.run_dir / "evaluation"
     output_dir.mkdir(parents=True, exist_ok=True)
-    checkpoints = {
-        "final": context.run_dir / "models" / f"td3_td3_actor{context.config['episodes']}.pth",
-        "training_best": context.run_dir / "models" / "td3_td3_actorbest.pth",
-    }
+    checkpoints = checkpoint_paths(context.run_dir, context.algorithm, context.config["episodes"])
     reports = {label: _save_evaluation(context, path, label, output_dir) for label, path in checkpoints.items()}
     history_path = context.run_dir / "UAV_TD3_improved.npz"
     training_best_episode = None
@@ -337,6 +354,7 @@ def main():
             training_best_episode = int(np.argmax(history["ep_rewards"]) + 1)
     summary = {
         "run_dir": str(context.run_dir),
+        "algorithm": context.algorithm,
         "training_best_episode": training_best_episode,
         "evaluation": {
             label: {
