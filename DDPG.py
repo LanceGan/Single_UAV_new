@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
+from demonstration import behavior_cloning_loss
 
 torch.cuda.set_device(0)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -82,6 +83,7 @@ class DDPG(object):
         # bookkeeping for tensorboard steps
         self.q_iteration = 0
         self.a_iteration = 0
+        self.bc_weight = 0.0  # set by the training loop; 0 disables imitation
 
     def select_action(self, state, noise=0.0):
         """
@@ -101,7 +103,7 @@ class DDPG(object):
 
     def train(self, replay_buffer):
         # Sample
-        s, a, r, s_prime, dead_mask = replay_buffer.sample(self.Q_batchsize)
+        s, a, r, s_prime, dead_mask, demo_mask = replay_buffer.sample(self.Q_batchsize, with_demo=True)
         # Compute target Q
         with torch.no_grad():
             next_a = self.actor_target(s_prime)
@@ -124,8 +126,11 @@ class DDPG(object):
 
         # Actor loss and update (maximize Q -> minimize -Q)
         a_pred = self.actor(s)
-        a_loss = -self.critic(s, a_pred).mean()
-        self.writer.add_scalar('a_loss', a_loss, self.a_iteration)
+        q_term = -self.critic(s, a_pred).mean()
+        bc_term = behavior_cloning_loss(a_pred, a, demo_mask, self.max_action[1])
+        a_loss = q_term + self.bc_weight * bc_term
+        self.writer.add_scalar('a_loss', q_term, self.a_iteration)
+        self.writer.add_scalar('bc_loss', bc_term, self.a_iteration)
         self.actor_optimizer.zero_grad()
         a_loss.backward()
         self.actor_optimizer.step()

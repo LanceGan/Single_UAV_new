@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
+from demonstration import behavior_cloning_loss
 from td3_actor import Actor
 
 torch.cuda.set_device(0)
@@ -101,6 +102,7 @@ class TD3(object):
 		self.delay_freq = 1
 		self.q_iteration = 0
 		self.a_iteration = 0
+		self.bc_weight = 0.0  # set by the training loop; 0 disables imitation
 		#torch.nn.init.kaiming_normal_(tensor, a=0, mode=‘fan_in’, nonlinearity =‘leaky_relu’)
 
 	def select_action(self, state):#only used when interact with the env
@@ -112,7 +114,7 @@ class TD3(object):
 	def train(self,replay_buffer):
 		self.delay_counter += 1
 		with torch.no_grad():
-			s, a, r, s_prime, dead_mask = replay_buffer.sample(self.Q_batchsize)
+			s, a, r, s_prime, dead_mask, demo_mask = replay_buffer.sample(self.Q_batchsize, with_demo=True)
 			noise = torch.max(-self.noise_clip, torch.min(torch.randn_like(a) * self.policy_noise, self.noise_clip))
 			smoothed_target_a = torch.maximum(self.min_action, torch.minimum(
 					self.actor_target(s_prime) + noise, self.max_action))
@@ -140,8 +142,12 @@ class TD3(object):
 		self.q_iteration += 1
 		if self.delay_counter == self.delay_freq:
 			# Update Actor
-			a_loss = -self.q_critic.Q1(s,self.actor(s)).mean()
-			self.writer.add_scalar('a_loss', a_loss, self.a_iteration)
+			pred = self.actor(s)
+			q_term = -self.q_critic.Q1(s, pred).mean()
+			bc_term = behavior_cloning_loss(pred, a, demo_mask, self.max_action[1])
+			a_loss = q_term + self.bc_weight * bc_term
+			self.writer.add_scalar('a_loss', q_term, self.a_iteration)
+			self.writer.add_scalar('bc_loss', bc_term, self.a_iteration)
 			self.actor_optimizer.zero_grad()
 			a_loss.backward()
 			self.actor_optimizer.step()

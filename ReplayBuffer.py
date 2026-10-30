@@ -13,28 +13,33 @@ class ReplayBuffer(object):
 		self.reward = np.zeros((max_size, 1))
 		self.next_state = np.zeros((max_size, state_dim))
 		self.dead = np.zeros((max_size, 1))
+		self.demo = np.zeros((max_size, 1))
 
 		self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-	def add(self, state, action, reward, next_state, dead):
+	def add(self, state, action, reward, next_state, dead, demo=False):
 		self.state[self.ptr] = state
 		self.action[self.ptr] = action
 		self.reward[self.ptr] = reward
 		self.next_state[self.ptr] = next_state
 		self.dead[self.ptr] = dead
+		self.demo[self.ptr] = demo
 
 		self.ptr = (self.ptr + 1) % self.max_size
 		self.size = min(self.size + 1, self.max_size)
 
 
-	def sample(self, batch_size):
+	def sample(self, batch_size, with_demo=False):
 		ind = np.random.randint(0, self.size, size=batch_size)
 
-		return (
+		batch = (
 			torch.FloatTensor(self.state[ind]).to(self.device),
 			torch.FloatTensor(self.action[ind]).to(self.device),
 			torch.FloatTensor(self.reward[ind]).to(self.device),
 			torch.FloatTensor(self.next_state[ind]).to(self.device),
 			torch.FloatTensor(self.dead[ind]).to(self.device)
 		)
+		if with_demo:
+			batch += (torch.FloatTensor(self.demo[ind]).to(self.device),)
+		return batch
