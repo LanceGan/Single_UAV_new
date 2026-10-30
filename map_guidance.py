@@ -63,7 +63,11 @@ class MapGuide:
         else:
             # Never enter the next target's acceptance disk before clearing data.
             blocked = np.linalg.norm(self.xy - w.target_loc, axis=1) <= w.distance + 0.15
-            upload_graph = self._graph(blocked)
+            # Exploration may place the UAV in the 0.15-wide guard ring without
+            # actually entering the target's acceptance disk.  Removing that
+            # source node would isolate Dijkstra at its starting point, so let
+            # the route leave the ring while still requiring its hub outside it.
+            upload_graph = graph if blocked[source] else self._graph(blocked)
             distance, predecessors = dijkstra(upload_graph, indices=source, return_predecessors=True)
             to_target = dijkstra(graph.T.tocsr(), indices=target)
             candidates = (~blocked) & (~self.outage) & np.isfinite(distance) & (self.rate > 0)
