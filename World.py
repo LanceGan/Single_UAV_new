@@ -24,6 +24,7 @@ class World(object):
     VARIANTS = ("baseline", "A", "AB")
     BASE_STATE_DIM = 8
     NEIGHBOR_DIRECTIONS = 8
+    STALL_DISTANCE = 1e-3  # slots moving less than this count as motionless
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
                  data_size = 250, data_sizes=None, outage_max_s=100.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
@@ -147,6 +148,9 @@ class World(object):
         self.reset_target()
         self.set_uavs_loc()
         self.terminal = False
+        self.stall_steps = 0
+        self.max_stall_run = 0
+        self._stall_run = 0
         self.trans_delay_start = 0
         self.trans_delay_end = self.T
         self.trans_delay = 0
@@ -295,11 +299,19 @@ class World(object):
                 fa += penalty # 累计出界奖励Pob
                 if not bound: # 如果出界
                     self.fa += 1
-                    uav.x = uav_location_pre[i][0]      # the uav break the boundary constraint, the action is cancelled
-                    uav.y = uav_location_pre[i][1]      # 无人机突破边界约束，动作取消      
+                    # Clip each coordinate so the UAV slides along the wall instead of
+                    # repeating a cancelled move; the penalty above is still charged.
+                    uav.x = float(np.clip(uav.x, self.min_x, self.max_x))
+                    uav.y = float(np.clip(uav.y, self.min_y, self.max_y))
         for i, uav in enumerate(self.UAVs):
             uav_location[i][0] = uav.x
             uav_location[i][1] = uav.y
+        if LA.norm(uav_location - uav_location_pre) < self.STALL_DISTANCE:
+            self.stall_steps += 1
+            self._stall_run += 1
+            self.max_stall_run = max(self.max_stall_run, self._stall_run)
+        else:
+            self._stall_run = 0
 
         step_cur = LA.norm(uav_location - self.target_loc)  # 此位置与目标点距离
         self.target_dis = step_cur #更新目标距离

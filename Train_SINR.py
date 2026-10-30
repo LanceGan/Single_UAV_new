@@ -4,7 +4,7 @@ from DDPG import DDPG
 import ReplayBuffer
 from World import World
 from reward_logging import log_reward_terms
-from training_config import build_output_paths, load_fixed_payloads
+from training_config import ALGORITHMS, build_output_paths, load_fixed_payloads, resolve_algorithm
 from sequence_runner import solve_ga_order
 from training_transitions import replay_terminal_mask
 from exploration import exploration_scales
@@ -40,13 +40,16 @@ def create_parser():
     parser.add_argument("--episodes", help="training episode count", type=int, default=2000)
     parser.add_argument("--output_root", default="journal_results")
     parser.add_argument("--ga_iterations", type=int, default=500)
-    parser.add_argument("--algorithm", choices=["td3", "ddpg"], default="td3")
+    parser.add_argument("--algorithm", choices=sorted(ALGORITHMS), default="td3",
+                        help="td3/ddpg are standard agents; td3_bc/ddpg_bc add MapGuide demonstrations and imitation")
     parser.add_argument("--outage_max_s", type=float, default=100.0)
     parser.add_argument("--train_memory_size", type=int, default=2000)
     parser.add_argument("--guided_warmup_episodes", type=int, default=400,
                         help="episodes over which the whole-episode MapGuide probability decays to zero")
-    parser.add_argument("--guide_prob", type=float, default=0.5, help="initial whole-episode MapGuide probability")
-    parser.add_argument("--bc_weight", type=float, default=1.0, help="initial imitation weight on demonstrated samples")
+    parser.add_argument("--guide_prob", type=float, default=None,
+                        help="initial whole-episode MapGuide probability (*_bc only; default 0.5)")
+    parser.add_argument("--bc_weight", type=float, default=None,
+                        help="initial imitation weight on demonstrated samples (*_bc only; default 1.0)")
     parser.add_argument("--bc_decay_episodes", type=int, default=600, help="episodes over which bc_weight decays to zero")
     parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--seed", type=int, default=1)
@@ -181,6 +184,8 @@ min_exploration = args.min_exploration
 max_exploration = args.max_exploration
 data_level = args.data_level
 algorithm = args.algorithm
+profile = resolve_algorithm(algorithm, args.guide_prob, args.bc_weight)
+args.guide_prob, args.bc_weight = profile["guide_prob"], profile["bc_weight"]
 outage_max_s = args.outage_max_s
 train_memory_size_arg = args.train_memory_size
 guided_warmup_episodes = args.guided_warmup_episodes
@@ -243,7 +248,10 @@ if args.preflight_only:
     "state_schema": STATE_SCHEMA,
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
     "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
-    "demonstration": "whole-episode MapGuide with decaying probability; behavior cloning on demo samples with decaying weight",
+    "base_agent": profile["base"],
+    "demonstration": ("none" if profile["guide_prob"] == 0.0 else
+                      "whole-episode MapGuide with decaying probability; behavior cloning on demo samples with decaying weight"),
+    "boundary_handling": "per-coordinate clip to map bounds with boundary penalty",
 }, indent=2), encoding="utf-8")
 # A separate world keeps evaluation from disturbing the training episode state.
 eval_context = load_run_context(output_paths["root"])
@@ -278,7 +286,7 @@ kwargs = {
     "c_lr": 1e-3,
     "Q_batchsize": 256,
 }
-model = TD3(**kwargs) if algorithm == "td3" else DDPG(**kwargs)
+model = TD3(**kwargs) if profile["base"] == "td3" else DDPG(**kwargs)
 model_path = str(output_paths["model_prefix"])
 mkdir(str(output_paths["model_prefix"].parent))
 replay_buffer = ReplayBuffer.ReplayBuffer(s_dim, a_dim, max_size=int(buffer))
@@ -431,11 +439,14 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         report, _ = rollout(eval_context, eval_world, model.select_action)
         eval_history.append({"episode": episode, **{k: report[k] for k in (
             "success", "termination_reason", "visited_inspection_points", "uploaded_mb",
-            "task_time_s", "transmission_delay_s", "outage_time_s", "total_return")}})
+            "task_time_s", "transmission_delay_s", "outage_time_s", "total_return",
+            "boundary_violations", "stall_steps", "max_stall_run")}})
         writer.add_scalar('eval/success', float(report["success"]), episode)
         writer.add_scalar('eval/visited_inspection_points', report["visited_inspection_points"], episode)
         writer.add_scalar('eval/objective_s', report["task_time_s"] + report["transmission_delay_s"], episode)
         writer.add_scalar('eval/outage_time', report["outage_time_s"], episode)
+        writer.add_scalar('eval/boundary_collisions', report["boundary_violations"], episode)
+        writer.add_scalar('eval/max_stall_run', report["max_stall_run"], episode)
         if eval_best_report is None or selection_key(report) < selection_key(eval_best_report):
             eval_best_report = {**report, "episode": episode}
             model.save("eval_best", model_path)
@@ -445,6 +456,9 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     writer.add_scalar('episode/min_target_distance', world.min_target_distance, episode)
     writer.add_scalar('episode/outage_time', world.out_time, episode)
     writer.add_scalar('episode/visited_inspection_points', world.Traverse_order, episode)
+    writer.add_scalar('episode/boundary_collisions', world.fa, episode)
+    writer.add_scalar('episode/stall_steps', world.stall_steps, episode)
+    writer.add_scalar('episode/max_stall_run', world.max_stall_run, episode)
     writer.add_scalar('exploration/angle_std_mean', angle_noise_sum / step_count, episode)
     writer.add_scalar('exploration/distance_std_mean', distance_noise_sum / step_count, episode)
     writer.add_scalar('exploration/guidance_fraction', guidance_steps / step_count, episode)

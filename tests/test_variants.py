@@ -116,3 +116,38 @@ def test_relabeled_mapguide_demonstration_completes_mission(variant):
             action = world.absolute_to_action(guide.action())
             state, _, done, t, terminal = world.step_inside(action, state, t)
     assert terminal and t * world.delta_T == pytest.approx(196.5)
+
+
+def test_boundary_crossing_clips_each_coordinate_and_keeps_penalty():
+    world = _world("baseline")
+    state, _ = world.reset()
+    world.UAVs[0].x, world.UAVs[0].y = 0.1, 5.0
+    heading = math.atan2(0.15, -0.2)  # 0.25 step: 0.2 west (crosses x=0), 0.15 north
+    world.step_inside(np.array([heading, 0.25]), state, 0)
+    assert world.UAVs[0].x == pytest.approx(0.0)
+    assert world.UAVs[0].y == pytest.approx(5.15)
+    assert world.fa == 1
+    assert world.reward_summary()["boundary"] < 0.0
+
+
+def test_boundary_slide_does_not_lock_a_repeated_action():
+    world = _world("baseline")
+    state, _ = world.reset()
+    world.UAVs[0].x, world.UAVs[0].y = 0.0, 5.0
+    heading = math.atan2(0.15, -0.2)
+    positions = []
+    for t in range(3):
+        state, *_ = world.step_inside(np.array([heading, 0.25]), state, t)
+        positions.append((world.UAVs[0].x, world.UAVs[0].y))
+    assert len(set(positions)) == 3
+
+
+def test_stall_diagnostics_track_consecutive_motionless_slots():
+    world = _world("baseline")
+    state, _ = world.reset()
+    for t, distance in enumerate([0.0, 0.0, 0.2, 0.0, 0.0, 0.0]):
+        state, *_ = world.step_inside(np.array([0.0, distance]), state, t)
+    assert world.stall_steps == 5
+    assert world.max_stall_run == 3
+    world.reset()
+    assert world.stall_steps == world.max_stall_run == world.fa == 0

@@ -17,6 +17,7 @@ import numpy as np
 import torch
 
 from World import World
+from training_config import ALGORITHMS
 from td3_actor import Actor
 
 
@@ -74,7 +75,7 @@ def load_run_context(run_dir):
     missing = sorted(REQUIRED_CONFIG_FIELDS - config.keys())
     if missing:
         raise ValueError(f"run_config.json missing required fields: {', '.join(missing)}")
-    if config["algorithm"] not in {"td3", "ddpg"}:
+    if config["algorithm"] not in ALGORITHMS:
         raise ValueError(f"unsupported algorithm: {config['algorithm']!r}")
     if config["variant"] not in World.VARIANTS:
         raise ValueError(f"unsupported variant: {config['variant']!r}")
@@ -104,10 +105,11 @@ def load_run_context(run_dir):
 
 
 def checkpoint_paths(run_dir, algorithm, episodes):
-    if algorithm not in {"td3", "ddpg"}:
+    if algorithm not in ALGORITHMS:
         raise ValueError(f"unsupported algorithm: {algorithm!r}")
     model_dir = Path(run_dir) / "models"
-    prefix = f"{algorithm}_{algorithm}_actor"
+    # Files are "<output name>_<agent save prefix>actor..."; *_bc runs save with the base agent's prefix.
+    prefix = f"{algorithm}_{ALGORITHMS[algorithm]['base']}_actor"
     paths = {
         "final": model_dir / f"{prefix}{episodes}.pth",
         "training_best": model_dir / f"{prefix}best.pth",
@@ -295,6 +297,8 @@ def rollout(context, world, act):
         "outage_fraction": float(world.out_time / time_s) if time_s else 0.0,
         "transmission_delay_s": float(world.trans_delay * context.delta_t),
         "boundary_violations": int(world.fa),
+        "stall_steps": int(world.stall_steps),
+        "max_stall_run": int(world.max_stall_run),
         "mean_a2g_snr_db": float(np.mean(a2g_snr)),
         "min_a2g_snr_db": float(np.min(a2g_snr)),
         "mean_g2a_outage_probability": float(np.mean(g2a_outage)),
@@ -375,7 +379,9 @@ def training_provenance(config, best_episode):
     warmup = int(config.get("guided_warmup_episodes", 0))
     in_guided_period = None
     if best_episode is not None:
-        in_guided_period = bool(strategy == "guided" and best_episode <= warmup)
+        # Older runs predate guide_prob and always mixed in MapGuide during warmup.
+        guided = strategy == "guided" and float(config.get("guide_prob", 0.5) or 0.0) > 0.0
+        in_guided_period = bool(guided and best_episode <= warmup)
     return {
         "exploration_strategy": strategy,
         "guided_warmup_episodes": warmup,
@@ -399,7 +405,11 @@ def main():
     context = load_run_context(args.run_dir)
     output_dir = Path(args.output_dir).resolve() if args.output_dir else context.run_dir / "evaluation"
     output_dir.mkdir(parents=True, exist_ok=True)
-    checkpoints = checkpoint_paths(context.run_dir, context.algorithm, context.config["episodes"])
+    checkpoints = {label: path for label, path in
+                   checkpoint_paths(context.run_dir, context.algorithm, context.config["episodes"]).items()
+                   if path.is_file()}
+    if not checkpoints:
+        raise FileNotFoundError(f"no saved actor checkpoints in {context.run_dir / 'models'}")
     reports = {label: _save_evaluation(context, path, label, output_dir) for label, path in checkpoints.items()}
     history_path = context.run_dir / "UAV_TD3_improved.npz"
     training_best_episode = None

@@ -169,3 +169,18 @@ def test_checkpoint_paths_include_eval_best_only_when_saved(tmp_path):
     (tmp_path / "models").mkdir()
     (tmp_path / "models" / "td3_td3_actoreval_best.pth").write_bytes(b"")
     assert checkpoint_paths(tmp_path, "td3", 1000)["eval_best"].name == "td3_td3_actoreval_best.pth"
+
+
+def test_checkpoint_paths_for_demonstration_variants_use_base_agent_file_names(tmp_path):
+    from evaluate_policy import checkpoint_paths
+
+    paths = checkpoint_paths(tmp_path, "td3_bc", 1000)
+    assert paths["final"].name == "td3_bc_td3_actor1000.pth"
+
+
+def test_standard_agent_best_episode_is_never_marked_guided():
+    from evaluate_policy import training_provenance
+
+    provenance = training_provenance(
+        {"exploration_strategy": "guided", "guided_warmup_episodes": 400, "guide_prob": 0.0}, 45)
+    assert provenance["training_best_in_guided_period"] is False

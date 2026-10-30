@@ -20,3 +20,17 @@ def test_training_outputs_are_isolated_by_data_level(tmp_path):
     paths = build_output_paths(tmp_path, "low", "ddpg")
     assert paths["root"] == tmp_path / "low" / "ddpg"
     assert paths["model_prefix"].parent == tmp_path / "low" / "ddpg" / "models"
+
+
+def test_algorithm_profiles_separate_standard_and_demonstration_variants():
+    import pytest
+    from training_config import resolve_algorithm
+
+    assert resolve_algorithm("td3", None, None) == {"base": "td3", "guide_prob": 0.0, "bc_weight": 0.0}
+    assert resolve_algorithm("ddpg", None, None)["guide_prob"] == 0.0
+    assert resolve_algorithm("td3_bc", None, None) == {"base": "td3", "guide_prob": 0.5, "bc_weight": 1.0}
+    assert resolve_algorithm("ddpg_bc", 0.3, 2.0) == {"base": "ddpg", "guide_prob": 0.3, "bc_weight": 2.0}
+    with pytest.raises(ValueError, match="td3_bc"):
+        resolve_algorithm("td3", 0.5, None)
+    with pytest.raises(ValueError, match="ddpg_bc"):
+        resolve_algorithm("ddpg", None, 1.0)
