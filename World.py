@@ -10,15 +10,14 @@ from rural_world import Rural_world
 
 
 class World(object):
-    PROGRESS_SCALE = 10.0
-    IDLE_PENALTY = 0.1
-    OUTAGE_STEP_PENALTY = 5.0
-    UPLOAD_REWARD_PER_MB = 2.0
-    TIME_STEP_PENALTY = 0.5
-    ARRIVAL_REWARD = 300.0
-    COMPLETION_REWARD = 1000.0
-    TIMEOUT_PENALTY = 1000.0
-    QOS_TERMINATION_PENALTY = 1000.0
+    # Reward terms are designed in seconds of the objective T + tau, then
+    # scaled once by REWARD_SCALE so returns stay in a critic-friendly range.
+    REWARD_SCALE = 0.01
+    UPLOAD_LEG_REWARD = 10.0   # earned in full when one leg's payload is cleared
+    ARRIVAL_REWARD = 50.0      # reaching a waypoint with its upload complete
+    COMPLETION_REWARD = 200.0
+    INFEASIBLE_PENALTY = 1000.0  # QoS violation, timeout, or early arrival
+    BOUNDARY_SCALE = 0.01
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
                  data_size = 250, data_sizes=None, outage_max_s=100.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
@@ -61,6 +60,7 @@ class World(object):
         self.data_size_ini = data_size # 每个巡检点的数据量
         self.data_size = self.data_size_ini  # 每个巡检点的数据量
         self.data_sizes = data_sizes
+        self.current_payload = 0.0
         self.data_rate = 0
         self.last_uploaded_data = 0.0
         self.BandWidth = 1
@@ -202,48 +202,30 @@ class World(object):
         # s_[5] = self.T-self.t #剩余可用时间步
         return s_
 
-    # 奖励表达式 平滑处理
-    def get_reward(self,fa,fly_engy,dis_target,dis_pre_target,dis_forward,SINR_A2G,SINR_G2A,g2a_outage=False):
-        """
-            fa: 出界惩罚
-            fly_engy: 飞行能量
-            dis_target: 当前位置与目标点距离
-            dis_pre_target: 当前位置与上一个目标点距离
-            dis_forward: 推进距离
-            SINR: 信噪比
-        """
-         # 前进奖励（只奖励正向前进）
-        progress_reward = dis_forward * self.PROGRESS_SCALE
-        # 停留惩罚
-        stay_penalty = -self.IDLE_PENALTY if abs(dis_forward) < 0.05 else 0
-        
-        comm_penalty = -self.OUTAGE_STEP_PENALTY if g2a_outage else 0.0
-        
-        
-        # if SINR_A2G < self.SIR_THRESHOLD_COMM and not self.transmit:
-        #     comm_penalty += self.NON_COMM_PENALTY    
-        
-        # if SINR_G2A < self.SIR_THRESHOLD_COVER:
-        #     comm_penalty += self.NON_COVER_PENALTY
-        
-        self.last_reward_terms = {
-            "progress": progress_reward,
-            "idle": stay_penalty,
-            "boundary": -fa,
-            "communication": comm_penalty,
+    def get_reward(self, fa, dis_forward, g2a_outage, pending_upload):
+        """Per-slot shaping in seconds: -T, -tau, -T_out, plus progress and boundary terms."""
+        speed = self.dist_max / self.delta_T
+        terms = {
+            "time": -self.delta_T,
+            "delay": -self.delta_T if pending_upload else 0.0,
+            "communication": -self.delta_T if g2a_outage else 0.0,
+            "progress": dis_forward / speed,
+            "boundary": -fa * self.BOUNDARY_SCALE,
         }
-        for name, value in self.last_reward_terms.items():
-            self.add_reward_term(name, value)
-        total_reward = sum(self.last_reward_terms.values())
+        return sum(self.add_scaled_term(name, value) for name, value in terms.items())
 
-        return total_reward
+    def add_scaled_term(self, name, seconds):
+        value = seconds * self.REWARD_SCALE
+        self.add_reward_term(name, value)
+        return value
 
     def reward_summary(self):
         return self.reward_term_totals.copy()
 
     @staticmethod
     def _empty_reward_terms():
-        return {name: 0.0 for name in ("progress", "idle", "boundary", "communication", "upload", "time", "arrival_upload", "completion", "timeout", "qos")}
+        return {name: 0.0 for name in ("time", "delay", "communication", "progress", "boundary", "upload",
+                                       "arrival", "completion", "incomplete_upload", "timeout", "qos")}
 
     def add_reward_term(self, name, value):
         self.reward_term_totals[name] = self.reward_term_totals.get(name, 0.0) + value
@@ -308,8 +290,9 @@ class World(object):
         self.data_rate = self.BandWidth * np.log2(1 + 10**(MaxSINR_A2G/10.0))
         self.last_uploaded_data = 0.0
         
-        #在空对地Radio Map中进行传输 
-        if not self.transmit:
+        # Upload during this slot; tau counts every slot that starts with pending data.
+        pending_upload = not self.transmit
+        if pending_upload:
             self.last_uploaded_data = min(self.data_size, self.data_rate * self.delta_T)
             self.data_size -= self.last_uploaded_data
             if self.data_size <=0:
@@ -317,28 +300,14 @@ class World(object):
                 self.transmit = True
                 self.trans_delay_end = self.t
                 self.trans_delay += self.trans_delay_end-self.trans_delay_start
-                
-        # if(MaxSINR_A2G >= self.SIR_THRESHOLD_COMM ):
-        #     self.data_rate = self.BandWidth * np.log2(1 + 10**(MaxSINR_A2G/10.0))  # 数据传输速率
-        #     print(self.data_rate)
-        #     if not self.transmit:
-        #         self.data_size -= self.data_rate*self.delta_T    
-        #         if(self.data_size < 20):
-        #             self.transmit = True
-        #             self.data_size = 0
-   
-        reward += self.get_reward(fa,fly_energy,step_cur,step_cur_pre,reduce_dis,MaxSINR_A2G,MaxSINR_G2A,g2a_outage) 
-        upload_reward = self.last_uploaded_data * self.UPLOAD_REWARD_PER_MB
-        reward += upload_reward
-        self.add_reward_term("upload", upload_reward)
-        time_reward = -self.TIME_STEP_PENALTY
-        reward += time_reward
-        self.add_reward_term("time", time_reward)
+
+        reward += self.get_reward(fa, reduce_dis, g2a_outage, pending_upload)
+        if self.last_uploaded_data > 0:
+            reward += self.add_scaled_term("upload", self.UPLOAD_LEG_REWARD * self.last_uploaded_data / self.current_payload)
 
         # A QoS violation is failure even when it coincides with endpoint arrival.
         if self.out_time > self.outage_max_s:
-            reward -= self.QOS_TERMINATION_PENALTY
-            self.add_reward_term("qos", -self.QOS_TERMINATION_PENALTY)
+            reward += self.add_scaled_term("qos", -self.INFEASIBLE_PENALTY)
             self.terminal = False
             self.r = reward
             return self.update_state(fly_energy,self.target_loc,self.target_dis), reward, True, self.t, False
@@ -347,12 +316,10 @@ class World(object):
             #只要到目标点了，就换下一个目标点，根据传输完成情况进行奖惩
             if self.transmit:  
                 print("arrive and transmit complete")
-                reward += self.ARRIVAL_REWARD
-                self.add_reward_term("arrival_upload", self.ARRIVAL_REWARD)
+                reward += self.add_scaled_term("arrival", self.ARRIVAL_REWARD)
             else:
                 print("arrive but not transmit complete, data size:",self.data_size)
-                reward -= self.data_size*3   
-                self.add_reward_term("arrival_upload", -self.data_size*3)
+                reward += self.add_scaled_term("incomplete_upload", -self.INFEASIBLE_PENALTY)
                 self.terminal = False
                 done = True
                 state_ = self.update_state(fly_energy,self.target_loc,self.target_dis)
@@ -368,6 +335,7 @@ class World(object):
                 self.target_pre_loc = self.target_loc #更新上一个目标点的位置
                 self.transmit = False
                 self.data_size = self.payload_for_user(self.Traverse[self.Traverse_order])
+                self.current_payload = self.data_size
                 self.trans_delay_start = self.t
                 self.terminal = False
                 done = False
@@ -384,19 +352,12 @@ class World(object):
             self.terminal = False
             done = False
 
-        if self.terminal or self.t >= self.T or self.out_time > self.outage_max_s:
+        if self.terminal:
+            print("完成任务所用时间为：",self.t*self.delta_T)
+            reward += self.add_scaled_term("completion", self.COMPLETION_REWARD)
+        elif self.t >= self.T:
             done = True
-            if self.terminal:
-                print("完成任务所用时间为：",self.t*self.delta_T)
-                completion_reward = self.COMPLETION_REWARD + 0.1 * (self.T-self.t)
-                reward += completion_reward
-                self.add_reward_term("completion", completion_reward)
-            if self.t >= self.T:
-                reward -= self.TIMEOUT_PENALTY
-                self.add_reward_term("timeout", -self.TIMEOUT_PENALTY)
-            if self.out_time > self.outage_max_s:
-                reward -= self.QOS_TERMINATION_PENALTY
-                self.add_reward_term("qos", -self.QOS_TERMINATION_PENALTY)
+            reward += self.add_scaled_term("timeout", -self.INFEASIBLE_PENALTY)
             
         state_ = self.update_state(fly_energy,self.target_loc,self.target_dis)  # 进入下一状态
         self.r = reward

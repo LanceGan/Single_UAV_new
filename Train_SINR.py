@@ -234,6 +234,7 @@ if args.preflight_only:
     "map_hashes": preflight["map_hashes"], "sequence_method": "GA with exact verification/fallback",
     "state_schema": "normalized eight-dimensional dual-radio observation",
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
+    "reward_schema": "v2-seconds: -(T + tau + T_out) shaping + progress + milestones, x0.01",
 }, indent=2), encoding="utf-8")
 # A separate world keeps evaluation from disturbing the training episode state.
 eval_context = load_run_context(output_paths["root"])
