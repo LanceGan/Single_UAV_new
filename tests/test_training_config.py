@@ -26,11 +26,19 @@ def test_algorithm_profiles_separate_standard_and_demonstration_variants():
     import pytest
     from training_config import resolve_algorithm
 
-    assert resolve_algorithm("td3", None, None) == {"base": "td3", "guide_prob": 0.0, "bc_weight": 0.0}
+    assert resolve_algorithm("td3", None, None, None, None) == {
+        "base": "td3", "guide_prob": 0.0, "bc_weight": 0.0,
+        "bc_min_weight": 0.0, "demo_fraction": 0.0}
     assert resolve_algorithm("ddpg", None, None)["guide_prob"] == 0.0
-    assert resolve_algorithm("td3_bc", None, None) == {"base": "td3", "guide_prob": 0.5, "bc_weight": 1.0}
-    assert resolve_algorithm("ddpg_bc", 0.3, 2.0) == {"base": "ddpg", "guide_prob": 0.3, "bc_weight": 2.0}
+    assert resolve_algorithm("td3_bc", None, None, None, None) == {
+        "base": "td3", "guide_prob": 0.5, "bc_weight": 1.0,
+        "bc_min_weight": 0.25, "demo_fraction": 0.25}
+    assert resolve_algorithm("ddpg_bc", 0.3, 2.0, 0.2, 0.4) == {
+        "base": "ddpg", "guide_prob": 0.3, "bc_weight": 2.0,
+        "bc_min_weight": 0.2, "demo_fraction": 0.4}
     with pytest.raises(ValueError, match="td3_bc"):
-        resolve_algorithm("td3", 0.5, None)
+        resolve_algorithm("td3", 0.5, None, None, None)
     with pytest.raises(ValueError, match="ddpg_bc"):
-        resolve_algorithm("ddpg", None, 1.0)
+        resolve_algorithm("ddpg", None, 1.0, None, None)
+    with pytest.raises(ValueError, match="td3_bc"):
+        resolve_algorithm("td3", None, None, 0.25, None)

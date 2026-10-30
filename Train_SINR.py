@@ -50,7 +50,12 @@ def create_parser():
                         help="initial whole-episode MapGuide probability (*_bc only; default 0.5)")
     parser.add_argument("--bc_weight", type=float, default=None,
                         help="initial imitation weight on demonstrated samples (*_bc only; default 1.0)")
-    parser.add_argument("--bc_decay_episodes", type=int, default=600, help="episodes over which bc_weight decays to zero")
+    parser.add_argument("--bc_min_weight", type=float, default=None,
+                        help="persistent imitation floor (*_bc only; default 0.25)")
+    parser.add_argument("--demo_fraction", type=float, default=None,
+                        help="demonstration share of each replay batch (*_bc only; default 0.25)")
+    parser.add_argument("--bc_decay_episodes", type=int, default=600,
+                        help="episodes over which bc_weight decays to bc_min_weight")
     parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--eval_interval", type=int, default=25)
@@ -184,8 +189,10 @@ min_exploration = args.min_exploration
 max_exploration = args.max_exploration
 data_level = args.data_level
 algorithm = args.algorithm
-profile = resolve_algorithm(algorithm, args.guide_prob, args.bc_weight)
+profile = resolve_algorithm(algorithm, args.guide_prob, args.bc_weight,
+                            args.bc_min_weight, args.demo_fraction)
 args.guide_prob, args.bc_weight = profile["guide_prob"], profile["bc_weight"]
+args.bc_min_weight, args.demo_fraction = profile["bc_min_weight"], profile["demo_fraction"]
 outage_max_s = args.outage_max_s
 train_memory_size_arg = args.train_memory_size
 guided_warmup_episodes = args.guided_warmup_episodes
@@ -250,7 +257,9 @@ if args.preflight_only:
     "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
     "base_agent": profile["base"],
     "demonstration": ("none" if profile["guide_prob"] == 0.0 else
-                      "whole-episode MapGuide with decaying probability; behavior cloning on demo samples with decaying weight"),
+                      "whole-episode MapGuide with decaying probability; persistent demo replay; behavior cloning weight decays to a nonzero floor"),
+    "demo_buffer_capacity": int(buffer),
+    "demo_sampling_fraction": profile["demo_fraction"],
     "boundary_handling": "per-coordinate clip to map bounds with boundary penalty",
 }, indent=2), encoding="utf-8")
 # A separate world keeps evaluation from disturbing the training episode state.
@@ -289,7 +298,9 @@ kwargs = {
 model = TD3(**kwargs) if profile["base"] == "td3" else DDPG(**kwargs)
 model_path = str(output_paths["model_prefix"])
 mkdir(str(output_paths["model_prefix"].parent))
-replay_buffer = ReplayBuffer.ReplayBuffer(s_dim, a_dim, max_size=int(buffer))
+replay_buffer = ReplayBuffer.ReplayBuffer(
+    s_dim, a_dim, max_size=int(buffer), demo_max_size=int(buffer),
+    demo_fraction=profile["demo_fraction"])
 
 # 早停和最佳模型保存
 best_reward = -float('inf')
@@ -315,7 +326,9 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     # Whole demonstration episodes avoid a guide silently repairing actor mistakes.
     guide_probability = linear_decay(args.guide_prob, episode - 1, guided_warmup_episodes) if exploration_strategy == "guided" else 0.0
     guided_episode = np.random.random() < guide_probability
-    model.bc_weight = linear_decay(args.bc_weight, episode - 1, args.bc_decay_episodes)
+    model.bc_weight = linear_decay(
+        args.bc_weight, episode - 1, args.bc_decay_episodes,
+        floor=args.bc_min_weight)
     fly_dis = 0.0
     data_total = 0.0
     
@@ -388,7 +401,7 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         replay_buffer.add(s, a, r, s_, replay_terminal_mask(done), demo=guided_episode)
         
         # 训练模型
-        if replay_buffer.size > train_memory_size and step_count % train_freq == 0:
+        if replay_buffer.total_size > train_memory_size and step_count % train_freq == 0:
             model.train(replay_buffer)
         
         s = s_
@@ -464,6 +477,9 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     writer.add_scalar('exploration/guidance_fraction', guidance_steps / step_count, episode)
     writer.add_scalar('exploration/guide_probability', guide_probability, episode)
     writer.add_scalar('training/bc_weight', model.bc_weight, episode)
+    writer.add_scalar('training/online_buffer_size', replay_buffer.size, episode)
+    writer.add_scalar('training/demo_buffer_size', replay_buffer.demo_size, episode)
+    writer.add_scalar('training/demo_fraction', replay_buffer.demo_fraction, episode)
     writer.add_scalar('training/critic_updates', model.q_iteration, episode)
     writer.add_scalar('training/actor_updates', model.a_iteration, episode)
     

@@ -10,13 +10,37 @@ from ReplayBuffer import ReplayBuffer
 from demonstration import behavior_cloning_loss, linear_decay
 
 
-def test_replay_buffer_keeps_demonstration_flags():
-    buffer = ReplayBuffer(3, 2, max_size=4)
+def test_replay_buffer_samples_fixed_demonstration_fraction():
+    buffer = ReplayBuffer(3, 2, max_size=4, demo_fraction=0.25)
     buffer.add(np.zeros(3), [0.0, 0.1], 0.0, np.zeros(3), False)
     buffer.add(np.ones(3), [1.0, 0.2], 0.0, np.ones(3), False, demo=True)
     *_, demo = buffer.sample(64, with_demo=True)
-    assert set(demo.cpu().flatten().tolist()) == {0.0, 1.0}
+    assert int(demo.sum().item()) == 16
     assert len(buffer.sample(8)) == 5
+
+
+def test_online_wraparound_does_not_overwrite_demonstrations():
+    buffer = ReplayBuffer(2, 2, max_size=2, demo_max_size=2, demo_fraction=0.5)
+    buffer.add([9.0, 9.0], [1.5, 0.2], 1.0, [8.0, 8.0], False, demo=True)
+    for value in range(10):
+        buffer.add([value, value], [0.0, 0.1], 0.0, [value + 1, value + 1], False)
+
+    states, *_, demo = buffer.sample(20, with_demo=True)
+
+    assert buffer.size == 2 and buffer.demo_size == 1 and buffer.total_size == 3
+    np.testing.assert_allclose(states[demo.flatten().bool()].cpu().numpy(), 9.0)
+
+
+def test_mixed_sampling_falls_back_when_one_pool_is_empty():
+    only_demo = ReplayBuffer(2, 2, max_size=4, demo_fraction=0.25)
+    only_demo.add([1.0, 1.0], [0.0, 0.1], 0.0, [1.0, 1.0], False, demo=True)
+    *_, demo_mask = only_demo.sample(12, with_demo=True)
+    assert int(demo_mask.sum().item()) == 12
+
+    only_online = ReplayBuffer(2, 2, max_size=4, demo_fraction=0.25)
+    only_online.add([1.0, 1.0], [0.0, 0.1], 0.0, [1.0, 1.0], False)
+    *_, demo_mask = only_online.sample(12, with_demo=True)
+    assert int(demo_mask.sum().item()) == 0
 
 
 def test_behavior_cloning_loss_wraps_heading_and_ignores_agent_samples():
@@ -41,6 +65,13 @@ def test_linear_decay_reaches_zero_and_stays_there():
     assert linear_decay(1.0, 400, 400) == 0.0
     assert linear_decay(1.0, 900, 400) == 0.0
     assert linear_decay(1.0, 5, 0) == 0.0
+
+
+def test_linear_decay_respects_nonzero_floor():
+    assert linear_decay(1.0, 0, 600, floor=0.25) == 1.0
+    assert linear_decay(1.0, 300, 600, floor=0.25) == pytest.approx(0.625)
+    assert linear_decay(1.0, 600, 600, floor=0.25) == 0.25
+    assert linear_decay(1.0, 3000, 600, floor=0.25) == 0.25
 
 
 @pytest.mark.parametrize("agent_type", [TD3, DDPG])

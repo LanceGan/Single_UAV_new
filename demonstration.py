@@ -5,11 +5,14 @@ import math
 import torch
 
 
-def linear_decay(initial, episode, horizon):
-    """Value that falls linearly from ``initial`` to zero over ``horizon`` episodes."""
+def linear_decay(initial, episode, horizon, floor=0.0):
+    """Value that falls linearly from ``initial`` to ``floor`` over ``horizon`` episodes."""
+    if floor < 0 or floor > initial:
+        raise ValueError("floor must be between zero and initial")
     if horizon <= 0:
-        return 0.0
-    return initial * max(0.0, 1.0 - episode / horizon)
+        return floor
+    fraction = max(0.0, 1.0 - episode / horizon)
+    return floor + (initial - floor) * fraction
 
 
 def behavior_cloning_loss(pred, demo_action, demo_mask, max_distance):
