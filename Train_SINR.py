@@ -45,9 +45,11 @@ def create_parser():
     parser.add_argument("--outage_max_s", type=float, default=100.0)
     parser.add_argument("--train_memory_size", type=int, default=2000)
     parser.add_argument("--guided_warmup_episodes", type=int, default=400,
-                        help="episodes over which the whole-episode MapGuide probability decays to zero")
+                        help="episodes over which the whole-episode MapGuide probability decays to guide_min_prob")
     parser.add_argument("--guide_prob", type=float, default=None,
                         help="initial whole-episode MapGuide probability (*_bc only; default 0.5)")
+    parser.add_argument("--guide_min_prob", type=float, default=None,
+                        help="MapGuide probability kept for the rest of training (*_bc only; default 0.2)")
     parser.add_argument("--bc_weight", type=float, default=None,
                         help="initial imitation weight on demonstrated samples (*_bc only; default 1.0)")
     parser.add_argument("--bc_min_weight", type=float, default=None,
@@ -190,8 +192,9 @@ max_exploration = args.max_exploration
 data_level = args.data_level
 algorithm = args.algorithm
 profile = resolve_algorithm(algorithm, args.guide_prob, args.bc_weight,
-                            args.bc_min_weight, args.demo_fraction)
+                            args.bc_min_weight, args.demo_fraction, args.guide_min_prob)
 args.guide_prob, args.bc_weight = profile["guide_prob"], profile["bc_weight"]
+args.guide_min_prob = profile["guide_min_prob"]
 args.bc_min_weight, args.demo_fraction = profile["bc_min_weight"], profile["demo_fraction"]
 outage_max_s = args.outage_max_s
 train_memory_size_arg = args.train_memory_size
@@ -257,7 +260,9 @@ if args.preflight_only:
     "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
     "base_agent": profile["base"],
     "demonstration": ("none" if profile["guide_prob"] == 0.0 else
-                      "whole-episode MapGuide with decaying probability; persistent demo replay; behavior cloning weight decays to a nonzero floor"),
+                      "whole-episode MapGuide with probability decaying to a persistent floor; persistent demo replay; "
+                      "behavior cloning weight decays to a nonzero floor"),
+    "guide_schedule": f"{profile['guide_prob']} -> {profile['guide_min_prob']} over {guided_warmup_episodes} episodes, then constant",
     "demo_buffer_capacity": int(buffer),
     "demo_sampling_fraction": profile["demo_fraction"],
     "boundary_handling": "per-coordinate clip to map bounds with boundary penalty",
@@ -309,6 +314,7 @@ no_improve_count = 0
 
 # 记录变量
 ep_rewards = []
+ep_guided = []  # reward curves can separate MapGuide episodes from actor episodes
 ep_exploration_noise = []
 x0_uav = np.zeros([total_episode+1, T + 1, world.uav_num])
 y0_uav = np.zeros([total_episode+1, T + 1, world.uav_num])
@@ -324,7 +330,8 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     s, t = world.reset()
     map_guide = MapGuide(world)
     # Whole demonstration episodes avoid a guide silently repairing actor mistakes.
-    guide_probability = linear_decay(args.guide_prob, episode - 1, guided_warmup_episodes) if exploration_strategy == "guided" else 0.0
+    guide_probability = (linear_decay(args.guide_prob, episode - 1, guided_warmup_episodes, floor=args.guide_min_prob)
+                         if exploration_strategy == "guided" else 0.0)
     guided_episode = np.random.random() < guide_probability
     model.bc_weight = linear_decay(
         args.bc_weight, episode - 1, args.bc_decay_episodes,
@@ -428,6 +435,7 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     
     # 记录和保存
     ep_rewards.append(sum_reward)
+    ep_guided.append(bool(guided_episode))
     ep_exploration_noise.append(current_noise)
     if episode %50 == 0 and episode >0:
         model.save(episode,model_path)
@@ -442,6 +450,7 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     
     # 记录到tensorboard
     writer.add_scalar('total_reward', sum_reward, episode)
+    writer.add_scalar('total_reward_by_source/' + ('mapguide' if guided_episode else 'actor'), sum_reward, episode)
     writer.add_scalar('exploration_noise', current_noise, episode)
     writer.add_scalar('average_speed', sum_fly_v/max(t, 1), episode)
     writer.add_scalar('path_efficiency', 
@@ -535,9 +544,9 @@ plt.close()
 if len(ep_rewards) > 200:
     return_mov_avg = get_moving_average(ep_rewards, 200)
     np.savez(output_paths["root"] / 'UAV_TD3_improved', return_mov_avg=return_mov_avg, 
-             ep_rewards=ep_rewards, exploration_noise=ep_exploration_noise)
+             ep_rewards=ep_rewards, ep_guided=ep_guided, exploration_noise=ep_exploration_noise)
 else:
-    np.savez(output_paths["root"] / 'UAV_TD3_improved', ep_rewards=ep_rewards, 
+    np.savez(output_paths["root"] / 'UAV_TD3_improved', ep_rewards=ep_rewards, ep_guided=ep_guided, 
              exploration_noise=ep_exploration_noise)
 
 writer.close()

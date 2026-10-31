@@ -26,23 +26,24 @@ def build_output_paths(output_root, level, algorithm, variant=None):
 # Standard agents never see MapGuide demonstrations; the *_bc variants are the
 # demonstration-assisted versions and are reported as separate methods.
 ALGORITHMS = {
-    "td3": {"base": "td3", "guide_prob": 0.0, "bc_weight": 0.0,
+    "td3": {"base": "td3", "guide_prob": 0.0, "guide_min_prob": 0.0, "bc_weight": 0.0,
             "bc_min_weight": 0.0, "demo_fraction": 0.0},
-    "ddpg": {"base": "ddpg", "guide_prob": 0.0, "bc_weight": 0.0,
+    "ddpg": {"base": "ddpg", "guide_prob": 0.0, "guide_min_prob": 0.0, "bc_weight": 0.0,
              "bc_min_weight": 0.0, "demo_fraction": 0.0},
-    "td3_bc": {"base": "td3", "guide_prob": 0.5, "bc_weight": 1.0,
+    # MapGuide episodes continue for the whole run at a persistent floor.
+    "td3_bc": {"base": "td3", "guide_prob": 0.5, "guide_min_prob": 0.2, "bc_weight": 1.0,
                "bc_min_weight": 0.25, "demo_fraction": 0.25},
-    "ddpg_bc": {"base": "ddpg", "guide_prob": 0.5, "bc_weight": 1.0,
+    "ddpg_bc": {"base": "ddpg", "guide_prob": 0.5, "guide_min_prob": 0.2, "bc_weight": 1.0,
                 "bc_min_weight": 0.25, "demo_fraction": 0.25},
 }
 
 
 def resolve_algorithm(name, guide_prob=None, bc_weight=None,
-                      bc_min_weight=None, demo_fraction=None):
+                      bc_min_weight=None, demo_fraction=None, guide_min_prob=None):
     if name not in ALGORITHMS:
         raise ValueError(f"unknown algorithm: {name!r}")
     profile = dict(ALGORITHMS[name])
-    overrides = {"guide_prob": guide_prob, "bc_weight": bc_weight,
+    overrides = {"guide_prob": guide_prob, "guide_min_prob": guide_min_prob, "bc_weight": bc_weight,
                  "bc_min_weight": bc_min_weight, "demo_fraction": demo_fraction}
     for key, value in overrides.items():
         if value is None:
@@ -50,6 +51,8 @@ def resolve_algorithm(name, guide_prob=None, bc_weight=None,
         if profile[key] == 0.0 and value != 0.0:
             raise ValueError(f"{name} is the standard agent; use {profile['base']}_bc to enable {key}")
         profile[key] = float(value)
+    if not 0.0 <= profile["guide_min_prob"] <= profile["guide_prob"]:
+        raise ValueError("guide_min_prob must be between zero and guide_prob")
     if not 0.0 <= profile["bc_min_weight"] <= profile["bc_weight"]:
         raise ValueError("bc_min_weight must be between zero and bc_weight")
     if not 0.0 <= profile["demo_fraction"] <= 1.0:
