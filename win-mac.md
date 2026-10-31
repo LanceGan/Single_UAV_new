@@ -2,6 +2,15 @@
 
 本文件是 Windows 机与 Mac 机之间的交接约定，两边会话开始前先读这一份，保持一致。
 
+## 0. Mac 侧同步（mac-win.md，2026-11-01）
+
+Mac 已在自己的 `feat/mac` 维护了 `mac-win.md`。要点与冲突：
+
+- Mac 已实现 `--a2g_blind`：Distance-TSP+TD3 与 DRL-SA 的轨迹栈去掉 A2G（7D 状态、G2A-only 教师），**DDPG/D3QN（轨迹算法对照）与 A\*（oracle）保持 A2G**。
+- ⚠️ **冲突待用户裁决**：Win 侧按用户指示把 DDPG/D3QN 改成了 A2G-free（7D 状态）；Mac 认为 DDPG/D3QN 应保持 A2G（它们是轨迹算法对照，不是地图感知基线）。两边的 A2G-free 对象不一致。
+- 配方口径：Mac 把 `0.5→0`（guide 归零）称为 course-final（课程正式），把 `0.5→0.2`（持久下限）称为 legacy-0.2（期刊历史）。Win 当前 TD3/DDPG 用的是 0.2 下限。
+- Mac 等待 Win：课程版 Proposed（IGA+TD3，low，需 ≤229.0s）、期刊高档 formal-v5、DDPG 课程口径确认。
+
 ## 1. 论文结果分配（已定）
 
 主方法 TD3 的三档结果分别来自两台机器：
