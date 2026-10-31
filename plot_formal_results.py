@@ -19,6 +19,7 @@ from evaluate_policy import (
     checkpoint_paths,
     evaluate_checkpoint,
     load_run_context,
+    method_display_name,
     plot_trajectory,
 )
 
@@ -256,7 +257,7 @@ def generate_run_figures(run_dir):
     output.mkdir(parents=True, exist_ok=True)
 
     load_label = str(context.config["data_level"]).capitalize()
-    method_label = context.algorithm.upper().replace("_", "-")
+    method_label = method_display_name(context.algorithm)
     title = f"{method_label}, {load_label} load, Variant {context.variant}"
     plot_objectives(series, output / "objective_vs_episode", title)
     plot_rewards(rewards, series, output / "reward_vs_episode", title)

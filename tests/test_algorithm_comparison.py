@@ -14,6 +14,15 @@ from plot_algorithm_comparison import (
 from plot_formal_results import _generate_d3qn_figures, _style, actor_reward_series
 
 
+def test_method_display_name_hides_bc_suffix_in_figures():
+    from evaluate_policy import method_display_name
+
+    assert method_display_name("td3_bc") == "TD3"
+    assert method_display_name("ddpg_bc") == "DDPG"
+    assert method_display_name("td3") == "TD3"
+    assert method_display_name("d3qn") == "D3QN"
+
+
 def _history_rows(successes):
     rows = []
     for index, ok in enumerate(successes, start=1):

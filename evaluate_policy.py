@@ -58,6 +58,11 @@ class RunContext:
     dist_max: float = 0.25
 
 
+def method_display_name(algorithm):
+    """Paper-facing method name: *_bc demonstration variants are reported as the base algorithm."""
+    return str(algorithm).upper().removesuffix("_BC").replace("_", "-")
+
+
 def _map_hashes():
     data_dir = ROOT / "results" / "datas"
     return {
@@ -339,7 +344,7 @@ def plot_trajectory(context, trace, output_stem, title):
             trajectory[:, 1],
             color="white",
             linewidth=2.0,
-            label=f"{context.algorithm.upper()} trajectory",
+            label=f"{method_display_name(context.algorithm)} trajectory",
         )
         axis.scatter(users[:, 0], users[:, 1], c="black", marker="^", s=55, label="Inspection point", zorder=3)
         axis.scatter(*start, c="red", s=70, label="Start", zorder=4)
@@ -369,7 +374,7 @@ def _save_evaluation(context, checkpoint, label, output_dir):
         context,
         trace,
         target / "trajectory_dual_maps",
-        f"{context.algorithm.upper()} {label}: {report['termination_reason']}",
+        f"{method_display_name(context.algorithm)} {label}: {report['termination_reason']}",
     )
     return report
 
