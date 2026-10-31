@@ -10,6 +10,8 @@
 目标：最小化 `T + τ`（完成时间 + 上传时延）。
 硬约束：G2A 中断时间 `T_out ≤ 100 s`（超过即判失败）。
 
+**参考文档：** 会议论文原文见仓库根目录 `Dual Radio Map-Aware Flight Strategy Optimization for UAV-Based Inspection System.pdf`。目标函数、约束、双地图物理含义与指标定义以该 PDF 为准；仿真数值参数以本仓库代码为准。
+
 ## 2. 环境
 
 - **Python**：`D:/Anaconda/envs/pytorch/python.exe`（Python 3.11、PyTorch 2.6 cu124、CUDA 可用）。
@@ -108,7 +110,7 @@ $PY evaluate_d3qn.py --run_dir journal_results/d3qn-baseline/low/d3qn           
 
 ## 7. 待办 / 下一步
 
-1. **重训 TD3-BC × 3 档 + DDPG-BC 低负载，用 A\* 示范**（命令见 §5，输出建议 `formal-v7`）。A* 是更强的老师，TD3 有望接近或超过 A* 的 214/318/447。
+1. **重训 TD3-BC × 3 档 + DDPG-BC 低负载，用 A\* 示范**（命令见 §5，输出建议 `formal-v7`）。A* 是更强的老师，TD3 有望接近或超过 A* 的 214/318/447。三档 A* 示范缓存已生成于 `journal_results/astar-teacher/`，训练启动无需再等搜索。
 2. **重训 D3QN × 3 档，用 A\* 示范**。之前 D3QN 无示范、未正式训练。
 3. **高负载**是难点：TD3（MapGuide 老师）曾比 MapGuide 还差 1.8%，A* 老师下需重看。
 4. **论文结论建议**：TD3 vs DDPG（DDPG 因 Q 高估失败）；TD3 vs A*（DRL 在线决策快、A* 离线搜索慢但更优）；TD3 vs MapGuide；三档负载下 T、τ、T_out 随数据量变化；GA 顺序随负载变化。
