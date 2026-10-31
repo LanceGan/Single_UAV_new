@@ -1,0 +1,20 @@
+{
+  "run_dir": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/d3qn-baseline/low/d3qn",
+  "algorithm": "d3qn",
+  "data_level": "low",
+  "variant": "A",
+  "evaluation_count": 120,
+  "successful_evaluations": 0,
+  "eval_best_episode": 200,
+  "eval_best": {
+    "success": false,
+    "termination_reason": "qos_violation",
+    "visited_inspection_points": 1,
+    "uploaded_mb": 90.0,
+    "task_time_s": 245.5,
+    "transmission_delay_s": 37.0,
+    "outage_time_s": 100.5,
+    "flight_distance_m": 12275.0,
+    "total_return": -12.102602384338002
+  }
+}

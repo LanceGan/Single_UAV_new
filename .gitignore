@@ -1,4 +1,6 @@
 __pycache__/
 .pytest_cache/
-journal_results/
+# feat/mac keeps results; only training checkpoints and raw tensorboard streams stay local
+journal_results/**/models/
+journal_results/**/logs/
 .superpowers/

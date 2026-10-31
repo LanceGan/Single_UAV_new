@@ -1,0 +1,35 @@
+{
+  "title": "Low load (Variant A): TD3 vs DDPG vs D3QN",
+  "references": {
+    "A*": 214.0,
+    "MapGuide planner": 273.0
+  },
+  "methods": [
+    {
+      "label": "TD3",
+      "evaluations": 120,
+      "successes": 97,
+      "success_rate": 0.8083333333333333,
+      "best_feasible": {
+        "episode": 2450,
+        "objective_s": 235.5,
+        "task_time_s": 153.0,
+        "transmission_delay_s": 82.5
+      }
+    },
+    {
+      "label": "DDPG",
+      "evaluations": 120,
+      "successes": 0,
+      "success_rate": 0.0,
+      "best_feasible": null
+    },
+    {
+      "label": "D3QN",
+      "evaluations": 120,
+      "successes": 0,
+      "success_rate": 0.0,
+      "best_feasible": null
+    }
+  ]
+}
