@@ -1,0 +1,65 @@
+{
+  "checkpoint": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v2\\low\\td3\\models\\td3_td3_actor1000.pth",
+  "algorithm": "td3",
+  "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
+  "success": false,
+  "termination_reason": "timeout",
+  "visited_inspection_points": 1,
+  "expected_inspection_points": 6,
+  "uploaded_mb": 90.0,
+  "expected_upload_mb": 450.0,
+  "task_time_s": 500.0,
+  "trajectory_steps": 1000,
+  "flight_distance_m": 1515.9761026501656,
+  "average_speed_mps": 3.031952205300331,
+  "outage_time_s": 6.0,
+  "outage_limit_s": 100.0,
+  "outage_fraction": 0.012,
+  "transmission_delay_s": 21.0,
+  "boundary_violations": 0,
+  "mean_a2g_snr_db": 14.303490042714799,
+  "min_a2g_snr_db": -7.431649335865059,
+  "mean_g2a_outage_probability": 0.13860239760239762,
+  "total_return": -1062.8976013720546,
+  "reward_terms": {
+    "progress": 111.3023986279455,
+    "idle": -94.19999999999892,
+    "boundary": 0.0,
+    "communication": -60.0,
+    "upload": 180.0000000000001,
+    "time": -500.0,
+    "arrival_upload": 300.0,
+    "completion": 0.0,
+    "timeout": -1000.0,
+    "qos": 0.0
+  },
+  "reward_accounting_error": 1.3642420526593924e-12,
+  "inspection_order": [
+    1,
+    6,
+    2,
+    3,
+    5,
+    4
+  ],
+  "payloads_mb": [
+    90.0,
+    90.0,
+    60.0,
+    60.0,
+    90.0,
+    60.0
+  ],
+  "visits": [
+    {
+      "node": 1,
+      "time_s": 12.0,
+      "outage_s": 1.5,
+      "uploaded_total_mb": 0.0
+    }
+  ],
+  "map_hashes": {
+    "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+    "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "uav_h": 1.0,
+  "gamma": 0.99,
+  "buffer": 200000,
+  "net_width": 256,
+  "exploration_strategy": "guided",
+  "min_exploration": 0.2,
+  "max_exploration": 0.6,
+  "data_level": "low",
+  "episodes": 1000,
+  "output_root": "journal_results/formal-v3",
+  "ga_iterations": 500,
+  "algorithm": "td3",
+  "outage_max_s": 100.0,
+  "train_memory_size": 2000,
+  "guided_warmup_episodes": 200,
+  "preflight_only": false,
+  "seed": 1,
+  "eval_interval": 25,
+  "state_dim": 8,
+  "order": [
+    1,
+    6,
+    2,
+    3,
+    5,
+    4
+  ],
+  "payloads_mb": [
+    90.0,
+    90.0,
+    60.0,
+    60.0,
+    90.0,
+    60.0
+  ],
+  "map_hashes": {
+    "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+    "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+  },
+  "sequence_method": "GA with exact verification/fallback",
+  "state_schema": "normalized eight-dimensional dual-radio observation",
+  "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
+  "reward_schema": "v2-seconds: -(T + tau + T_out) shaping + progress + milestones, x0.01"
+}

@@ -1,0 +1,41 @@
+{
+  "run_dir": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v4\\A\\low\\td3_bc",
+  "algorithm": "td3_bc",
+  "training_best_episode": 465,
+  "exploration_strategy": "guided",
+  "guided_warmup_episodes": 400,
+  "training_best_in_guided_period": false,
+  "training_best_guidance_note": "The episode was outside the configured MapGuide warmup period.",
+  "evaluation": {
+    "final": {
+      "checkpoint": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v4\\A\\low\\td3_bc\\models\\td3_bc_td3_actor1000.pth",
+      "success": false,
+      "termination_reason": "timeout",
+      "visited_inspection_points": 0,
+      "uploaded_mb": 0.0,
+      "task_time_s": 500.0,
+      "outage_time_s": 1.5,
+      "total_return": -14.921544652176346
+    },
+    "training_best": {
+      "checkpoint": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v4\\A\\low\\td3_bc\\models\\td3_bc_td3_actorbest.pth",
+      "success": true,
+      "termination_reason": "success",
+      "visited_inspection_points": 6,
+      "uploaded_mb": 450.0,
+      "task_time_s": 178.0,
+      "outage_time_s": 25.0,
+      "total_return": 5.15473659944681
+    },
+    "eval_best": {
+      "checkpoint": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v4\\A\\low\\td3_bc\\models\\td3_bc_td3_actoreval_best.pth",
+      "success": true,
+      "termination_reason": "success",
+      "visited_inspection_points": 6,
+      "uploaded_mb": 450.0,
+      "task_time_s": 176.5,
+      "outage_time_s": 26.0,
+      "total_return": 5.153873312267239
+    }
+  }
+}

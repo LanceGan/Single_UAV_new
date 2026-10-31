@@ -1,0 +1,31 @@
+{
+  "run_dir": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v2\\low\\ddpg",
+  "algorithm": "ddpg",
+  "training_best_episode": 45,
+  "exploration_strategy": "guided",
+  "guided_warmup_episodes": 200,
+  "training_best_in_guided_period": true,
+  "training_best_guidance_note": "The episode was eligible for per-step MapGuide sampling; this does not mean every action was guided.",
+  "evaluation": {
+    "final": {
+      "checkpoint": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v2\\low\\ddpg\\models\\ddpg_ddpg_actor1000.pth",
+      "success": false,
+      "termination_reason": "premature_termination",
+      "visited_inspection_points": 2,
+      "uploaded_mb": 141.44619168,
+      "task_time_s": 99.0,
+      "outage_time_s": 48.0,
+      "total_return": 475.14945870298874
+    },
+    "training_best": {
+      "checkpoint": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v2\\low\\ddpg\\models\\ddpg_ddpg_actorbest.pth",
+      "success": false,
+      "termination_reason": "timeout",
+      "visited_inspection_points": 0,
+      "uploaded_mb": 0.0,
+      "task_time_s": 500.0,
+      "outage_time_s": 0.0,
+      "total_return": -1572.0603396700535
+    }
+  }
+}

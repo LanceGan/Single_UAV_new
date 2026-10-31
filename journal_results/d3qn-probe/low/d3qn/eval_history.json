@@ -1,0 +1,345 @@
+{
+  "selection": "eval_best: feasible first, then minimum T + tau",
+  "best": {
+    "episode": 75,
+    "checkpoint": null,
+    "algorithm": "d3qn",
+    "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
+    "success": false,
+    "termination_reason": "premature_termination",
+    "visited_inspection_points": 1,
+    "expected_inspection_points": 6,
+    "uploaded_mb": 81.41516804,
+    "expected_upload_mb": 450.0,
+    "task_time_s": 42.5,
+    "trajectory_steps": 85,
+    "flight_distance_m": 1525.0000000000002,
+    "average_speed_mps": 35.88235294117648,
+    "outage_time_s": 9.5,
+    "outage_limit_s": 100.0,
+    "outage_fraction": 0.2235294117647059,
+    "transmission_delay_s": 0.0,
+    "boundary_violations": 0,
+    "stall_steps": 0,
+    "max_stall_run": 0,
+    "mean_a2g_snr_db": 11.634400409579154,
+    "min_a2g_snr_db": -7.431649335865059,
+    "mean_g2a_outage_probability": 0.2729418604651163,
+    "total_return": -9.302732325481152,
+    "reward_terms": {
+      "time": -0.42500000000000027,
+      "delay": -0.2600000000000001,
+      "progress": 0.47519183431623596,
+      "boundary": 0.0,
+      "upload": 0.4070758402026125,
+      "arrival": 0.5,
+      "completion": 0.0,
+      "incomplete_upload": -10.0,
+      "timeout": 0.0,
+      "qos": 0.0
+    },
+    "reward_accounting_error": 0.0,
+    "inspection_order": [
+      1,
+      6,
+      2,
+      3,
+      5,
+      4
+    ],
+    "payloads_mb": [
+      90.0,
+      90.0,
+      60.0,
+      60.0,
+      90.0,
+      60.0
+    ],
+    "visits": [
+      {
+        "node": 1,
+        "time_s": 16.5,
+        "outage_s": 1.5,
+        "uploaded_total_mb": 0.0
+      }
+    ],
+    "map_hashes": {
+      "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+      "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+    }
+  },
+  "history": [
+    {
+      "episode": 25,
+      "checkpoint": null,
+      "algorithm": "d3qn",
+      "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
+      "success": false,
+      "termination_reason": "premature_termination",
+      "visited_inspection_points": 1,
+      "expected_inspection_points": 6,
+      "uploaded_mb": 76.50795223,
+      "expected_upload_mb": 450.0,
+      "task_time_s": 38.0,
+      "trajectory_steps": 76,
+      "flight_distance_m": 1475.0000000000005,
+      "average_speed_mps": 38.81578947368422,
+      "outage_time_s": 8.0,
+      "outage_limit_s": 100.0,
+      "outage_fraction": 0.21052631578947367,
+      "transmission_delay_s": 0.0,
+      "boundary_violations": 0,
+      "stall_steps": 0,
+      "max_stall_run": 0,
+      "mean_a2g_snr_db": 11.125694687288313,
+      "min_a2g_snr_db": -7.431649335865059,
+      "mean_g2a_outage_probability": 0.28727272727272724,
+      "total_return": -9.246723342294041,
+      "reward_terms": {
+        "time": -0.3800000000000002,
+        "delay": -0.23000000000000012,
+        "progress": 0.48073689656536256,
+        "boundary": 0.0,
+        "upload": 0.38253976114059685,
+        "arrival": 0.5,
+        "completion": 0.0,
+        "incomplete_upload": -10.0,
+        "timeout": 0.0,
+        "qos": 0.0
+      },
+      "reward_accounting_error": 0.0,
+      "inspection_order": [
+        1,
+        6,
+        2,
+        3,
+        5,
+        4
+      ],
+      "payloads_mb": [
+        90.0,
+        90.0,
+        60.0,
+        60.0,
+        90.0,
+        60.0
+      ],
+      "visits": [
+        {
+          "node": 1,
+          "time_s": 15.0,
+          "outage_s": 2.0,
+          "uploaded_total_mb": 0.0
+        }
+      ],
+      "map_hashes": {
+        "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+        "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+      }
+    },
+    {
+      "episode": 50,
+      "checkpoint": null,
+      "algorithm": "d3qn",
+      "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
+      "success": false,
+      "termination_reason": "premature_termination",
+      "visited_inspection_points": 1,
+      "expected_inspection_points": 6,
+      "uploaded_mb": 80.75242525,
+      "expected_upload_mb": 450.0,
+      "task_time_s": 43.0,
+      "trajectory_steps": 86,
+      "flight_distance_m": 1537.4999999999995,
+      "average_speed_mps": 35.755813953488364,
+      "outage_time_s": 10.0,
+      "outage_limit_s": 100.0,
+      "outage_fraction": 0.23255813953488372,
+      "transmission_delay_s": 0.0,
+      "boundary_violations": 0,
+      "stall_steps": 0,
+      "max_stall_run": 0,
+      "mean_a2g_snr_db": 11.29049256327272,
+      "min_a2g_snr_db": -7.431649335865059,
+      "mean_g2a_outage_probability": 0.28320689655172415,
+      "total_return": -9.309724795763888,
+      "reward_terms": {
+        "time": -0.43000000000000027,
+        "delay": -0.2600000000000001,
+        "progress": 0.4765130779826493,
+        "boundary": 0.0,
+        "upload": 0.40376212625346247,
+        "arrival": 0.5,
+        "completion": 0.0,
+        "incomplete_upload": -10.0,
+        "timeout": 0.0,
+        "qos": 0.0
+      },
+      "reward_accounting_error": 0.0,
+      "inspection_order": [
+        1,
+        6,
+        2,
+        3,
+        5,
+        4
+      ],
+      "payloads_mb": [
+        90.0,
+        90.0,
+        60.0,
+        60.0,
+        90.0,
+        60.0
+      ],
+      "visits": [
+        {
+          "node": 1,
+          "time_s": 17.0,
+          "outage_s": 2.0,
+          "uploaded_total_mb": 0.0
+        }
+      ],
+      "map_hashes": {
+        "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+        "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+      }
+    },
+    {
+      "episode": 75,
+      "checkpoint": null,
+      "algorithm": "d3qn",
+      "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
+      "success": false,
+      "termination_reason": "premature_termination",
+      "visited_inspection_points": 1,
+      "expected_inspection_points": 6,
+      "uploaded_mb": 81.41516804,
+      "expected_upload_mb": 450.0,
+      "task_time_s": 42.5,
+      "trajectory_steps": 85,
+      "flight_distance_m": 1525.0000000000002,
+      "average_speed_mps": 35.88235294117648,
+      "outage_time_s": 9.5,
+      "outage_limit_s": 100.0,
+      "outage_fraction": 0.2235294117647059,
+      "transmission_delay_s": 0.0,
+      "boundary_violations": 0,
+      "stall_steps": 0,
+      "max_stall_run": 0,
+      "mean_a2g_snr_db": 11.634400409579154,
+      "min_a2g_snr_db": -7.431649335865059,
+      "mean_g2a_outage_probability": 0.2729418604651163,
+      "total_return": -9.302732325481152,
+      "reward_terms": {
+        "time": -0.42500000000000027,
+        "delay": -0.2600000000000001,
+        "progress": 0.47519183431623596,
+        "boundary": 0.0,
+        "upload": 0.4070758402026125,
+        "arrival": 0.5,
+        "completion": 0.0,
+        "incomplete_upload": -10.0,
+        "timeout": 0.0,
+        "qos": 0.0
+      },
+      "reward_accounting_error": 0.0,
+      "inspection_order": [
+        1,
+        6,
+        2,
+        3,
+        5,
+        4
+      ],
+      "payloads_mb": [
+        90.0,
+        90.0,
+        60.0,
+        60.0,
+        90.0,
+        60.0
+      ],
+      "visits": [
+        {
+          "node": 1,
+          "time_s": 16.5,
+          "outage_s": 1.5,
+          "uploaded_total_mb": 0.0
+        }
+      ],
+      "map_hashes": {
+        "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+        "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+      }
+    },
+    {
+      "episode": 100,
+      "checkpoint": null,
+      "algorithm": "d3qn",
+      "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
+      "success": false,
+      "termination_reason": "premature_termination",
+      "visited_inspection_points": 1,
+      "expected_inspection_points": 6,
+      "uploaded_mb": 80.0958794,
+      "expected_upload_mb": 450.0,
+      "task_time_s": 42.0,
+      "trajectory_steps": 84,
+      "flight_distance_m": 1624.9999999999998,
+      "average_speed_mps": 38.69047619047618,
+      "outage_time_s": 8.0,
+      "outage_limit_s": 100.0,
+      "outage_fraction": 0.19047619047619047,
+      "transmission_delay_s": 0.0,
+      "boundary_violations": 0,
+      "stall_steps": 0,
+      "max_stall_run": 0,
+      "mean_a2g_snr_db": 10.762710547033134,
+      "min_a2g_snr_db": -7.431649335865059,
+      "mean_g2a_outage_probability": 0.2784470588235294,
+      "total_return": -9.307929883756978,
+      "reward_terms": {
+        "time": -0.42000000000000026,
+        "delay": -0.27000000000000013,
+        "progress": 0.4815907192417671,
+        "boundary": 0.0,
+        "upload": 0.40047939700125396,
+        "arrival": 0.5,
+        "completion": 0.0,
+        "incomplete_upload": -10.0,
+        "timeout": 0.0,
+        "qos": 0.0
+      },
+      "reward_accounting_error": 1.7763568394002505e-15,
+      "inspection_order": [
+        1,
+        6,
+        2,
+        3,
+        5,
+        4
+      ],
+      "payloads_mb": [
+        90.0,
+        90.0,
+        60.0,
+        60.0,
+        90.0,
+        60.0
+      ],
+      "visits": [
+        {
+          "node": 1,
+          "time_s": 15.0,
+          "outage_s": 1.5,
+          "uploaded_total_mb": 0.0
+        }
+      ],
+      "map_hashes": {
+        "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+        "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+      }
+    }
+  ]
+}

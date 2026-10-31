@@ -1,0 +1,89 @@
+{
+  "level": "medium",
+  "success": true,
+  "order": [
+    1,
+    6,
+    5,
+    4,
+    2,
+    3
+  ],
+  "payloads_mb": [
+    180.0,
+    180.0,
+    180.0,
+    120.0,
+    120.0,
+    120.0
+  ],
+  "time_s": 242.0,
+  "outage_s": 15.5,
+  "uploaded_mb": 900.0,
+  "expected_upload_mb": 900.0,
+  "visited_points": 6,
+  "return": 5035.099999613165,
+  "reward_terms": {
+    "progress": 496.89999961316016,
+    "idle": -16.399999999999963,
+    "boundary": 0.0,
+    "communication": -155.0,
+    "upload": 1800.0000000000014,
+    "time": -242.0,
+    "arrival_upload": 2100.0,
+    "completion": 1051.6,
+    "timeout": 0.0,
+    "qos": 0.0
+  },
+  "visits": [
+    {
+      "node": 1,
+      "time_s": 17.5,
+      "outage_s": 1.0,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 6,
+      "time_s": 51.5,
+      "outage_s": 4.5,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 5,
+      "time_s": 85.5,
+      "outage_s": 9.0,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 4,
+      "time_s": 107.5,
+      "outage_s": 9.5,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 2,
+      "time_s": 146.5,
+      "outage_s": 12.0,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 3,
+      "time_s": 194.0,
+      "outage_s": 14.5,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": "end",
+      "time_s": 242.0,
+      "outage_s": 15.5,
+      "pending_before_collection": 0.0
+    }
+  ],
+  "reward_accounting_error": 3.637978807091713e-12,
+  "max_pending_data_at_visit": 0.0,
+  "map_hashes": {
+    "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+    "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+  },
+  "method": "map-aware reference guidance (no learned policy)"
+}

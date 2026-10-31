@@ -1,0 +1,20 @@
+{
+  "low": {
+    "planner_status": "success",
+    "planner_optimality_proven": false,
+    "replay_success": true,
+    "objective_s": 214.0
+  },
+  "medium": {
+    "planner_status": "success",
+    "planner_optimality_proven": false,
+    "replay_success": true,
+    "objective_s": 318.0
+  },
+  "high": {
+    "planner_status": "success",
+    "planner_optimality_proven": false,
+    "replay_success": true,
+    "objective_s": 447.0
+  }
+}

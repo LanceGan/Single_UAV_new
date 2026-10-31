@@ -1,0 +1,406 @@
+{
+  "td3": [
+    {
+      "episode": 50,
+      "success": false,
+      "reason": "timeout",
+      "visited": 2,
+      "uploaded_mb": 150.0,
+      "time_s": 500.0,
+      "outage_s": 32.5,
+      "return": -1379.731605730165
+    },
+    {
+      "episode": 100,
+      "success": false,
+      "reason": "premature_termination",
+      "visited": 1,
+      "uploaded_mb": 86.40313841,
+      "time_s": 36.5,
+      "outage_s": 8.0,
+      "return": 461.7986789600984
+    },
+    {
+      "episode": 150,
+      "success": false,
+      "reason": "premature_termination",
+      "visited": 1,
+      "uploaded_mb": 59.98569426,
+      "time_s": 30.5,
+      "outage_s": 8.0,
+      "return": 338.4333251792581
+    },
+    {
+      "episode": 200,
+      "success": false,
+      "reason": "premature_termination",
+      "visited": 1,
+      "uploaded_mb": 37.88484441,
+      "time_s": 25.0,
+      "outage_s": 8.0,
+      "return": 233.41475463794774
+    },
+    {
+      "episode": 250,
+      "success": false,
+      "reason": "qos_violation",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 386.5,
+      "outage_s": 100.5,
+      "return": -2190.335516118789
+    },
+    {
+      "episode": 300,
+      "success": false,
+      "reason": "qos_violation",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 127.5,
+      "outage_s": 100.5,
+      "return": -1591.405742025603
+    },
+    {
+      "episode": 350,
+      "success": false,
+      "reason": "timeout",
+      "visited": 2,
+      "uploaded_mb": 150.0,
+      "time_s": 500.0,
+      "outage_s": 12.5,
+      "return": -663.9260545837997
+    },
+    {
+      "episode": 400,
+      "success": false,
+      "reason": "premature_termination",
+      "visited": 1,
+      "uploaded_mb": 76.10645762,
+      "time_s": 31.0,
+      "outage_s": 7.5,
+      "return": 419.43855055401144
+    },
+    {
+      "episode": 450,
+      "success": false,
+      "reason": "incomplete_upload_at_target",
+      "visited": 6,
+      "uploaded_mb": 430.70211675,
+      "time_s": 186.0,
+      "outage_s": 88.0,
+      "return": 1946.823240935584
+    },
+    {
+      "episode": 500,
+      "success": false,
+      "reason": "timeout",
+      "visited": 6,
+      "uploaded_mb": 450.0,
+      "time_s": 500.0,
+      "outage_s": 73.5,
+      "return": -345.65861343031384
+    },
+    {
+      "episode": 550,
+      "success": false,
+      "reason": "timeout",
+      "visited": 6,
+      "uploaded_mb": 450.0,
+      "time_s": 500.0,
+      "outage_s": 40.5,
+      "return": 1085.0323221887943
+    },
+    {
+      "episode": 600,
+      "success": true,
+      "reason": "success",
+      "visited": 6,
+      "uploaded_mb": 450.0,
+      "time_s": 171.0,
+      "outage_s": 64.5,
+      "return": 3669.512113984005
+    },
+    {
+      "episode": 650,
+      "success": false,
+      "reason": "premature_termination",
+      "visited": 5,
+      "uploaded_mb": 388.55161496,
+      "time_s": 124.0,
+      "outage_s": 37.0,
+      "return": 2138.382720632889
+    },
+    {
+      "episode": 700,
+      "success": true,
+      "reason": "success",
+      "visited": 6,
+      "uploaded_mb": 450.0,
+      "time_s": 154.0,
+      "outage_s": 49.0,
+      "return": 3842.357116650779
+    },
+    {
+      "episode": 750,
+      "success": true,
+      "reason": "success",
+      "visited": 6,
+      "uploaded_mb": 450.0,
+      "time_s": 159.5,
+      "outage_s": 41.0,
+      "return": 3923.7011474573665
+    },
+    {
+      "episode": 800,
+      "success": false,
+      "reason": "premature_termination",
+      "visited": 2,
+      "uploaded_mb": 149.00554562,
+      "time_s": 60.0,
+      "outage_s": 24.5,
+      "return": 796.049586678994
+    },
+    {
+      "episode": 850,
+      "success": true,
+      "reason": "success",
+      "visited": 6,
+      "uploaded_mb": 450.0,
+      "time_s": 168.0,
+      "outage_s": 55.5,
+      "return": 3765.7600307110556
+    },
+    {
+      "episode": 900,
+      "success": false,
+      "reason": "timeout",
+      "visited": 4,
+      "uploaded_mb": 300.0,
+      "time_s": 500.0,
+      "outage_s": 72.5,
+      "return": -275.68645026909576
+    },
+    {
+      "episode": 950,
+      "success": false,
+      "reason": "premature_termination",
+      "visited": 5,
+      "uploaded_mb": 385.39863299,
+      "time_s": 130.0,
+      "outage_s": 44.0,
+      "return": 2042.4027162849839
+    },
+    {
+      "episode": 1000,
+      "success": false,
+      "reason": "timeout",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 500.0,
+      "outage_s": 6.0,
+      "return": -1062.8976013720546
+    }
+  ],
+  "ddpg": [
+    {
+      "episode": 50,
+      "success": false,
+      "reason": "timeout",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 500.0,
+      "outage_s": 6.5,
+      "return": -1064.5714128970706
+    },
+    {
+      "episode": 100,
+      "success": false,
+      "reason": "timeout",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 500.0,
+      "outage_s": 19.0,
+      "return": -2736.919496074641
+    },
+    {
+      "episode": 150,
+      "success": false,
+      "reason": "timeout",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 500.0,
+      "outage_s": 40.0,
+      "return": -2005.978657150894
+    },
+    {
+      "episode": 200,
+      "success": false,
+      "reason": "timeout",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 500.0,
+      "outage_s": 38.0,
+      "return": -1474.2838120830943
+    },
+    {
+      "episode": 250,
+      "success": false,
+      "reason": "timeout",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 500.0,
+      "outage_s": 71.0,
+      "return": -2546.149926144447
+    },
+    {
+      "episode": 300,
+      "success": false,
+      "reason": "timeout",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 500.0,
+      "outage_s": 27.5,
+      "return": -1359.0130162637138
+    },
+    {
+      "episode": 350,
+      "success": false,
+      "reason": "timeout",
+      "visited": 2,
+      "uploaded_mb": 150.0,
+      "time_s": 500.0,
+      "outage_s": 90.0,
+      "return": -1439.1179607447446
+    },
+    {
+      "episode": 400,
+      "success": false,
+      "reason": "qos_violation",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 126.5,
+      "outage_s": 100.5,
+      "return": -1629.9665922143167
+    },
+    {
+      "episode": 450,
+      "success": false,
+      "reason": "qos_violation",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 121.5,
+      "outage_s": 100.5,
+      "return": -2157.476953882409
+    },
+    {
+      "episode": 500,
+      "success": false,
+      "reason": "timeout",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 500.0,
+      "outage_s": 67.0,
+      "return": -2400.4812069051827
+    },
+    {
+      "episode": 550,
+      "success": false,
+      "reason": "timeout",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 500.0,
+      "outage_s": 24.0,
+      "return": -1344.734799973313
+    },
+    {
+      "episode": 600,
+      "success": false,
+      "reason": "qos_violation",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 116.0,
+      "outage_s": 100.5,
+      "return": -2099.803198540664
+    },
+    {
+      "episode": 650,
+      "success": false,
+      "reason": "timeout",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 500.0,
+      "outage_s": 92.5,
+      "return": -2539.2932682142073
+    },
+    {
+      "episode": 700,
+      "success": false,
+      "reason": "qos_violation",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 113.5,
+      "outage_s": 100.5,
+      "return": -2105.735129646283
+    },
+    {
+      "episode": 750,
+      "success": false,
+      "reason": "qos_violation",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 117.5,
+      "outage_s": 100.5,
+      "return": -1659.727704059121
+    },
+    {
+      "episode": 800,
+      "success": false,
+      "reason": "timeout",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 500.0,
+      "outage_s": 51.0,
+      "return": -2119.3881025113296
+    },
+    {
+      "episode": 850,
+      "success": false,
+      "reason": "qos_violation",
+      "visited": 0,
+      "uploaded_mb": 0.0,
+      "time_s": 135.0,
+      "outage_s": 100.5,
+      "return": -2224.243690206689
+    },
+    {
+      "episode": 900,
+      "success": false,
+      "reason": "timeout",
+      "visited": 1,
+      "uploaded_mb": 66.29465072,
+      "time_s": 500.0,
+      "outage_s": 33.5,
+      "return": -1419.8813928022446
+    },
+    {
+      "episode": 950,
+      "success": false,
+      "reason": "timeout",
+      "visited": 1,
+      "uploaded_mb": 90.0,
+      "time_s": 500.0,
+      "outage_s": 7.5,
+      "return": -1136.0880217444346
+    },
+    {
+      "episode": 1000,
+      "success": false,
+      "reason": "premature_termination",
+      "visited": 2,
+      "uploaded_mb": 141.44619168,
+      "time_s": 99.0,
+      "outage_s": 48.0,
+      "return": 475.14945870298874
+    }
+  ]
+}
