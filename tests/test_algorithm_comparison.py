@@ -4,12 +4,14 @@ import numpy as np
 import pytest
 
 from plot_algorithm_comparison import (
+    load_actor_rewards,
     load_series,
     plot_objective_comparison,
+    plot_reward_comparison,
     plot_success_comparison,
     summarize,
 )
-from plot_formal_results import _generate_d3qn_figures, _style
+from plot_formal_results import _generate_d3qn_figures, _style, actor_reward_series
 
 
 def _history_rows(successes):
@@ -61,6 +63,50 @@ def test_comparison_plots_render_mixed_and_all_failed_runs(tmp_path):
     for stem in ("objective", "success"):
         assert (tmp_path / f"{stem}.png").is_file()
         assert (tmp_path / f"{stem}.pdf").is_file()
+
+
+def test_actor_reward_series_drops_guided_episodes_and_clips_to_display_window():
+    rewards = np.arange(1.0, 7.0)  # episodes 1..6
+    guided = np.array([False, True, False, False, True, False])
+
+    episodes, actor = actor_reward_series(rewards, guided, limit=4)
+
+    np.testing.assert_array_equal(episodes, [1, 3, 4])
+    np.testing.assert_allclose(actor, [1.0, 3.0, 4.0])
+
+
+def test_load_actor_rewards_reads_both_archive_layouts(tmp_path):
+    continuous = tmp_path / "continuous"
+    continuous.mkdir()
+    np.savez(continuous / "UAV_TD3_improved.npz",
+             ep_rewards=np.array([1.0, 2.0, 3.0]),
+             ep_guided=np.array([False, True, False]))
+    discrete = tmp_path / "discrete"
+    discrete.mkdir()
+    np.savez(discrete / "training_history.npz",
+             episode_rewards=np.array([5.0, 6.0]),
+             episode_guided=np.array([True, False]))
+
+    episodes_c, rewards_c = load_actor_rewards(continuous)
+    episodes_d, rewards_d = load_actor_rewards(discrete)
+
+    np.testing.assert_array_equal(episodes_c, [1, 3])
+    np.testing.assert_allclose(rewards_c, [1.0, 3.0])
+    np.testing.assert_array_equal(episodes_d, [2])
+    np.testing.assert_allclose(rewards_d, [6.0])
+
+
+def test_reward_comparison_renders_with_short_series(tmp_path):
+    _style()
+    reward_entries = [
+        ("TD3", np.arange(1, 251), np.random.default_rng(0).normal(size=250)),
+        ("DDPG", np.arange(1, 51), np.random.default_rng(1).normal(size=50)),
+    ]
+
+    plot_reward_comparison(reward_entries, tmp_path / "rewards", "Low load")
+
+    assert (tmp_path / "rewards.png").is_file()
+    assert (tmp_path / "rewards.pdf").is_file()
 
 
 def test_d3qn_run_figures_render_without_checkpoints(tmp_path):

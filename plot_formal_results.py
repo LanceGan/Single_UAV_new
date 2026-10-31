@@ -65,6 +65,43 @@ def moving_average(values, window=200):
     return episodes, averages
 
 
+DISPLAY_EPISODE_LIMIT = 2000
+
+
+def actor_reward_series(rewards, guided, limit=DISPLAY_EPISODE_LIMIT):
+    """Actor-only returns within the displayed learning phase.
+
+    Demonstration (teacher) episodes are excluded so the curve reflects the
+    agent's own behaviour; failures within the window are kept as they are.
+    """
+    rewards = np.asarray(rewards, dtype=float)
+    guided = np.asarray(guided, dtype=bool)
+    episodes = np.arange(1, rewards.size + 1)
+    keep = (~guided) & (episodes <= int(limit))
+    return episodes[keep], rewards[keep]
+
+
+def plot_rewards_display(rewards, guided, stem, title, window=200, limit=DISPLAY_EPISODE_LIMIT):
+    """Course-report reward curve: first ``limit`` episodes, actor episodes only."""
+    episodes, actor = actor_reward_series(rewards, guided, limit=limit)
+    figure, axis = plt.subplots(figsize=(8.2, 4.6), constrained_layout=True)
+    axis.plot(episodes, actor, color="0.72", linewidth=0.6, alpha=0.6,
+              label="Actor episode return")
+    if actor.size >= window:
+        kernel = np.ones(window, dtype=float) / window
+        averages = np.convolve(actor, kernel, mode="valid")
+        axis.plot(episodes[window - 1:], averages, color="#0072B2", linewidth=2.0,
+                  label=f"{window}-episode moving average")
+    axis.axhline(0.0, color="black", linewidth=0.7, alpha=0.6)
+    axis.set_xlim(0, limit)
+    axis.set_xlabel("Training episode")
+    axis.set_ylabel("Episode return")
+    axis.set_title(f"{title} (first {limit} episodes, actor episodes only)")
+    axis.grid(alpha=0.25)
+    axis.legend(loc="best")
+    _save_pair(figure, stem)
+
+
 def _style():
     plt.rcParams.update({
         "font.family": "serif",
@@ -163,9 +200,10 @@ def _generate_d3qn_figures(run_dir, config):
     history = json.loads((run_dir / "eval_history.json").read_text(encoding="utf-8"))
     best = history.get("best")
     series = evaluation_series(history)
-    rewards = np.asarray(
-        np.load(run_dir / "training_history.npz")["episode_rewards"], dtype=float
-    )
+    archive = np.load(run_dir / "training_history.npz")
+    rewards = np.asarray(archive["episode_rewards"], dtype=float)
+    guided = (np.asarray(archive["episode_guided"], dtype=bool)
+              if "episode_guided" in archive else np.zeros(rewards.size, dtype=bool))
     output = run_dir / "paper_figures"
     output.mkdir(parents=True, exist_ok=True)
 
@@ -173,6 +211,7 @@ def _generate_d3qn_figures(run_dir, config):
     title = f"D3QN, {load_label} load, Variant {config['variant']}"
     plot_objectives(series, output / "objective_vs_episode", title)
     plot_rewards(rewards, series, output / "reward_vs_episode", title)
+    plot_rewards_display(rewards, guided, output / "reward_vs_episode_0_2000", title)
 
     eval_best_report = None
     checkpoint = d3qn_checkpoint_paths(run_dir)["eval_best"]
@@ -221,6 +260,9 @@ def generate_run_figures(run_dir):
     title = f"{method_label}, {load_label} load, Variant {context.variant}"
     plot_objectives(series, output / "objective_vs_episode", title)
     plot_rewards(rewards, series, output / "reward_vs_episode", title)
+    guided = (np.asarray(reward_archive["ep_guided"], dtype=bool)
+              if "ep_guided" in reward_archive else np.zeros(rewards.size, dtype=bool))
+    plot_rewards_display(rewards, guided, output / "reward_vs_episode_0_2000", title)
 
     paths = checkpoint_paths(run_dir, context.algorithm, context.config["episodes"])
     if "eval_best" not in paths or not paths["eval_best"].is_file():

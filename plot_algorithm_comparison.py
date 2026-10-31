@@ -15,7 +15,13 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from plot_formal_results import _save_pair, _style, evaluation_series
+from plot_formal_results import (
+    DISPLAY_EPISODE_LIMIT,
+    _save_pair,
+    _style,
+    actor_reward_series,
+    evaluation_series,
+)
 
 METHOD_COLORS = {"TD3": "#0072B2", "DDPG": "#D55E00", "D3QN": "#009E73"}
 
@@ -23,6 +29,42 @@ METHOD_COLORS = {"TD3": "#0072B2", "DDPG": "#D55E00", "D3QN": "#009E73"}
 def load_series(run_dir):
     history = json.loads((Path(run_dir) / "eval_history.json").read_text(encoding="utf-8"))
     return evaluation_series(history)
+
+
+def load_actor_rewards(run_dir, limit=DISPLAY_EPISODE_LIMIT):
+    """Actor-only reward series from either training archive layout."""
+    run_dir = Path(run_dir)
+    discrete = run_dir / "training_history.npz"
+    if discrete.is_file():
+        archive = np.load(discrete)
+        return actor_reward_series(archive["episode_rewards"], archive["episode_guided"], limit)
+    archive = np.load(run_dir / "UAV_TD3_improved.npz")
+    guided = (archive["ep_guided"] if "ep_guided" in archive
+              else np.zeros(len(archive["ep_rewards"]), dtype=bool))
+    return actor_reward_series(archive["ep_rewards"], guided, limit)
+
+
+def plot_reward_comparison(reward_entries, stem, title, window=200, limit=DISPLAY_EPISODE_LIMIT):
+    """Overlay actor-only reward curves, clipped to the main learning phase."""
+    figure, axis = plt.subplots(figsize=(8.6, 5.0), constrained_layout=True)
+    for index, (label, episodes, rewards) in enumerate(reward_entries):
+        color = _color(label, index)
+        axis.plot(episodes, rewards, color=color, linewidth=0.5, alpha=0.28)
+        if rewards.size >= window:
+            kernel = np.ones(window, dtype=float) / window
+            averages = np.convolve(rewards, kernel, mode="valid")
+            axis.plot(episodes[window - 1:], averages, color=color, linewidth=2.0,
+                      label=f"{label} ({window}-episode moving average)")
+        else:
+            axis.plot([], [], color=color, label=f"{label} (fewer than {window} actor episodes)")
+    axis.axhline(0.0, color="black", linewidth=0.7, alpha=0.6)
+    axis.set_xlim(0, limit)
+    axis.set_xlabel("Training episode")
+    axis.set_ylabel("Actor episode return")
+    axis.set_title(f"{title} (first {limit} episodes, actor episodes only)")
+    axis.grid(alpha=0.25)
+    axis.legend(loc="best", framealpha=0.92)
+    _save_pair(figure, stem)
 
 
 def summarize(label, series):
@@ -139,15 +181,19 @@ def main():
     _style()
 
     entries = []
+    reward_entries = []
     for raw in args.run:
         label, run_dir = parse_pair(raw, "--run")
         entries.append((label, load_series(run_dir)))
+        episodes, rewards = load_actor_rewards(run_dir)
+        reward_entries.append((label, episodes, rewards))
     references = [parse_pair(raw, "--reference", float) for raw in args.reference]
 
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     plot_objective_comparison(entries, references, output / "comparison_objective", args.title)
     plot_success_comparison(entries, output / "comparison_success", args.title)
+    plot_reward_comparison(reward_entries, output / "comparison_rewards", args.title)
     summary = {
         "title": args.title,
         "references": {name: value for name, value in references},
