@@ -60,8 +60,8 @@ def create_parser():
     parser.add_argument("--teacher", choices=("mapguide", "astar", "none"), default="mapguide",
                         help="demonstration source: MapGuide by default; A* and none are optional")
     parser.add_argument("--guide_prob", type=float, default=0.5)
-    parser.add_argument("--guide_min_prob", type=float, default=0.2,
-                        help="demonstration probability kept for the rest of training, like TD3-BC")
+    parser.add_argument("--guide_min_prob", type=float, default=0.5,
+                        help="demonstration probability floor; 0.5 keeps MapGuide control constant (no decay)")
     parser.add_argument("--guided_warmup_episodes", type=int, default=400)
     parser.add_argument("--demo_fraction", type=float, default=0.25)
     parser.add_argument("--demo_capacity", type=int, default=200_000)

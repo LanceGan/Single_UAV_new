@@ -25,7 +25,7 @@ def test_d3qn_defaults_to_mapguide_and_lower_learning_rate():
     assert args.teacher == "mapguide"
     assert args.learning_rate == pytest.approx(1e-4)
     assert args.guide_prob == pytest.approx(0.5)
-    assert args.guide_min_prob == pytest.approx(0.2)
+    assert args.guide_min_prob == pytest.approx(0.5)
     assert args.demo_fraction == pytest.approx(0.25)
 
 

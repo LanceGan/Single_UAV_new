@@ -53,12 +53,14 @@ A* 比 TD3 好 11–14%。原因是 A* 直接知道整张地图并精确优化 T
 A* 示范功能仍保留，但不再作为默认训练设置：
 
 - **TD3-BC / DDPG-BC**：`--teacher mapguide` 为默认；`--teacher astar` 仅用于可选消融。
-- **D3QN**：默认使用离散MapGuide早期示范，教师概率在400轮后归零；A*大边界示范仅为可选消融。
+- **D3QN**：默认使用离散 MapGuide 示范，教师控制概率保持常数 0.5（见 4.2）；A* 大边界示范仅为可选消融。
 - 示范源在 `astar_teacher.py`，规划一次后缓存到 `journal_results/astar-teacher/teacher_{low,medium,high}.json`（已预生成三档，训练启动不再等待搜索）。
 
-### 4.2 示范缓存持续保留，直接教师控制归零
+### 4.2 示范缓存持续保留，教师控制有下界
 
-TD3-BC/DDPG-BC 的整回合 MapGuide 示范概率在前 400 回合从 0.5 线性降到 **0**。行为克隆权重在前 600 回合从 1.0 降到 0.25 后保持；早期示范数据单独存放，不被新数据挤掉。后期Actor完全自主控制，但仍受示范池的BC锚定。
+- **TD3-BC / DDPG-BC**：整回合 MapGuide 示范概率在前 400 回合从 0.5 线性降到 **0.2**，之后保持 0.2（`guide_min_prob=0.2`）。行为克隆权重在前 600 回合从 1.0 降到 0.25 后保持。
+- **D3QN**：MapGuide 示范概率**保持常数 0.5**（`guide_prob=guide_min_prob=0.5`，不衰减），先确保能完成任务；DQfD 边界损失权重 1.0、边界 0.8。
+- 示范数据单独回放、不被新数据挤掉；判断好坏仍只看纯 actor 的 `eval_best`（评估时无引导）。
 
 ### 4.3 之前已修好的关键项
 
@@ -74,8 +76,8 @@ TD3-BC/DDPG-BC 的整回合 MapGuide 示范概率在前 400 回合从 0.5 线性
 
 ```bash
 PY=D:/Anaconda/envs/pytorch/python.exe
-$PY Train_SINR.py --variant A --data_level low --algorithm td3_bc --teacher mapguide --guide_min_prob 0 --seed 1 --episodes 3000 --output_root journal_results/course-final-corrected
-$PY Train_SINR.py --variant A --data_level low --algorithm ddpg_bc --teacher mapguide --guide_min_prob 0 --seed 1 --episodes 3000 --output_root journal_results/course-final-corrected
+$PY Train_SINR.py --variant A --data_level low --algorithm td3_bc --teacher mapguide --seed 1 --episodes 3000 --output_root journal_results/formal-v8
+$PY Train_SINR.py --variant A --data_level low --algorithm ddpg_bc --teacher mapguide --seed 1 --episodes 3000 --output_root journal_results/formal-v8
 ```
 
 标准版（无示范）用 `--algorithm td3` / `--algorithm ddpg`（不能开示范参数）。
@@ -83,7 +85,7 @@ $PY Train_SINR.py --variant A --data_level low --algorithm ddpg_bc --teacher map
 ### D3QN（离散MapGuide早期示范）
 
 ```bash
-$PY Train_D3QN.py --data_level low --teacher mapguide --guide_prob 0.5 --guide_min_prob 0 --guided_warmup_episodes 400 --demo_fraction 0.25 --learning_rate 0.0001 --seed 1 --episodes 3000 --output_root journal_results/course-final-corrected-v2/d3qn
+$PY Train_D3QN.py --data_level low --teacher mapguide --seed 1 --episodes 3000 --output_root journal_results/d3qn-v3
 ```
 
 ### A* 基线

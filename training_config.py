@@ -30,10 +30,10 @@ ALGORITHMS = {
             "bc_min_weight": 0.0, "demo_fraction": 0.0},
     "ddpg": {"base": "ddpg", "guide_prob": 0.0, "guide_min_prob": 0.0, "bc_weight": 0.0,
              "bc_min_weight": 0.0, "demo_fraction": 0.0},
-    # Direct teacher control decays away; persistent demonstrations remain in replay.
-    "td3_bc": {"base": "td3", "guide_prob": 0.5, "guide_min_prob": 0.0, "bc_weight": 1.0,
+    # Teacher episodes persist at a 0.2 floor for the whole run.
+    "td3_bc": {"base": "td3", "guide_prob": 0.5, "guide_min_prob": 0.2, "bc_weight": 1.0,
                "bc_min_weight": 0.25, "demo_fraction": 0.25},
-    "ddpg_bc": {"base": "ddpg", "guide_prob": 0.5, "guide_min_prob": 0.0, "bc_weight": 1.0,
+    "ddpg_bc": {"base": "ddpg", "guide_prob": 0.5, "guide_min_prob": 0.2, "bc_weight": 1.0,
                 "bc_min_weight": 0.25, "demo_fraction": 0.25},
 }
 
