@@ -62,3 +62,17 @@ def test_bc_guide_probability_decays_to_persistent_floor():
     schedule = [linear_decay(profile["guide_prob"], episode - 1, 400, floor=profile["guide_min_prob"])
                 for episode in (1, 201, 401, 3000)]
     assert schedule == [0.5, 0.35, 0.2, 0.2]
+
+
+def test_d3qn_profiles_mirror_the_continuous_demonstration_split():
+    import pytest
+    from training_config import resolve_algorithm
+
+    assert resolve_algorithm("d3qn") == {
+        "base": "d3qn", "guide_prob": 0.0, "guide_min_prob": 0.0, "bc_weight": 0.0,
+        "bc_min_weight": 0.0, "demo_fraction": 0.0}
+    assert resolve_algorithm("d3qn_bc") == {
+        "base": "d3qn", "guide_prob": 0.5, "guide_min_prob": 0.2, "bc_weight": 1.0,
+        "bc_min_weight": 0.25, "demo_fraction": 0.25}
+    with pytest.raises(ValueError, match="d3qn_bc"):
+        resolve_algorithm("d3qn", 0.5, None, None, None)

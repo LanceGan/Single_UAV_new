@@ -64,8 +64,8 @@ def load_d3qn_run_context(run_dir):
     missing = sorted(REQUIRED_CONFIG_FIELDS - config.keys())
     if missing:
         raise ValueError(f"D3QN run_config.json missing required fields: {', '.join(missing)}")
-    if config["algorithm"] != "d3qn":
-        raise ValueError("D3QN evaluator only accepts algorithm='d3qn'")
+    if config["algorithm"] not in ("d3qn", "d3qn_bc"):
+        raise ValueError("D3QN evaluator only accepts algorithm='d3qn' or 'd3qn_bc'")
     if config["variant"] != "A" or int(config["state_dim"]) != 8:
         raise ValueError("D3QN baseline requires Variant A and state_dim 8")
     if config["state_schema"] != D3QN_STATE_SCHEMA:
@@ -81,7 +81,7 @@ def load_d3qn_run_context(run_dir):
     return D3QNRunContext(
         run_dir=run_dir,
         config=config,
-        algorithm="d3qn",
+        algorithm=config["algorithm"],
         state_dim=8,
         net_width=int(config["net_width"]),
         variant="A",

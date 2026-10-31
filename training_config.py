@@ -30,10 +30,15 @@ ALGORITHMS = {
             "bc_min_weight": 0.0, "demo_fraction": 0.0},
     "ddpg": {"base": "ddpg", "guide_prob": 0.0, "guide_min_prob": 0.0, "bc_weight": 0.0,
              "bc_min_weight": 0.0, "demo_fraction": 0.0},
+    "d3qn": {"base": "d3qn", "guide_prob": 0.0, "guide_min_prob": 0.0, "bc_weight": 0.0,
+             "bc_min_weight": 0.0, "demo_fraction": 0.0},
     # MapGuide episodes continue for the whole run at a persistent floor.
     "td3_bc": {"base": "td3", "guide_prob": 0.5, "guide_min_prob": 0.2, "bc_weight": 1.0,
                "bc_min_weight": 0.25, "demo_fraction": 0.25},
     "ddpg_bc": {"base": "ddpg", "guide_prob": 0.5, "guide_min_prob": 0.2, "bc_weight": 1.0,
+                "bc_min_weight": 0.25, "demo_fraction": 0.25},
+    # Discrete variant: imitation uses the DQfD large-margin loss instead of BC MSE.
+    "d3qn_bc": {"base": "d3qn", "guide_prob": 0.5, "guide_min_prob": 0.2, "bc_weight": 1.0,
                 "bc_min_weight": 0.25, "demo_fraction": 0.25},
 }
 

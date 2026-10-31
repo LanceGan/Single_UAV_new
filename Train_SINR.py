@@ -40,7 +40,10 @@ def create_parser():
     parser.add_argument("--episodes", help="training episode count", type=int, default=2000)
     parser.add_argument("--output_root", default="journal_results")
     parser.add_argument("--ga_iterations", type=int, default=500)
-    parser.add_argument("--algorithm", choices=sorted(ALGORITHMS), default="td3",
+    parser.add_argument("--algorithm",
+                        choices=sorted(name for name, profile in ALGORITHMS.items()
+                                       if profile["base"] in ("td3", "ddpg")),
+                        default="td3",
                         help="td3/ddpg are standard agents; td3_bc/ddpg_bc add MapGuide demonstrations and imitation")
     parser.add_argument("--outage_max_s", type=float, default=100.0)
     parser.add_argument("--train_memory_size", type=int, default=2000)
