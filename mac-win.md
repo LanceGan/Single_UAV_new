@@ -29,16 +29,17 @@
 
 ## 3. Mac 侧结果清单（feat/mac 分支内）
 
-### 课程线（low，course-final 配方）✅ 可直接进课程表
+### 课程线（low，course-final 配方 + **A2G-blind**）🔄 重跑中
 
-| 方法 | 顺序 | 成功率 | eval_best T+τ | 目录 |
-|---|---|---|---|---|
-| Distance-TSP+TD3 | `[1,6,5,2,3,4]`（720 排列精确） | 91/120 | **229.0s**（ep1525，T=140.0，τ=89.0，T_out=23.5） | `journal_results/course-baselines/distance-tsp/A/low/td3_bc/` |
-| DRL-SA（SA 序 + TD3 轨迹） | `[1,6,5,2,3,4]`（SA 仅看 G2A） | 91/120 | **229.0s**（与上行逐位相同） | `journal_results/course-baselines/drl-sa/A/low/td3_bc/` |
+**2026-11-01 方法论修正**：基线原始论文均无 A2G（A2G 是本文贡献），故顺序基线的整条管线去除 A2G 可见性——状态去掉 A2G SNR 维（8D→7D，`--a2g_blind`）、教师换 G2A-only MapGuide（枢纽选择不用速率打分）；**环境物理、目标与奖励不变**（公平性底线）。DDPG/D3QN（轨迹算法对照）与 A\*（oracle 参照）经确认保持全知。
 
-两行相同的原因：SA 与距离 TSP 在本地图恰好选出同一顺序，加之同种子同配方 → 训练为确定性复制。课程表照填两行并脚注说明。SA 轨迹部分为统一 TD3（原文 DRL-SA 用 DQN，报告按 BASELINE_COMPARISON_PLAN §1 注明适配）。
+| 方法 | 顺序 | 结果 | 目录 |
+|---|---|---|---|
+| Distance-TSP+TD3（A2G-blind） | `[1,6,5,2,3,4]` | 🔄 训练中 | `journal_results/course-baselines/distance-tsp/A/low/td3_bc/` |
+| DRL-SA（A2G-blind，SA 序 + TD3 轨迹） | `[1,6,5,2,3,4]` | 🔄 训练中 | `journal_results/course-baselines/drl-sa/A/low/td3_bc/` |
+| （存档）A2G 可见版两基线 | 同上 | 均 91/120，229.0s | `journal_results/course-baselines-a2g-visible/`（基线经状态特征与教师间接看到 A2G，不作课程正式结果） |
 
-**顺序质量核查**（`journal_results/analysis-astar-order-check/`）：A\* 规划器下 IGA 序 `[1,6,2,3,5,4]` = 214.0s < 基线序 216.5s → 数据感知顺序在低档亦严格更优。
+**顺序质量核查**（`journal_results/analysis-astar-order-check/`，与盲化无关仍有效）：A\* 规划器下 IGA 序 `[1,6,2,3,5,4]` = 214.0s < 基线序 216.5s → 数据感知顺序在低档亦严格更优。
 
 ### 期刊线 / 对照（legacy-0.2 配方）
 

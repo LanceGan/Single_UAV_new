@@ -12,8 +12,9 @@ from scipy.sparse.csgraph import dijkstra
 
 
 class MapGuide:
-    def __init__(self, world):
+    def __init__(self, world, use_a2g=True):
         self.world = world
+        self.use_a2g = bool(use_a2g)
         self.shape = world.radio_maps.a2g_snr.shape
         yy, xx = np.indices(self.shape)
         self.xy = np.column_stack((xx.ravel(), yy.ravel())) / 10.0
@@ -70,9 +71,14 @@ class MapGuide:
             upload_graph = graph if blocked[source] else self._graph(blocked)
             distance, predecessors = dijkstra(upload_graph, indices=source, return_predecessors=True)
             to_target = dijkstra(graph.T.tocsr(), indices=target)
-            candidates = (~blocked) & (~self.outage) & np.isfinite(distance) & (self.rate > 0)
-            # Conservative dwell estimate: in-flight upload will reduce the actual wait.
-            score = distance + to_target + w.data_size / np.maximum(self.rate, 1e-9)
+            candidates = (~blocked) & (~self.outage) & np.isfinite(distance)
+            if self.use_a2g:
+                candidates &= (self.rate > 0)
+                # Conservative dwell estimate: in-flight upload will reduce the actual wait.
+                score = distance + to_target + w.data_size / np.maximum(self.rate, 1e-9)
+            else:
+                # A2G-blind teacher: nearest safe hover cell by detour length only.
+                score = distance + to_target
             score[~candidates] = np.inf
             hub = int(np.argmin(score))
             if not np.isfinite(score[hub]):

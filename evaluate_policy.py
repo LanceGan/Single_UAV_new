@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parent
 # Checkpoints trained on a different observation layout cannot be replayed in the current World.
 STATE_SCHEMA = ("v3: uav xy, target-minus-uav xy, pending payload, outage usage, A2G SNR, G2A outage probability"
                 "; AB adds 8 target-frame one-step A2G SNR then 8 G2A outage samples")
+A2G_BLIND_STATE_SCHEMA = ("v3-blind: uav xy, target-minus-uav xy, pending payload, outage usage, "
+                          "G2A outage probability (A2G SNR feature denied to sequence baselines)")
 REQUIRED_CONFIG_FIELDS = {
     "algorithm",
     "data_level",
@@ -51,6 +53,7 @@ class RunContext:
     order: tuple
     payloads_mb: np.ndarray
     outage_max_s: float
+    a2g_blind: bool = False
     total_steps: int = 1000
     length: float = 20.0
     width: float = 20.0
@@ -84,11 +87,16 @@ def load_run_context(run_dir):
         raise ValueError(f"unsupported algorithm: {config['algorithm']!r}")
     if config["variant"] not in World.VARIANTS:
         raise ValueError(f"unsupported variant: {config['variant']!r}")
-    expected_dim = World.BASE_STATE_DIM + (2 * World.NEIGHBOR_DIRECTIONS if config["variant"] == "AB" else 0)
+    a2g_blind = bool(config.get("a2g_blind", False))
+    if a2g_blind and config["variant"] == "AB":
+        raise ValueError("a2g_blind runs cannot use the AB map-neighborhood variant")
+    expected_dim = (World.BASE_STATE_DIM - (1 if a2g_blind else 0)
+                    + (2 * World.NEIGHBOR_DIRECTIONS if config["variant"] == "AB" else 0))
     if int(config["state_dim"]) != expected_dim:
         raise ValueError(f"variant {config['variant']} expects state_dim {expected_dim}, got {config['state_dim']}")
-    if config.get("state_schema") != STATE_SCHEMA:
-        raise ValueError(f"run was trained with state schema {config.get('state_schema')!r}, current is {STATE_SCHEMA!r}")
+    expected_schema = A2G_BLIND_STATE_SCHEMA if a2g_blind else STATE_SCHEMA
+    if config.get("state_schema") != expected_schema:
+        raise ValueError(f"run was trained with state schema {config.get('state_schema')!r}, current is {expected_schema!r}")
     order = tuple(int(value) for value in config["order"])
     payloads = np.asarray(config["payloads_mb"], dtype=float)
     if len(order) != len(payloads) or sorted(order) != list(range(1, len(payloads) + 1)):
@@ -106,6 +114,7 @@ def load_run_context(run_dir):
         order=order,
         payloads_mb=payloads,
         outage_max_s=float(config["outage_max_s"]),
+        a2g_blind=a2g_blind,
     )
 
 
@@ -195,6 +204,7 @@ def _build_world(context):
         ),
         traverse_sequence=list(context.order),
         variant=context.variant,
+        a2g_blind=context.a2g_blind,
     )
 
 

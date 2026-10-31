@@ -13,7 +13,7 @@ from map_guidance import MapGuide
 from astar_teacher import AStarTeacher, load_or_plan_teacher_path
 from demonstration import linear_decay
 from mission_preflight import run_preflight
-from evaluate_policy import STATE_SCHEMA, load_run_context, _build_world, rollout, selection_key
+from evaluate_policy import STATE_SCHEMA, A2G_BLIND_STATE_SCHEMA, load_run_context, _build_world, rollout, selection_key
 import json
 import random
 import numpy as np
@@ -65,6 +65,9 @@ def create_parser():
     parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--eval_interval", type=int, default=25)
+    parser.add_argument("--a2g_blind", action="store_true",
+                        help="deny the trajectory stack all A2G knowledge (sequence baselines): "
+                             "state drops the A2G SNR feature and the MapGuide teacher is G2A-only")
     parser.add_argument("--sequence_method", choices=("iga", "distance_tsp", "sa"), default="iga",
                         help="inspection order: data-aware IGA (proposed), exact distance TSP "
                              "(no maps/payloads), or G2A-only simulated annealing (DRL-SA baseline)")
@@ -257,7 +260,7 @@ world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, de
               data_size=data_size, ini_loc=ini_loc, end_loc=end_loc,
               users_name='results/datas/Users_'+str(user_num)+'.txt',
               BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads, outage_max_s=outage_max_s,
-              variant=args.variant)
+              variant=args.variant, a2g_blind=args.a2g_blind)
 s_dim = world.state_dim
 
 preflight = run_preflight(data_level, output_paths["root"] / "preflight", order=trave_order,
@@ -275,7 +278,7 @@ if args.preflight_only:
     **vars(args), "state_dim": s_dim, "order": trave_order, "payloads_mb": payloads.tolist(),
     "map_hashes": preflight["map_hashes"], "sequence_method": sequence_meta["method"],
     "sequence_meta": sequence_meta,
-    "state_schema": STATE_SCHEMA,
+    "state_schema": A2G_BLIND_STATE_SCHEMA if args.a2g_blind else STATE_SCHEMA,
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
     "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
     "base_agent": profile["base"],
@@ -352,7 +355,7 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     t3 = time.time()
     s, t = world.reset()
     demo_actor = (AStarTeacher(world, teacher_positions) if args.teacher == "astar" and teacher_positions is not None
-                  else MapGuide(world))
+                  else MapGuide(world, use_a2g=not args.a2g_blind))
     # Whole demonstration episodes avoid a guide silently repairing actor mistakes.
     guide_probability = (linear_decay(args.guide_prob, episode - 1, guided_warmup_episodes, floor=args.guide_min_prob)
                          if exploration_strategy == "guided" else 0.0)

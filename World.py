@@ -30,13 +30,17 @@ class World(object):
                  data_size = 250, data_sizes=None, outage_max_s=100.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
                  users_name='Users.txt'
                  ,BS_loc=[],
-                 traverse_sequence=[], variant="baseline"):
+                 traverse_sequence=[], variant="baseline", a2g_blind=False):
         if variant not in self.VARIANTS:
             raise ValueError(f"unknown variant {variant!r}; expected one of {self.VARIANTS}")
         self.variant = variant
         self.relative_heading = variant in ("A", "AB")
         self.map_neighborhood = variant == "AB"
-        self.state_dim = self.BASE_STATE_DIM + (2 * self.NEIGHBOR_DIRECTIONS if self.map_neighborhood else 0)
+        self.a2g_blind = bool(a2g_blind)
+        if self.a2g_blind and self.map_neighborhood:
+            raise ValueError("a2g_blind is not supported with the AB map-neighborhood variant")
+        self.state_dim = (self.BASE_STATE_DIM - (1 if self.a2g_blind else 0)
+                          + (2 * self.NEIGHBOR_DIRECTIONS if self.map_neighborhood else 0))
         self.length = length # 区域大小
         self.width = width
         self.uav_num = uav_num  # 总的无人机数目
@@ -206,6 +210,10 @@ class World(object):
         s[3] = (target_loc[1] - uav.y) / self.width
         s[4] = self.data_size / self.max_payload
         s[5] = self.out_time / self.outage_max_s
+        if self.a2g_blind:
+            # Sequence baselines are denied uplink knowledge: no A2G SNR feature.
+            s[6] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)
+            return s
         s[6] = np.clip((self.current_a2g_snr - self.a2g_snr_min) / snr_span, 0.0, 1.0)
         s[7] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)
         if self.map_neighborhood:
