@@ -67,8 +67,7 @@ Mac 已在自己的 `feat/mac` 维护了 `mac-win.md`。要点与冲突：
 
 ## 6. 当前进行中
 
-- **D3QN 重训（Windows）**：用**新奖励 + MapGuide 常数 0.5 引导**再试低负载。Mac 上 0/120 是旧奖励下的失败，不能据此判定新配方也失败；Windows 250 回合短训已出现正趋势（失败模式从"不传数据"变成"传了但慢"）。
-- 命令：`D:/Anaconda/envs/pytorch/python.exe Train_D3QN.py --data_level low --teacher mapguide --seed 1 --episodes 3000 --output_root journal_results/d3qn-v3`
+- **D3QN 已判定失败（0/120）**：Windows 用新奖励 + A2G-free 7 维状态 + MapGuide 常数 0.5 引导跑满 3000 轮，纯 actor 评估 0 成功，最佳仅 4 点（ep25），之后长期停在 0–2 点。至此 D3QN 在四种配方下全部失败（Mac 的 A\* 示范对、MapGuide 整回合；Win 的 A2G 感知、A2G-free），结论稳健：**离散动作空间无法完成本导航+连续上传任务**。论文里作为负结果/消融一句话带过即可，不再投入训练。
 
 ## 7. 待办 / 注意
 
