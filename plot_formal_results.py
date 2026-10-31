@@ -10,6 +10,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+from evaluate_d3qn import (
+    d3qn_checkpoint_paths,
+    evaluate_checkpoint as evaluate_d3qn_checkpoint,
+    load_d3qn_run_context,
+)
 from evaluate_policy import (
     checkpoint_paths,
     evaluate_checkpoint,
@@ -146,8 +151,63 @@ def plot_rewards(rewards, series, stem, title, window=200):
     _save_pair(figure, stem)
 
 
+REPORT_KEYS = (
+    "success", "termination_reason", "visited_inspection_points",
+    "uploaded_mb", "task_time_s", "transmission_delay_s",
+    "outage_time_s", "flight_distance_m", "total_return",
+)
+
+
+def _generate_d3qn_figures(run_dir, config):
+    """Figures for a discrete D3QN run; its eval history keeps the best entry under ``best``."""
+    history = json.loads((run_dir / "eval_history.json").read_text(encoding="utf-8"))
+    best = history.get("best")
+    series = evaluation_series(history)
+    rewards = np.asarray(
+        np.load(run_dir / "training_history.npz")["episode_rewards"], dtype=float
+    )
+    output = run_dir / "paper_figures"
+    output.mkdir(parents=True, exist_ok=True)
+
+    load_label = str(config["data_level"]).capitalize()
+    title = f"D3QN, {load_label} load, Variant {config['variant']}"
+    plot_objectives(series, output / "objective_vs_episode", title)
+    plot_rewards(rewards, series, output / "reward_vs_episode", title)
+
+    eval_best_report = None
+    checkpoint = d3qn_checkpoint_paths(run_dir)["eval_best"]
+    if best is not None and checkpoint.is_file():
+        context = load_d3qn_run_context(run_dir)
+        report, trace = evaluate_d3qn_checkpoint(context, checkpoint)
+        plot_trajectory(
+            context,
+            trace,
+            output / "trajectory_eval_best_dual_maps",
+            trajectory_title(title, best["episode"], report),
+        )
+        np.savez(output / "trajectory_eval_best.npz", **trace)
+        eval_best_report = {key: report[key] for key in REPORT_KEYS}
+
+    summary = {
+        "run_dir": str(run_dir),
+        "algorithm": "d3qn",
+        "data_level": config["data_level"],
+        "variant": config["variant"],
+        "evaluation_count": int(len(series["episodes"])),
+        "successful_evaluations": int(series["success"].sum()),
+        "eval_best_episode": int(best["episode"]) if best else None,
+        "eval_best": eval_best_report,
+    }
+    (output / "figure_summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+    return summary
+
+
 def generate_run_figures(run_dir):
     run_dir = Path(run_dir).resolve()
+    config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
+    if config.get("algorithm") == "d3qn":
+        return _generate_d3qn_figures(run_dir, config)
     context = load_run_context(run_dir)
     history = json.loads((run_dir / "eval_history.json").read_text(encoding="utf-8"))
     series = evaluation_series(history)
