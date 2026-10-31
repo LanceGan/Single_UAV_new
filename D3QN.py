@@ -37,6 +37,7 @@ class DuelingQNetwork(nn.Module):
 
 class DiscreteReplayBuffer:
     def __init__(self, state_dim, capacity=200_000, seed=1):
+        self.state_dim = int(state_dim)
         self.capacity = int(capacity)
         if self.capacity <= 0:
             raise ValueError("capacity must be positive")
@@ -72,6 +73,37 @@ class DiscreteReplayBuffer:
             torch.as_tensor(self.next_states[indices], device=device),
             torch.as_tensor(self.dones[indices], device=device),
         )
+
+
+def sample_mixed_replay(online, demonstration, batch_size, demo_fraction, device):
+    """Sample a fixed online/demonstration mixture with empty-pool fallback."""
+    if len(online) + len(demonstration) == 0:
+        raise ValueError("cannot sample empty online and demonstration buffers")
+    if len(demonstration) == 0:
+        demo_count = 0
+    elif len(online) == 0:
+        demo_count = int(batch_size)
+    else:
+        demo_count = int(round(int(batch_size) * float(demo_fraction)))
+    online_count = int(batch_size) - demo_count
+    online_batch = online.sample(online_count, device) if online_count else None
+    demo_batch = demonstration.sample(demo_count, device) if demo_count else None
+    fields = []
+    for index in range(5):
+        chunks = []
+        if online_batch is not None:
+            chunks.append(online_batch[index])
+        if demo_batch is not None:
+            chunks.append(demo_batch[index])
+        fields.append(torch.cat(chunks, dim=0))
+    permutation = torch.randperm(int(batch_size), device=fields[0].device)
+    fields = [field[permutation] for field in fields]
+    if demo_batch is None:
+        demo_states = torch.empty((0, online.state_dim), device=device)
+        demo_actions = torch.empty((0, 1), dtype=torch.long, device=device)
+    else:
+        demo_states, demo_actions = demo_batch[0], demo_batch[1]
+    return (*fields, demo_states, demo_actions)
 
 
 @torch.no_grad()
@@ -139,16 +171,28 @@ class D3QNAgent:
         penalties.scatter_(1, actions, 0.0)
         return (penalties + q - q_teacher).clamp(min=0.0).mean()
 
-    def learn(self, replay_buffer, demo=None, demo_weight=None):
-        states, actions, rewards, next_states, dones = replay_buffer.sample(
-            self.batch_size, self.device
-        )
+    def learn(self, replay_buffer, demo=None, demo_weight=None,
+              demo_replay=None, demo_fraction=0.25):
+        sampled_demo = None
+        if demo_replay is not None:
+            states, actions, rewards, next_states, dones, demo_states, demo_actions = sample_mixed_replay(
+                replay_buffer, demo_replay, self.batch_size, demo_fraction, self.device)
+            sampled_demo = (demo_states, demo_actions.squeeze(1))
+        else:
+            states, actions, rewards, next_states, dones = replay_buffer.sample(
+                self.batch_size, self.device
+            )
         targets = double_dqn_targets(
             rewards, dones, next_states, self.online_network, self.target_network, self.gamma
         )
         predictions = self.online_network(states).gather(1, actions)
         loss = F.smooth_l1_loss(predictions, targets)
-        if demo is not None:
+        if sampled_demo is not None and len(sampled_demo[1]) > 0:
+            weight = self.demo_weight if demo_weight is None else float(demo_weight)
+            if weight > 0:
+                loss = loss + weight * self.demonstration_loss(
+                    sampled_demo[0], sampled_demo[1].long().unsqueeze(1))
+        elif demo is not None:
             demo_states, demo_actions = demo
             weight = self.demo_weight if demo_weight is None else float(demo_weight)
             if weight > 0 and len(demo_actions) > 0:

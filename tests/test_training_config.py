@@ -31,7 +31,7 @@ def test_algorithm_profiles_separate_standard_and_demonstration_variants():
         "bc_min_weight": 0.0, "demo_fraction": 0.0}
     assert resolve_algorithm("ddpg", None, None)["guide_prob"] == 0.0
     assert resolve_algorithm("td3_bc", None, None, None, None) == {
-        "base": "td3", "guide_prob": 0.5, "guide_min_prob": 0.2, "bc_weight": 1.0,
+        "base": "td3", "guide_prob": 0.5, "guide_min_prob": 0.0, "bc_weight": 1.0,
         "bc_min_weight": 0.25, "demo_fraction": 0.25}
     assert resolve_algorithm("ddpg_bc", 0.3, 2.0, 0.2, 0.4, guide_min_prob=0.1) == {
         "base": "ddpg", "guide_prob": 0.3, "guide_min_prob": 0.1, "bc_weight": 2.0,
@@ -61,4 +61,4 @@ def test_bc_guide_probability_decays_to_persistent_floor():
     profile = resolve_algorithm("td3_bc")
     schedule = [linear_decay(profile["guide_prob"], episode - 1, 400, floor=profile["guide_min_prob"])
                 for episode in (1, 201, 401, 3000)]
-    assert schedule == [0.5, 0.35, 0.2, 0.2]
+    assert schedule == [0.5, 0.25, 0.0, 0.0]

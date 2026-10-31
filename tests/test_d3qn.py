@@ -34,6 +34,17 @@ def test_action_headings_are_relative_to_target_bearing():
         codec.decode(33)
 
 
+def test_codec_maps_continuous_relative_action_to_nearest_discrete_action():
+    codec = DiscreteActionCodec()
+
+    assert codec.nearest([1.0, 0.0]) == 0
+    index = codec.nearest([math.pi - 0.01, 0.25])
+    heading, distance = codec.decode(index)
+
+    assert math.cos(heading - math.pi) > 0.99
+    assert distance == pytest.approx(0.25)
+
+
 def test_dueling_aggregation_centers_advantage_for_each_sample():
     values = torch.tensor([[2.0], [-4.0]])
     advantages = torch.tensor([[1.0, 3.0, 8.0], [6.0, 3.0, 0.0]])

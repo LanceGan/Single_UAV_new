@@ -45,14 +45,14 @@ def create_parser():
                         help="td3/ddpg are standard agents; td3_bc/ddpg_bc add MapGuide demonstrations and imitation")
     parser.add_argument("--outage_max_s", type=float, default=100.0)
     parser.add_argument("--train_memory_size", type=int, default=2000)
-    parser.add_argument("--teacher", choices=("astar", "mapguide"), default="astar",
-                        help="demonstration source for *_bc agents (A* optimal plan, or MapGuide planner)")
+    parser.add_argument("--teacher", choices=("astar", "mapguide"), default="mapguide",
+                        help="demonstration source for *_bc agents (default: MapGuide; A* is optional)")
     parser.add_argument("--guided_warmup_episodes", type=int, default=400,
                         help="episodes over which the whole-episode demonstration probability decays to guide_min_prob")
     parser.add_argument("--guide_prob", type=float, default=None,
                         help="initial whole-episode MapGuide probability (*_bc only; default 0.5)")
     parser.add_argument("--guide_min_prob", type=float, default=None,
-                        help="MapGuide probability kept for the rest of training (*_bc only; default 0.2)")
+                        help="teacher-control probability after warmup (*_bc only; default 0.0)")
     parser.add_argument("--bc_weight", type=float, default=None,
                         help="initial imitation weight on demonstrated samples (*_bc only; default 1.0)")
     parser.add_argument("--bc_min_weight", type=float, default=None,
@@ -264,7 +264,7 @@ if args.preflight_only:
     "map_hashes": preflight["map_hashes"], "sequence_method": "GA with exact verification/fallback",
     "state_schema": STATE_SCHEMA,
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
-    "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
+    "reward_schema": "v5-seconds: -(T + tau) + 2x progress + 0.5x uploaded-MB + milestones; T_out only as hard constraint; x0.01",
     "base_agent": profile["base"],
     "demonstration": ("none" if profile["guide_prob"] == 0.0 else
                       f"whole-episode {args.teacher.upper()} demonstration with probability decaying to a persistent floor; "

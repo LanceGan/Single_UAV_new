@@ -231,14 +231,25 @@ def test_pending_upload_slot_is_charged_as_transmission_delay(monkeypatch):
     assert world.reward_summary()["delay"] == pytest.approx(-world.delta_T * world.REWARD_SCALE)
 
 
-def test_completed_leg_upload_is_worth_fixed_reward_regardless_of_payload(monkeypatch):
+def test_upload_reward_is_per_mb_uploaded(monkeypatch):
     world = _world()
     _constant_radio(monkeypatch, world, snr_db=100.0)
     state, _ = world.reset()
     world.transmit = False; world.data_size = 2.0; world.current_payload = 8.0
     world.step_inside(np.zeros(2), state, 0)
+    assert world.last_uploaded_data == pytest.approx(2.0)
     assert world.reward_summary()["upload"] == pytest.approx(
-        world.UPLOAD_LEG_REWARD * 2.0 / 8.0 * world.REWARD_SCALE)
+        world.UPLOAD_MB_REWARD * 2.0 * world.REWARD_SCALE)
+
+
+def test_efficient_upload_slot_is_net_positive(monkeypatch):
+    world = _world()
+    _constant_radio(monkeypatch, world, snr_db=20.0)  # ~6.66 MB/s, above the 4 MB/s break-even
+    state, _ = world.reset()
+    world.transmit = False; world.data_size = 100.0; world.current_payload = 100.0
+    world.step_inside(np.zeros(2), state, 0)  # hover while uploading
+    terms = world.reward_summary()
+    assert terms["upload"] + terms["time"] + terms["delay"] > 0
 
 
 def test_all_infeasible_terminations_share_one_penalty(monkeypatch):
@@ -272,7 +283,8 @@ def test_infeasible_penalty_exceeds_worst_feasible_objective():
     world = _world(t=1000)
     horizon_s = world.T * world.delta_T
     worst_feasible_cost = horizon_s + horizon_s + world.outage_max_s  # T + tau + T_out
-    milestones = 7 * world.ARRIVAL_REWARD + 6 * world.UPLOAD_LEG_REWARD + world.COMPLETION_REWARD
+    # Worst feasible upload still contributes its per-MB reward, so the penalty must clear it too.
+    milestones = 7 * world.ARRIVAL_REWARD + world.UPLOAD_MB_REWARD * 1500.0 + world.COMPLETION_REWARD
     assert world.INFEASIBLE_PENALTY > worst_feasible_cost - milestones
 
 

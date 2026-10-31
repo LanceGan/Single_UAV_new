@@ -38,6 +38,20 @@ class DiscreteActionCodec:
             raise IndexError(f"action index {action_index} is outside [0, {len(self)})")
         return self._actions[action_index].copy()
 
+    def nearest(self, action):
+        """Return the closest discrete action to a continuous Variant-A action."""
+        heading, distance = np.asarray(action, dtype=float).reshape(2)
+        if distance <= 1e-9:
+            return 0
+        heading_error = np.abs(np.arctan2(
+            np.sin(self._actions[:, 0] - heading),
+            np.cos(self._actions[:, 0] - heading),
+        ))
+        distance_error = np.abs(self._actions[:, 1] - distance) / 0.25
+        cost = heading_error + distance_error
+        cost[0] = np.inf
+        return int(np.argmin(cost))
+
     def to_absolute(self, action_index, target_bearing):
         """Return an absolute heading for diagnostics; World Variant A decodes it itself."""
         heading, distance = self.decode(action_index)

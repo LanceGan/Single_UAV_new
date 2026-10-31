@@ -10,12 +10,23 @@ from D3QN import D3QNAgent
 from Train_D3QN import (
     D3QN_STATE_SCHEMA,
     checkpoint_paths,
+    create_parser,
     epsilon_at_step,
     evaluation_action,
     run_training,
 )
 from discrete_actions import DiscreteActionCodec
 from evaluate_d3qn import load_d3qn_checkpoint, load_d3qn_run_context
+
+
+def test_d3qn_defaults_to_mapguide_and_lower_learning_rate():
+    args = create_parser().parse_args([])
+
+    assert args.teacher == "mapguide"
+    assert args.learning_rate == pytest.approx(1e-4)
+    assert args.guide_prob == pytest.approx(0.5)
+    assert args.guide_min_prob == pytest.approx(0.2)
+    assert args.demo_fraction == pytest.approx(0.25)
 
 
 def _map_hashes():
@@ -198,6 +209,38 @@ def test_demonstration_weight_zero_matches_no_demonstration():
 
     for left, right in zip(with_demo.online_network.parameters(), without.online_network.parameters()):
         assert torch.equal(left, right)
+
+
+def test_mixed_discrete_replay_uses_one_quarter_demonstrations():
+    import torch
+    from D3QN import DiscreteReplayBuffer, sample_mixed_replay
+
+    online = DiscreteReplayBuffer(8, 64, seed=1)
+    demo = DiscreteReplayBuffer(8, 64, seed=2)
+    for _ in range(64):
+        online.add(np.zeros(8), 0, 0.0, np.zeros(8), False)
+        demo.add(np.ones(8), 1, 1.0, np.ones(8), False)
+
+    states, actions, rewards, next_states, dones, demo_states, demo_actions = sample_mixed_replay(
+        online, demo, batch_size=32, demo_fraction=0.25, device="cpu")
+
+    assert states.shape == (32, 8)
+    assert int((states[:, 0] == 1).sum()) == 8
+    assert demo_states.shape == (8, 8)
+    assert torch.all(demo_actions == 1)
+
+
+def test_mapguide_discrete_demonstration_completes_low_mission():
+    from d3qn_mapguide import collect_mapguide_demonstration
+
+    transitions, report = collect_mapguide_demonstration(
+        level="low", order=[1, 6, 2, 3, 5, 4])
+
+    assert report["success"]
+    assert report["visited_inspection_points"] == 6
+    assert report["uploaded_mb"] == pytest.approx(450.0)
+    assert transitions["states"].shape[1] == 8
+    assert len(transitions["actions"]) == report["steps"]
 
 
 def test_training_with_injected_demo_records_guidance(tmp_path):

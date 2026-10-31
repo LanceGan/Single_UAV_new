@@ -13,7 +13,7 @@ class World(object):
     # Reward terms are designed in seconds of the objective T + tau, then
     # scaled once by REWARD_SCALE so returns stay in a critic-friendly range.
     REWARD_SCALE = 0.01
-    UPLOAD_LEG_REWARD = 10.0   # earned in full when one leg's payload is cleared
+    UPLOAD_MB_REWARD = 0.5   # seconds credited per MB uploaded; makes efficient upload net-positive
     ARRIVAL_REWARD = 50.0      # reaching a waypoint with its upload complete
     COMPLETION_REWARD = 200.0
     INFEASIBLE_PENALTY = 1000.0  # QoS violation, timeout, or early arrival
@@ -343,8 +343,9 @@ class World(object):
                 self.trans_delay += self.trans_delay_end-self.trans_delay_start
 
         reward += self.get_reward(fa, reduce_dis, pending_upload)
-        if self.last_uploaded_data > 0 and self.current_payload > 0:
-            reward += self.add_scaled_term("upload", self.UPLOAD_LEG_REWARD * self.last_uploaded_data / self.current_payload)
+        if self.last_uploaded_data > 0:
+            # Per-MB progress: hovering at a high-rate spot outweighs the T+tau slot cost.
+            reward += self.add_scaled_term("upload", self.UPLOAD_MB_REWARD * self.last_uploaded_data)
 
         # A QoS violation is failure even when it coincides with endpoint arrival.
         if self.out_time > self.outage_max_s:
