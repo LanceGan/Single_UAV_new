@@ -29,17 +29,29 @@
 
 ## 3. Mac 侧结果清单（feat/mac 分支内）
 
-### 课程线（low，course-final 配方 + **A2G-blind**）🔄 重跑中
+### 课程线（low，归零配方）✅ 盲版已完成（2026-11-01 夜）
 
-**2026-11-01 方法论修正**：基线原始论文均无 A2G（A2G 是本文贡献），故顺序基线的整条管线去除 A2G 可见性——状态去掉 A2G SNR 维（8D→7D，`--a2g_blind`）、教师换 G2A-only MapGuide（枢纽选择不用速率打分）；**环境物理、目标与奖励不变**（公平性底线）。DDPG/D3QN（轨迹算法对照）与 A\*（oracle 参照）经确认保持全知。
+**2026-11-01 方法论调整与结果**：顺序基线轨迹栈去除 A2G 可见性——状态去 A2G SNR 维（8D→7D，`--a2g_blind`）、教师 G2A-only MapGuide；环境物理、目标与奖励不变。
 
-| 方法 | 顺序 | 结果 | 目录 |
+| 方法 | 顺序 | 成功率 | eval_best T+τ | 目录 |
+|---|---|---|---|---|
+| Distance-TSP+TD3（**A2G-blind**） | `[1,6,5,2,3,4]` | 56/120 (47%) | **311.0s**（ep1450，T=185.5，τ=125.5，T_out=20.5） | `journal_results/course-baselines/distance-tsp/.../td3_bc/` |
+| DRL-SA（**A2G-blind**） | 同上 | 56/120 | **311.0s**（确定性复制，逐位相同） | `journal_results/course-baselines/drl-sa/.../td3_bc/` |
+| （消融存档）同基线 A2G 可见版 | 同上 | 91/120 | 229.0s | `journal_results/course-baselines-a2g-visible/` |
+
+**A2G 价值的量化证据**：同顺序、同配方、仅去掉轨迹层 A2G 可见性 → T+τ 恶化 **+82.0s（+35.8%）**、成功率 −29pp、τ 从 89.0→125.5（+41%）。配合 Proposed（A2G 全知）对比，论文可把 A2G 贡献拆成两层呈现。
+
+**顺序质量核查**（`journal_results/analysis-astar-order-check/`）：A\* 下 IGA 序 214.0 < 基线序 216.5（仅低档；Win 侧 §3 发现中高档 TSP 序反而略优，叙事以 Win 版为准）。
+
+### ⚠️ 晨间待裁决（双机立场冲突，2026-11-01 夜记录）
+
+| # | 议题 | Win 立场（win-mac.md / 5adb624） | Mac 已执行（本会话用户指示） |
 |---|---|---|---|
-| Distance-TSP+TD3（A2G-blind） | `[1,6,5,2,3,4]` | 🔄 训练中 | `journal_results/course-baselines/distance-tsp/A/low/td3_bc/` |
-| DRL-SA（A2G-blind，SA 序 + TD3 轨迹） | `[1,6,5,2,3,4]` | 🔄 训练中 | `journal_results/course-baselines/drl-sa/A/low/td3_bc/` |
-| （存档）A2G 可见版两基线 | 同上 | 均 91/120，229.0s | `journal_results/course-baselines-a2g-visible/`（基线经状态特征与教师间接看到 A2G，不作课程正式结果） |
+| 1 | 谁盲 A2G | 仅 DRL 基线（DDPG/DQN）盲化；序列基线轨迹栈保持全知 | 序列基线轨迹栈全盲（上表 311.0 即其结果）；DDPG/D3QN 保持全知 |
+| 2 | 教师下限 | 0.2（与论文 TD3 行配方一致） | 基线按课程文档用归零（可见版 229.0 与盲版 311.0 均为归零） |
+| 3 | 奖励版本 | Win 已切 v5（0.5 s/MB） | Mac 保持旧奖励（与论文 TD3 行可比）；基线全部旧奖励 |
 
-**顺序质量核查**（`journal_results/analysis-astar-order-check/`，与盲化无关仍有效）：A\* 规划器下 IGA 序 `[1,6,2,3,5,4]` = 214.0s < 基线序 216.5s → 数据感知顺序在低档亦严格更优。
+无论 #1 如何裁决，两套基线数据（盲 311.0 / 可见 229.0）都已在库：一套做正式基线、另一套做 A2G 消融，不浪费。
 
 ### 期刊线 / 对照（legacy-0.2 配方）
 
