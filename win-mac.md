@@ -15,19 +15,18 @@
 - **失败结果不进论文**，仅内部知晓：DDPG 0/120、D3QN 0/120（Mac 上 A* 示范对与 MapGuide 整回合两种配方都失败）。
 - **TD3 high** 用 Win 的 `formal-v5-restart` 结果（Mac 的 high 只有 1/120，已弃用）。
 
-## 2. ⚠️ A2G 原则（baseline 不应使用 A2G）
+## 2. A2G 原则（仅"其他论文的 baseline"不得使用 A2G）
 
-会议论文的对比算法（TSP、DRL-SA 等）**原始定义里没有 A2G**。为保证真实复现、并体现 A2G 地图的价值，**所有 baseline 的轨迹/序列优化都不得使用 A2G 相关元素**（即不找高上传点、不优化上传时延 τ）。
+- **我们的方法保留 A2G**：TD3、A*、MapGuide 都应使用 A2G（找高上传点、优化上传时延 τ），这是本工作的核心。
+- **选自其他论文的 DRL baseline 不应有 A2G**：DQN、DDPG 原始论文没有 A2G，复现时应只给 G2A（状态里去掉 A2G SNR 维度），以忠实复现并体现 A2G 的价值。
+- 序列 baseline 本来就 A2G-free：距离 TSP 只看距离、G2A-SA 只看距离+G2A 中断，已正确。
 
-| baseline | 是否已 A2G-free | 说明 |
+| 方法 | A2G | 说明 |
 |---|---|---|
-| 距离 TSP | ✅ | 只看飞行距离 |
-| G2A-SA | ✅ | 只看距离 + G2A 中断 |
-| **A\*** | ❌ 待改 | 当前实现优化了 τ（用了 A2G），需改成只优化飞行+G2A、上传就地完成 |
-| **MapGuide** | ❌ 待改 | 当前会找高 SNR 上传 hub（用了 A2G），需改成上传就地完成 |
-| DDPG/D3QN | 保持 | 作为算法基线应与 TD3 同状态（含 A2G）；但已失败、不进论文 |
-
-**注意：当前已记录在案的 A\*/MapGuide 结果（见 §1 表）是 A2G-aware 的，将被 A2G-free 重跑替换。**
+| TD3 / A* / MapGuide | ✅ 有 | 我们自己的方法 |
+| 距离 TSP | ✅ 无 | 只看飞行距离（已正确） |
+| G2A-SA | ✅ 无 | 只看距离 + G2A 中断（已正确） |
+| **DDPG / DQN** | ❌ 待改 | 状态目前含 A2G SNR，需改成只含 G2A 的 7 维观察 |
 
 ## 3. 序列基线结果（已补齐）
 
@@ -64,7 +63,7 @@
 
 ## 7. 待办 / 注意
 
-- **A2G-free 重跑（待做）**：把 A\* 与 MapGuide 改成只用飞行+G2A 中断、上传就地完成，重跑三档；替换 §1 表中现有的 A2G-aware 结果，以体现 A2G 价值。
+- **DDPG/DQN 改 A2G-free（待确认）**：若需忠实复现，把这两个 DRL 基线状态里的 A2G SNR 去掉（改成 7 维 G2A-only 观察）并重跑；否则只在论文里说明其 G2A-only 的设定。
 - **TD3 三档配方不完全一致**：低/中来自 Mac（0.2 下限配方），高来自 Win（旧 0 衰减配方）。论文里若要求完全一致，可考虑在 Windows 用 `guide_min_prob=0.2` 重训一版 high。
 - 判断方法好坏一律看**纯 actor 的 `eval_best`**（无引导、无噪声），不看训练奖励曲线。
 - 环境：Windows 用 `D:/Anaconda/envs/pytorch/python.exe`（Py3.11 + CUDA）；默认 `python` 是 3.14，没有 torch/pytest，不要用。
