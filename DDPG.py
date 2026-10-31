@@ -6,7 +6,8 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from demonstration import behavior_cloning_loss
 
-torch.cuda.set_device(0)
+if torch.cuda.is_available():
+    torch.cuda.set_device(0)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
