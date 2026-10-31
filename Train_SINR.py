@@ -6,6 +6,7 @@ from World import World
 from reward_logging import log_reward_terms
 from training_config import ALGORITHMS, build_output_paths, load_fixed_payloads, resolve_algorithm
 from sequence_runner import solve_ga_order
+from sequence_optimizers import distance_tsp_order, sa_order
 from training_transitions import replay_terminal_mask
 from exploration import exploration_scales
 from map_guidance import MapGuide
@@ -64,6 +65,9 @@ def create_parser():
     parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--eval_interval", type=int, default=25)
+    parser.add_argument("--sequence_method", choices=("iga", "distance_tsp", "sa"), default="iga",
+                        help="inspection order: data-aware IGA (proposed), exact distance TSP "
+                             "(no maps/payloads), or G2A-only simulated annealing (DRL-SA baseline)")
     parser.add_argument("--variant", choices=World.VARIANTS, default="baseline",
                         help="ablation: baseline (absolute heading), A (target-relative heading), AB (A + map neighborhood)")
     return parser
@@ -235,7 +239,15 @@ data_size = 300
 ini_loc = [2.62, 2.65]
 end_loc = [18.95, 11.12]
 BS_loc = np.array([[4.77,4.56,0.25],[14.89,4.89,0.25],[4.63,13.78,0.25],[13.48,14.89,0.25]])
-trave_order = solve_ga_order(payloads, iterations=args.ga_iterations)
+if args.sequence_method == "distance_tsp":
+    trave_order, sequence_meta = distance_tsp_order()
+elif args.sequence_method == "sa":
+    trave_order, sequence_meta = sa_order(seed=args.seed)
+else:
+    trave_order = solve_ga_order(payloads, iterations=args.ga_iterations)
+    sequence_meta = {"method": "GA with exact verification/fallback",
+                     "uses_g2a": True, "uses_a2g": True, "uses_payloads": True}
+print("Sequence:", args.sequence_method, trave_order, sequence_meta, flush=True)
 teacher_positions = teacher_meta = None
 if args.teacher == "astar" and profile["guide_prob"] > 0.0:
     teacher_positions, teacher_meta = load_or_plan_teacher_path(data_level, trave_order)
@@ -261,7 +273,8 @@ if args.preflight_only:
 
 (output_paths["root"] / "run_config.json").write_text(json.dumps({
     **vars(args), "state_dim": s_dim, "order": trave_order, "payloads_mb": payloads.tolist(),
-    "map_hashes": preflight["map_hashes"], "sequence_method": "GA with exact verification/fallback",
+    "map_hashes": preflight["map_hashes"], "sequence_method": sequence_meta["method"],
+    "sequence_meta": sequence_meta,
     "state_schema": STATE_SCHEMA,
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
     "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
