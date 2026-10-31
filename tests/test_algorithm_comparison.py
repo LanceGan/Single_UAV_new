@@ -23,6 +23,15 @@ def test_method_display_name_hides_bc_suffix_in_figures():
     assert method_display_name("d3qn") == "D3QN"
 
 
+def test_method_title_qualifies_sequence_baselines():
+    from plot_formal_results import method_title
+
+    assert method_title("td3_bc", {"sequence_method": "GA with exact verification/fallback"}) == "TD3"
+    assert method_title("td3_bc", {"sequence_method": "exact distance TSP over all permutations"}) == "Distance-TSP+TD3"
+    assert method_title("td3_bc", {"sequence_method": "simulated annealing on G2A flight+outage seconds"}) == "DRL-SA (TD3 trajectory)"
+    assert method_title("td3_bc", {}) == "TD3"
+
+
 def _history_rows(successes):
     rows = []
     for index, ok in enumerate(successes, start=1):

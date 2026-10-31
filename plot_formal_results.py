@@ -243,6 +243,17 @@ def _generate_d3qn_figures(run_dir, config):
     return summary
 
 
+def method_title(algorithm, config):
+    """Figure label: paper method name, qualified by a non-IGA sequence baseline."""
+    base = method_display_name(algorithm)
+    sequence = str(config.get("sequence_method", ""))
+    if "distance TSP" in sequence:
+        return f"Distance-TSP+{base}"
+    if "annealing" in sequence:
+        return f"DRL-SA ({base} trajectory)"
+    return base
+
+
 def generate_run_figures(run_dir):
     run_dir = Path(run_dir).resolve()
     config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
@@ -257,7 +268,7 @@ def generate_run_figures(run_dir):
     output.mkdir(parents=True, exist_ok=True)
 
     load_label = str(context.config["data_level"]).capitalize()
-    method_label = method_display_name(context.algorithm)
+    method_label = method_title(context.algorithm, context.config)
     title = f"{method_label}, {load_label} load, Variant {context.variant}"
     plot_objectives(series, output / "objective_vs_episode", title)
     plot_rewards(rewards, series, output / "reward_vs_episode", title)
