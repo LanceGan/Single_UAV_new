@@ -18,6 +18,7 @@ from D3QN import D3QNAgent, DiscreteReplayBuffer
 from World import World
 from discrete_actions import DiscreteActionCodec
 from evaluate_policy import rollout, selection_key
+from astar_teacher import d3qn_demo_pairs
 from sequence_runner import solve_ga_order
 from training_config import load_fixed_payloads
 
@@ -53,6 +54,10 @@ def create_parser():
     parser.add_argument("--epsilon_end", type=float, default=0.05)
     parser.add_argument("--epsilon_decay_steps", type=int, default=150_000)
     parser.add_argument("--checkpoint_interval", type=int, default=50)
+    parser.add_argument("--teacher", choices=("astar", "none"), default="astar",
+                        help="demonstration source: A* optimal plan snapped to discrete actions, or none")
+    parser.add_argument("--demo_weight", type=float, default=1.0, help="weight on the DQfD margin loss")
+    parser.add_argument("--demo_margin", type=float, default=0.8, help="Q margin required around demonstrated actions")
     parser.add_argument("--device", default=None)
     return parser
 
@@ -157,6 +162,7 @@ def run_training(
     order_solver=solve_ga_order,
     world_factory=_make_world,
     evaluator=_evaluate_agent,
+    demo_factory=None,
 ):
     if args.episodes <= 0:
         raise ValueError("episodes must be positive")
@@ -175,6 +181,8 @@ def run_training(
     run_dir = Path(args.output_root).resolve() / args.data_level / "d3qn"
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    codec = DiscreteActionCodec()
+    demo = demo_factory(order, codec) if demo_factory is not None else None
     config = {
         **vars(args),
         "algorithm": "d3qn",
@@ -187,7 +195,8 @@ def run_training(
         "payloads_mb": payloads.tolist(),
         "map_hashes": _map_hashes(),
         "sequence_method": "GA with exact verification/fallback",
-        "guidance": "none",
+        "guidance": "astar-demonstration-margin" if demo is not None else "none",
+        "demo_pairs": int(len(demo[1])) if demo is not None else 0,
         "policy_mode": "epsilon-greedy training; deterministic argmax evaluation",
         "model_selection": "eval_best: feasible first, then minimum T + tau",
         "checkpoint_schema": D3QNAgent.CHECKPOINT_SCHEMA,
@@ -211,7 +220,6 @@ def run_training(
     np.random.seed(args.seed)
     random.seed(args.seed)
 
-    codec = DiscreteActionCodec()
     agent = D3QNAgent(
         state_dim=8,
         action_dim=len(codec),
@@ -224,6 +232,8 @@ def run_training(
         seed=args.seed,
         device=getattr(args, "device", None),
     )
+    agent.demo_weight = float(getattr(args, "demo_weight", 1.0))
+    agent.demo_margin = float(getattr(args, "demo_margin", 0.8))
     replay = DiscreteReplayBuffer(8, args.buffer, args.seed)
     context = _rollout_context(run_dir, config)
     paths = checkpoint_paths(run_dir)
@@ -259,7 +269,7 @@ def run_training(
             episode_reward += float(reward)
             global_step += 1
             if len(replay) >= max(args.train_start, args.batch_size) and global_step % args.train_frequency == 0:
-                losses.append(agent.learn(replay)["loss"])
+                losses.append(agent.learn(replay, demo=demo)["loss"])
 
         rewards.append(episode_reward)
         episode_losses.append(float(np.mean(losses)) if losses else np.nan)
@@ -305,7 +315,14 @@ def run_training(
 
 
 def main():
-    run_dir = run_training(create_parser().parse_args())
+    args = create_parser().parse_args()
+
+    def make_demo(order, codec):
+        if args.teacher == "none":
+            return None
+        return d3qn_demo_pairs(args.data_level, order, codec)
+
+    run_dir = run_training(args, demo_factory=make_demo)
     print(run_dir)
 
 

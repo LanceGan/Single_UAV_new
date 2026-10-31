@@ -162,3 +162,67 @@ def test_tiny_training_writes_reproducible_artifacts_and_uses_fixed_order(tmp_pa
     assert history["episode_losses"].shape == (2,)
     for path in checkpoint_paths(run_dir).values():
         assert path.is_file()
+
+
+def test_demonstration_margin_loss_is_finite_and_nonnegative():
+    torch = pytest.importorskip("torch")
+    from D3QN import D3QNAgent
+
+    agent = D3QNAgent(8, 33, hidden_dim=32, seed=3, device="cpu")
+    states = torch.randn(16, 8)
+    actions = torch.randint(0, 33, (16, 1))
+    loss = agent.demonstration_loss(states, actions)
+    assert torch.isfinite(loss) and loss.item() >= 0.0
+
+
+def test_demonstration_weight_zero_matches_no_demonstration():
+    import torch
+    from D3QN import D3QNAgent, DiscreteReplayBuffer
+
+    def buffer():
+        b = DiscreteReplayBuffer(8, 64, seed=7)
+        rng = np.random.default_rng(0)
+        for _ in range(64):
+            b.add(rng.random(8), int(rng.integers(33)), -0.1, rng.random(8), False)
+        return b
+
+    def build():
+        return D3QNAgent(8, 33, hidden_dim=32, seed=7, device="cpu")
+
+    demo = (np.random.rand(64, 8).astype("float32"), np.random.randint(33, size=64))
+
+    with_demo = build(); with_demo.demo_weight = 0.0
+    with_demo.learn(buffer(), demo=demo)
+    without = build()
+    without.learn(buffer())
+
+    for left, right in zip(with_demo.online_network.parameters(), without.online_network.parameters()):
+        assert torch.equal(left, right)
+
+
+def test_training_with_injected_demo_records_guidance(tmp_path):
+    reports = iter([{"success": True, "visited_inspection_points": 6, "uploaded_mb": 450.0,
+                     "task_time_s": 200.0, "transmission_delay_s": 80.0}])
+    args = Namespace(
+        data_level="low", episodes=1, output_root=str(tmp_path), ga_iterations=1,
+        seed=1, eval_interval=1, uav_h=1.0, outage_max_s=100.0,
+        gamma=0.995, buffer=32, net_width=16, learning_rate=0.001,
+        batch_size=2, train_start=2, train_frequency=1, target_update_interval=2,
+        gradient_clip=1.0, epsilon_start=1.0, epsilon_end=0.05,
+        epsilon_decay_steps=10, checkpoint_interval=1, teacher="astar",
+        demo_weight=1.0, demo_margin=0.8,
+    )
+
+    def demo_factory(order, codec):
+        return (np.zeros((4, 8), dtype="float32"), np.zeros(4, dtype="int64"))
+
+    run_dir = run_training(
+        args,
+        order_solver=lambda payloads, iterations: [1, 6, 2, 3, 5, 4],
+        world_factory=lambda **kwargs: _TinyWorld(),
+        evaluator=lambda *unused: next(reports),
+        demo_factory=demo_factory,
+    )
+    config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
+    assert config["guidance"] == "astar-demonstration-margin"
+    assert config["demo_pairs"] == 4

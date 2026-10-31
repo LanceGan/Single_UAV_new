@@ -116,6 +116,8 @@ class D3QNAgent:
             parameter.requires_grad_(False)
         self.optimizer = torch.optim.Adam(self.online_network.parameters(), lr=learning_rate)
         self.update_count = 0
+        self.demo_margin = 0.8
+        self.demo_weight = 0.0  # set by the training loop; 0 disables demonstration imitation
 
     def select_action(self, state, epsilon=0.0):
         if self.rng.random() < float(epsilon):
@@ -124,7 +126,20 @@ class D3QNAgent:
             state_tensor = torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             return int(self.online_network(state_tensor).argmax(dim=1).item())
 
-    def learn(self, replay_buffer):
+    def demonstration_loss(self, states, actions, margin=None):
+        """Large-margin DQfD loss on demonstrated (state, action) pairs.
+
+        Penalizes any non-teacher action whose Q value comes within ``margin`` of
+        the teacher action, so argmax is pulled toward the demonstration.
+        """
+        margin = self.demo_margin if margin is None else float(margin)
+        q = self.online_network(states)
+        q_teacher = q.gather(1, actions)
+        penalties = torch.full_like(q, margin)
+        penalties.scatter_(1, actions, 0.0)
+        return (penalties + q - q_teacher).clamp(min=0.0).mean()
+
+    def learn(self, replay_buffer, demo=None, demo_weight=None):
         states, actions, rewards, next_states, dones = replay_buffer.sample(
             self.batch_size, self.device
         )
@@ -133,6 +148,14 @@ class D3QNAgent:
         )
         predictions = self.online_network(states).gather(1, actions)
         loss = F.smooth_l1_loss(predictions, targets)
+        if demo is not None:
+            demo_states, demo_actions = demo
+            weight = self.demo_weight if demo_weight is None else float(demo_weight)
+            if weight > 0 and len(demo_actions) > 0:
+                indices = self.rng.integers(0, len(demo_actions), size=self.batch_size)
+                demo_states_t = torch.as_tensor(demo_states[indices], device=self.device)
+                demo_actions_t = torch.as_tensor(demo_actions[indices], device=self.device).long().unsqueeze(1)
+                loss = loss + weight * self.demonstration_loss(demo_states_t, demo_actions_t)
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         norm = torch.nn.utils.clip_grad_norm_(

@@ -9,6 +9,7 @@ from sequence_runner import solve_ga_order
 from training_transitions import replay_terminal_mask
 from exploration import exploration_scales
 from map_guidance import MapGuide
+from astar_teacher import AStarTeacher, load_or_plan_teacher_path
 from demonstration import linear_decay
 from mission_preflight import run_preflight
 from evaluate_policy import STATE_SCHEMA, load_run_context, _build_world, rollout, selection_key
@@ -44,8 +45,10 @@ def create_parser():
                         help="td3/ddpg are standard agents; td3_bc/ddpg_bc add MapGuide demonstrations and imitation")
     parser.add_argument("--outage_max_s", type=float, default=100.0)
     parser.add_argument("--train_memory_size", type=int, default=2000)
+    parser.add_argument("--teacher", choices=("astar", "mapguide"), default="astar",
+                        help="demonstration source for *_bc agents (A* optimal plan, or MapGuide planner)")
     parser.add_argument("--guided_warmup_episodes", type=int, default=400,
-                        help="episodes over which the whole-episode MapGuide probability decays to guide_min_prob")
+                        help="episodes over which the whole-episode demonstration probability decays to guide_min_prob")
     parser.add_argument("--guide_prob", type=float, default=None,
                         help="initial whole-episode MapGuide probability (*_bc only; default 0.5)")
     parser.add_argument("--guide_min_prob", type=float, default=None,
@@ -233,6 +236,10 @@ ini_loc = [2.62, 2.65]
 end_loc = [18.95, 11.12]
 BS_loc = np.array([[4.77,4.56,0.25],[14.89,4.89,0.25],[4.63,13.78,0.25],[13.48,14.89,0.25]])
 trave_order = solve_ga_order(payloads, iterations=args.ga_iterations)
+teacher_positions = teacher_meta = None
+if args.teacher == "astar" and profile["guide_prob"] > 0.0:
+    teacher_positions, teacher_meta = load_or_plan_teacher_path(data_level, trave_order)
+    print("A* demonstration teacher:", {k: teacher_meta.get(k) for k in ("objective_s", "from_cache", "expansions")}, flush=True)
 
 world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, delta_t=delta_t, t=T, uav_h=uav_h,
               data_size=data_size, ini_loc=ini_loc, end_loc=end_loc,
@@ -260,8 +267,11 @@ if args.preflight_only:
     "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
     "base_agent": profile["base"],
     "demonstration": ("none" if profile["guide_prob"] == 0.0 else
-                      "whole-episode MapGuide with probability decaying to a persistent floor; persistent demo replay; "
-                      "behavior cloning weight decays to a nonzero floor"),
+                      f"whole-episode {args.teacher.upper()} demonstration with probability decaying to a persistent floor; "
+                      "persistent demo replay; behavior cloning weight decays to a nonzero floor"),
+    "teacher": args.teacher,
+    "teacher_objective_s": teacher_meta["objective_s"] if teacher_meta else None,
+    "teacher_from_cache": teacher_meta["from_cache"] if teacher_meta else None,
     "guide_schedule": f"{profile['guide_prob']} -> {profile['guide_min_prob']} over {guided_warmup_episodes} episodes, then constant",
     "demo_buffer_capacity": int(buffer),
     "demo_sampling_fraction": profile["demo_fraction"],
@@ -328,7 +338,8 @@ print(f"初始探索噪声: {max_exploration}, 最小探索噪声: {min_explorat
 for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
     t3 = time.time()
     s, t = world.reset()
-    map_guide = MapGuide(world)
+    demo_actor = (AStarTeacher(world, teacher_positions) if args.teacher == "astar" and teacher_positions is not None
+                  else MapGuide(world))
     # Whole demonstration episodes avoid a guide silently repairing actor mistakes.
     guide_probability = (linear_decay(args.guide_prob, episode - 1, guided_warmup_episodes, floor=args.guide_min_prob)
                          if exploration_strategy == "guided" else 0.0)
@@ -370,8 +381,11 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         if exploration_strategy == "guided":
             if guided_episode:
                 guidance_steps += 1
-                # MapGuide plans absolute headings; store them in the policy's action frame.
-                a = world.absolute_to_action(map_guide.action(angle_noise, distance_noise, np.random))
+                if args.teacher == "astar":
+                    a = demo_actor.action()  # already in the policy's relative-heading frame
+                else:
+                    # MapGuide plans absolute headings; store them in the policy's action frame.
+                    a = world.absolute_to_action(demo_actor.action(angle_noise, distance_noise, np.random))
             else:
                 a = model.select_action(s) + np.random.normal(0, [angle_noise, distance_noise], size=a_dim)
             current_noise = angle_noise
