@@ -5,7 +5,13 @@ import pytest
 import torch
 from torch import nn
 
-from D3QN import D3QNAgent, DiscreteReplayBuffer, DuelingQNetwork, double_dqn_targets
+from D3QN import (
+    D3QNAgent,
+    DiscreteReplayBuffer,
+    DuelingQNetwork,
+    double_dqn_targets,
+    dqfd_margin_loss,
+)
 from discrete_actions import DiscreteActionCodec
 
 
@@ -32,6 +38,98 @@ def test_action_headings_are_relative_to_target_bearing():
     np.testing.assert_allclose(codec.to_absolute(9, math.pi / 3.0), [-2.0 * math.pi / 3.0, 0.125])
     with pytest.raises(IndexError):
         codec.decode(33)
+
+
+def test_encode_round_trips_and_snaps_to_nearest_action():
+    codec = DiscreteActionCodec()
+
+    for index in range(len(codec)):
+        assert codec.encode(codec.decode(index)) == index
+    # Below half of the smallest step the only faithful discrete action is hovering.
+    assert codec.encode([1.3, 0.05]) == 0
+    assert codec.encode([0.0, 0.0625]) == 1
+    # Nearest sixteenth of a turn, including both signs of the pi seam.
+    assert codec.encode([math.pi / 8.0 + 0.02, 0.125]) == 2
+    assert codec.encode([math.pi, 0.125]) == 9
+    assert codec.encode([-math.pi, 0.125]) == 9
+    # Nearest legal step length, clipping anything past the 0.25 bound.
+    assert codec.encode([0.0, 0.2]) == 17
+    assert codec.encode([0.0, 1.0]) == 17
+
+
+def test_replay_demo_partition_mixes_fraction_and_survives_online_wraparound():
+    replay = DiscreteReplayBuffer(
+        state_dim=2, capacity=8, seed=0, demo_capacity=4, demo_fraction=0.25
+    )
+    for _ in range(4):
+        replay.add(np.zeros(2), 7, 1.0, np.zeros(2), False, demo=True)
+    for _ in range(20):  # wraps the online region without touching demonstrations
+        replay.add(np.ones(2), 1, 0.0, np.ones(2), False)
+
+    assert len(replay) == 8 + 4
+    _, actions, _, _, _, demo_mask = replay.sample(8, "cpu")
+    demo_rows = demo_mask.bool().squeeze(1)
+    assert demo_mask.sum().item() == 2  # round(8 * 0.25)
+    assert set(actions[demo_rows].squeeze(1).tolist()) == {7}
+    assert set(actions[~demo_rows].squeeze(1).tolist()) == {1}
+
+
+def test_replay_serves_demonstrations_alone_before_any_online_transition():
+    replay = DiscreteReplayBuffer(
+        state_dim=2, capacity=8, seed=0, demo_capacity=4, demo_fraction=0.25
+    )
+    replay.add(np.zeros(2), 3, 1.0, np.zeros(2), True, demo=True)
+
+    _, actions, _, _, _, demo_mask = replay.sample(4, "cpu")
+
+    assert demo_mask.sum().item() == 4
+    assert set(actions.squeeze(1).tolist()) == {3}
+
+
+def test_dqfd_margin_loss_penalizes_only_demos_that_lack_the_margin():
+    q_values = torch.tensor([[5.0, 1.0, 0.0], [0.0, 2.0, 1.5]])
+    actions = torch.tensor([[0], [1]])
+
+    # First demo clears the margin (5 >= 2); the second is short by 0.5 (2.5 - 2).
+    both = dqfd_margin_loss(q_values, actions, torch.ones((2, 1)), margin=1.0)
+    first_only = dqfd_margin_loss(
+        q_values, actions, torch.tensor([[1.0], [0.0]]), margin=1.0
+    )
+    neither = dqfd_margin_loss(q_values, actions, torch.zeros((2, 1)), margin=1.0)
+
+    assert both.item() == pytest.approx(0.25)
+    assert first_only.item() == pytest.approx(0.0)
+    assert neither.item() == pytest.approx(0.0)
+
+
+def test_learn_adds_weighted_margin_term_for_demonstrations():
+    rng = np.random.default_rng(3)
+    replay = DiscreteReplayBuffer(
+        state_dim=8, capacity=64, seed=3, demo_capacity=64, demo_fraction=0.5
+    )
+    for index in range(32):
+        replay.add(
+            rng.normal(size=8),
+            index % 33,
+            float(rng.normal()),
+            rng.normal(size=8),
+            index % 7 == 0,
+            demo=index % 2 == 0,
+        )
+    agent = D3QNAgent(
+        8, 33, hidden_dim=32, batch_size=16, seed=5, device="cpu", margin=1.0
+    )
+
+    agent.bc_weight = 0.7
+    weighted = agent.learn(replay)
+    agent.bc_weight = 0.0
+    unweighted = agent.learn(replay)
+
+    assert weighted["margin_loss"] > 0.0
+    assert weighted["loss"] == pytest.approx(
+        weighted["td_loss"] + 0.7 * weighted["margin_loss"], rel=1e-5
+    )
+    assert unweighted["loss"] == pytest.approx(unweighted["td_loss"], rel=1e-6)
 
 
 def test_dueling_aggregation_centers_advantage_for_each_sample():

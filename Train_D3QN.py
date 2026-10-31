@@ -1,4 +1,4 @@
-"""Train a guide-free D3QN baseline on the fixed Variant-A mission."""
+"""Train the D3QN baseline: guide-free, A* demo pairs, or MapGuide teacher episodes."""
 
 import argparse
 import hashlib
@@ -16,9 +16,12 @@ import torch
 
 from D3QN import D3QNAgent, DiscreteReplayBuffer
 from World import World
+from demonstration import linear_decay
 from discrete_actions import DiscreteActionCodec
 from evaluate_policy import rollout, selection_key
+from exploration import exploration_scales
 from astar_teacher import d3qn_demo_pairs
+from map_guidance import MapGuide
 from sequence_runner import solve_ga_order
 from training_config import load_fixed_payloads
 
@@ -54,10 +57,27 @@ def create_parser():
     parser.add_argument("--epsilon_end", type=float, default=0.05)
     parser.add_argument("--epsilon_decay_steps", type=int, default=150_000)
     parser.add_argument("--checkpoint_interval", type=int, default=50)
-    parser.add_argument("--teacher", choices=("astar", "none"), default="astar",
-                        help="demonstration source: A* optimal plan snapped to discrete actions, or none")
+    parser.add_argument("--teacher", choices=("astar", "mapguide", "none"), default="astar",
+                        help="demonstration source: A* pairs for the margin loss, whole-episode "
+                             "MapGuide replayed into the demo partition, or none")
     parser.add_argument("--demo_weight", type=float, default=1.0, help="weight on the DQfD margin loss")
     parser.add_argument("--demo_margin", type=float, default=0.8, help="Q margin required around demonstrated actions")
+    parser.add_argument("--guided_warmup_episodes", type=int, default=400,
+                        help="episodes over which the whole-episode MapGuide probability decays to guide_min_prob")
+    parser.add_argument("--guide_prob", type=float, default=0.5,
+                        help="initial whole-episode MapGuide probability (mapguide teacher only)")
+    parser.add_argument("--guide_min_prob", type=float, default=0.2,
+                        help="MapGuide probability kept for the rest of training (mapguide teacher only)")
+    parser.add_argument("--bc_weight", type=float, default=1.0,
+                        help="initial DQfD margin weight on replayed demonstrations (mapguide teacher only)")
+    parser.add_argument("--bc_min_weight", type=float, default=0.25,
+                        help="persistent imitation weight floor (mapguide teacher only)")
+    parser.add_argument("--demo_fraction", type=float, default=0.25,
+                        help="demonstration share of each replay batch (mapguide teacher only)")
+    parser.add_argument("--bc_decay_episodes", type=int, default=600,
+                        help="episodes over which bc_weight decays to bc_min_weight")
+    parser.add_argument("--margin", type=float, default=1.0,
+                        help="DQfD margin used for replayed demonstrations")
     parser.add_argument("--device", default=None)
     return parser
 
@@ -163,11 +183,23 @@ def run_training(
     world_factory=_make_world,
     evaluator=_evaluate_agent,
     demo_factory=None,
+    guide_factory=MapGuide,
 ):
     if args.episodes <= 0:
         raise ValueError("episodes must be positive")
     if args.eval_interval <= 0 or args.checkpoint_interval <= 0:
         raise ValueError("evaluation and checkpoint intervals must be positive")
+    guided_enabled = getattr(args, "teacher", "astar") == "mapguide"
+    guide_prob = float(getattr(args, "guide_prob", 0.5))
+    guide_min_prob = float(getattr(args, "guide_min_prob", 0.2))
+    if not 0.0 <= guide_min_prob <= guide_prob:
+        raise ValueError("guide_min_prob must be between zero and guide_prob")
+    bc_weight = float(getattr(args, "bc_weight", 1.0))
+    bc_min_weight = float(getattr(args, "bc_min_weight", 0.25))
+    demo_fraction = float(getattr(args, "demo_fraction", 0.25))
+    guided_warmup = int(getattr(args, "guided_warmup_episodes", 400))
+    bc_decay_episodes = int(getattr(args, "bc_decay_episodes", 600))
+    margin = float(getattr(args, "margin", 1.0))
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -183,6 +215,13 @@ def run_training(
 
     codec = DiscreteActionCodec()
     demo = demo_factory(order, codec) if demo_factory is not None else None
+    if guided_enabled:
+        guidance = ("whole-episode MapGuide demonstrations replayed into a persistent demo "
+                    "partition; DQfD margin with weight decaying to a persistent floor")
+    elif demo is not None:
+        guidance = "astar-demonstration-margin"
+    else:
+        guidance = "none"
     config = {
         **vars(args),
         "algorithm": "d3qn",
@@ -195,9 +234,17 @@ def run_training(
         "payloads_mb": payloads.tolist(),
         "map_hashes": _map_hashes(),
         "sequence_method": "GA with exact verification/fallback",
-        "guidance": "astar-demonstration-margin" if demo is not None else "none",
+        "guidance": guidance,
         "demo_pairs": int(len(demo[1])) if demo is not None else 0,
-        "policy_mode": "epsilon-greedy training; deterministic argmax evaluation",
+        "guide_schedule": (f"{guide_prob} -> {guide_min_prob} over {guided_warmup} episodes, "
+                           "then constant" if guided_enabled else "none"),
+        "bc_schedule": (f"{bc_weight} -> {bc_min_weight} over {bc_decay_episodes} episodes, "
+                        "then constant" if guided_enabled else "none"),
+        "demo_sampling_fraction": demo_fraction if guided_enabled else 0.0,
+        "dqfd_margin": margin if guided_enabled else 0.0,
+        "policy_mode": ("epsilon-greedy with whole-episode MapGuide demonstrations; "
+                        "deterministic argmax evaluation" if guided_enabled
+                        else "epsilon-greedy training; deterministic argmax evaluation"),
         "model_selection": "eval_best: feasible first, then minimum T + tau",
         "checkpoint_schema": D3QNAgent.CHECKPOINT_SCHEMA,
         "done_mask": "all episode endings disable bootstrap",
@@ -231,10 +278,14 @@ def run_training(
         gradient_clip=args.gradient_clip,
         seed=args.seed,
         device=getattr(args, "device", None),
+        margin=margin,
     )
     agent.demo_weight = float(getattr(args, "demo_weight", 1.0))
     agent.demo_margin = float(getattr(args, "demo_margin", 0.8))
-    replay = DiscreteReplayBuffer(8, args.buffer, args.seed)
+    replay = DiscreteReplayBuffer(
+        8, args.buffer, args.seed,
+        demo_capacity=args.buffer, demo_fraction=demo_fraction,
+    )
     context = _rollout_context(run_dir, config)
     paths = checkpoint_paths(run_dir)
     paths["final"].parent.mkdir(parents=True, exist_ok=True)
@@ -242,6 +293,7 @@ def run_training(
     rewards = []
     episode_losses = []
     epsilons = []
+    episode_guided = []
     eval_history = []
     eval_best = None
     best_reward = -float("inf")
@@ -249,6 +301,19 @@ def run_training(
 
     for episode in range(1, args.episodes + 1):
         state, step = training_world.reset()
+        # A fresh guide per episode mirrors Train_SINR: whole demonstration
+        # episodes avoid the guide silently repairing the agent's mistakes.
+        guide = guide_factory(training_world) if guided_enabled else None
+        guide_probability = (
+            linear_decay(guide_prob, episode - 1, guided_warmup, floor=guide_min_prob)
+            if guided_enabled else 0.0
+        )
+        guided_run = bool(np.random.random() < guide_probability) if guided_enabled else False
+        episode_guided.append(guided_run)
+        agent.bc_weight = (
+            linear_decay(bc_weight, episode - 1, bc_decay_episodes, floor=bc_min_weight)
+            if guided_enabled else 0.0
+        )
         done = False
         episode_reward = 0.0
         losses = []
@@ -259,12 +324,26 @@ def run_training(
             epsilon = epsilon_at_step(
                 global_step, args.epsilon_start, args.epsilon_end, args.epsilon_decay_steps
             )
-            action_index = agent.select_action(state, epsilon)
+            if guided_run:
+                uav = training_world.UAVs[0]
+                target_distance = float(np.linalg.norm(
+                    np.array([uav.x, uav.y]) - training_world.target_loc
+                ))
+                angle_noise, distance_noise = exploration_scales(
+                    episode, args.episodes, target_distance
+                )
+                # MapGuide plans absolute headings; snap them onto the discrete
+                # codec so the stored index is exactly what the world executes.
+                action_index = codec.encode(training_world.absolute_to_action(
+                    guide.action(angle_noise, distance_noise, np.random)
+                ))
+            else:
+                action_index = agent.select_action(state, epsilon)
             next_state, reward, done, step, _ = training_world.step_inside(
                 codec.decode(action_index), state, step
             )
             # Every episode ending is terminal for bootstrap, including QoS and timeout.
-            replay.add(state, action_index, reward, next_state, done)
+            replay.add(state, action_index, reward, next_state, done, demo=guided_run)
             state = next_state
             episode_reward += float(reward)
             global_step += 1
@@ -306,6 +385,7 @@ def run_training(
         episode_rewards=np.asarray(rewards, dtype=float),
         episode_losses=np.asarray(episode_losses, dtype=float),
         epsilons=np.asarray(epsilons, dtype=float),
+        episode_guided=np.asarray(episode_guided, dtype=bool),
         eval_episodes=eval_episodes,
         eval_success=eval_success,
         eval_objective_s=eval_objective,
@@ -318,7 +398,7 @@ def main():
     args = create_parser().parse_args()
 
     def make_demo(order, codec):
-        if args.teacher == "none":
+        if args.teacher != "astar":
             return None
         return d3qn_demo_pairs(args.data_level, order, codec)
 

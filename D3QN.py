@@ -36,23 +36,48 @@ class DuelingQNetwork(nn.Module):
 
 
 class DiscreteReplayBuffer:
-    def __init__(self, state_dim, capacity=200_000, seed=1):
+    """Online transitions plus a demonstration partition that is never evicted by them."""
+
+    def __init__(self, state_dim, capacity=200_000, seed=1, demo_capacity=None, demo_fraction=0.25):
         self.capacity = int(capacity)
         if self.capacity <= 0:
             raise ValueError("capacity must be positive")
+        self.demo_fraction = float(demo_fraction)
+        if not 0.0 <= self.demo_fraction <= 1.0:
+            raise ValueError("demo_fraction must be between 0 and 1")
+        self.demo_capacity = int(demo_capacity if demo_capacity is not None else capacity)
+        if self.demo_capacity <= 0:
+            raise ValueError("demo_capacity must be positive")
         self.states = np.empty((self.capacity, state_dim), dtype=np.float32)
         self.actions = np.empty((self.capacity, 1), dtype=np.int64)
         self.rewards = np.empty((self.capacity, 1), dtype=np.float32)
         self.next_states = np.empty((self.capacity, state_dim), dtype=np.float32)
         self.dones = np.empty((self.capacity, 1), dtype=np.float32)
+        self.demo_states = np.empty((self.demo_capacity, state_dim), dtype=np.float32)
+        self.demo_actions = np.empty((self.demo_capacity, 1), dtype=np.int64)
+        self.demo_rewards = np.empty((self.demo_capacity, 1), dtype=np.float32)
+        self.demo_next_states = np.empty((self.demo_capacity, state_dim), dtype=np.float32)
+        self.demo_dones = np.empty((self.demo_capacity, 1), dtype=np.float32)
         self.position = 0
         self.size = 0
+        self.demo_position = 0
+        self.demo_size = 0
         self.rng = np.random.default_rng(seed)
 
     def __len__(self):
-        return self.size
+        return self.size + self.demo_size
 
-    def add(self, state, action, reward, next_state, done):
+    def add(self, state, action, reward, next_state, done, demo=False):
+        if demo:
+            index = self.demo_position
+            self.demo_states[index] = state
+            self.demo_actions[index, 0] = int(action)
+            self.demo_rewards[index, 0] = float(reward)
+            self.demo_next_states[index] = next_state
+            self.demo_dones[index, 0] = float(bool(done))
+            self.demo_position = (self.demo_position + 1) % self.demo_capacity
+            self.demo_size = min(self.demo_size + 1, self.demo_capacity)
+            return
         self.states[self.position] = state
         self.actions[self.position, 0] = int(action)
         self.rewards[self.position, 0] = float(reward)
@@ -62,16 +87,38 @@ class DiscreteReplayBuffer:
         self.size = min(self.size + 1, self.capacity)
 
     def sample(self, batch_size, device="cpu"):
-        if self.size == 0:
+        if len(self) == 0:
             raise ValueError("cannot sample an empty replay buffer")
-        indices = self.rng.integers(0, self.size, size=int(batch_size))
-        return (
-            torch.as_tensor(self.states[indices], device=device),
-            torch.as_tensor(self.actions[indices], device=device),
-            torch.as_tensor(self.rewards[indices], device=device),
-            torch.as_tensor(self.next_states[indices], device=device),
-            torch.as_tensor(self.dones[indices], device=device),
+        batch_size = int(batch_size)
+        if self.demo_size == 0:
+            demo_count = 0
+        elif self.size == 0:
+            demo_count = batch_size
+        else:
+            demo_count = int(round(batch_size * self.demo_fraction))
+        online_count = batch_size - demo_count
+        online = (self.rng.integers(0, self.size, size=online_count)
+                  if online_count else np.empty(0, dtype=int))
+        demo = (self.rng.integers(0, self.demo_size, size=demo_count)
+                if demo_count else np.empty(0, dtype=int))
+        demo_mask = np.concatenate(
+            (np.zeros((online_count, 1), dtype=np.float32),
+             np.ones((demo_count, 1), dtype=np.float32))
         )
+        arrays = [
+            np.concatenate((online_array[online], demo_array[demo]), axis=0)
+            for online_array, demo_array in (
+                (self.states, self.demo_states),
+                (self.actions, self.demo_actions),
+                (self.rewards, self.demo_rewards),
+                (self.next_states, self.demo_next_states),
+                (self.dones, self.demo_dones),
+            )
+        ] + [demo_mask]
+        if demo_count:
+            permutation = self.rng.permutation(batch_size)
+            arrays = [array[permutation] for array in arrays]
+        return tuple(torch.as_tensor(array, device=device) for array in arrays)
 
 
 @torch.no_grad()
@@ -80,6 +127,22 @@ def double_dqn_targets(rewards, dones, next_states, online_network, target_netwo
     next_actions = online_network(next_states).argmax(dim=1, keepdim=True)
     next_values = target_network(next_states).gather(1, next_actions)
     return rewards + float(gamma) * (1.0 - dones) * next_values
+
+
+def dqfd_margin_loss(q_values, demo_actions, demo_mask, margin):
+    """DQfD large-margin term over demonstration-flagged batch rows only.
+
+    Zero exactly when every demonstrated action's Q exceeds all alternatives
+    by at least ``margin``; otherwise it pays the shortfall.
+    """
+    count = demo_mask.sum()
+    if count.item() == 0:
+        return q_values.sum() * 0.0
+    penalty = torch.full_like(q_values, float(margin))
+    penalty.scatter_(1, demo_actions, 0.0)
+    augmented_max = (q_values + penalty).max(dim=1, keepdim=True).values
+    shortfall = augmented_max - q_values.gather(1, demo_actions)
+    return (shortfall * demo_mask).sum() / count
 
 
 class D3QNAgent:
@@ -97,6 +160,7 @@ class D3QNAgent:
         gradient_clip=10.0,
         seed=1,
         device=None,
+        margin=1.0,
     ):
         self.state_dim = int(state_dim)
         self.action_dim = int(action_dim)
@@ -105,6 +169,8 @@ class D3QNAgent:
         self.batch_size = int(batch_size)
         self.target_update_interval = int(target_update_interval)
         self.gradient_clip = float(gradient_clip)
+        self.margin = float(margin)
+        self.bc_weight = 0.0  # weight on replayed-demo margin; scheduled per episode
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         torch.manual_seed(seed)
         self.rng = np.random.default_rng(seed)
@@ -140,14 +206,19 @@ class D3QNAgent:
         return (penalties + q - q_teacher).clamp(min=0.0).mean()
 
     def learn(self, replay_buffer, demo=None, demo_weight=None):
-        states, actions, rewards, next_states, dones = replay_buffer.sample(
+        states, actions, rewards, next_states, dones, demo_mask = replay_buffer.sample(
             self.batch_size, self.device
         )
         targets = double_dqn_targets(
             rewards, dones, next_states, self.online_network, self.target_network, self.gamma
         )
-        predictions = self.online_network(states).gather(1, actions)
-        loss = F.smooth_l1_loss(predictions, targets)
+        q_values = self.online_network(states)
+        predictions = q_values.gather(1, actions)
+        td_loss = F.smooth_l1_loss(predictions, targets)
+        # Replayed teacher episodes carry a mask; bc_weight is scheduled per episode.
+        margin_loss = dqfd_margin_loss(q_values, actions, demo_mask, self.margin)
+        loss = td_loss + float(self.bc_weight) * margin_loss
+        # Fixed demonstration (state, action) pairs feed only this auxiliary term.
         if demo is not None:
             demo_states, demo_actions = demo
             weight = self.demo_weight if demo_weight is None else float(demo_weight)
@@ -167,6 +238,9 @@ class D3QNAgent:
             self.sync_target()
         return {
             "loss": float(loss.detach().cpu()),
+            "td_loss": float(td_loss.detach().cpu()),
+            "margin_loss": float(margin_loss.detach().cpu()),
+            "bc_weight": float(self.bc_weight),
             "gradient_norm": min(float(norm), self.gradient_clip),
         }
 

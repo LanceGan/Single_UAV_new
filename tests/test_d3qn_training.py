@@ -226,3 +226,82 @@ def test_training_with_injected_demo_records_guidance(tmp_path):
     config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
     assert config["guidance"] == "astar-demonstration-margin"
     assert config["demo_pairs"] == 4
+
+
+class _GuidedTinyWorld(_TinyWorld):
+    dist_max = 0.25
+
+    class _StubUAV:
+        x = 0.0
+        y = 0.0
+
+    def __init__(self):
+        self.UAVs = [self._StubUAV()]
+        self.target_loc = np.array([1.0, 1.0])
+        self.executed = []
+        super().__init__()
+
+    def absolute_to_action(self, absolute):
+        return np.asarray(absolute, dtype=float)
+
+    def step_inside(self, action, state, step):
+        self.executed.append(np.asarray(action, dtype=float).copy())
+        return super().step_inside(action, state, step)
+
+
+class _StraightGuide:
+    """Stands in for MapGuide: always proposes the same absolute action."""
+
+    def __init__(self, world):
+        self.world = world
+
+    def action(self, angle_noise=0.0, distance_noise=0.0, rng=None):
+        return np.array([0.3, 0.2])
+
+
+def test_mapguide_episodes_execute_snapped_discrete_actions_and_are_marked(tmp_path):
+    worlds = []
+
+    def factory(**kwargs):
+        worlds.append(_GuidedTinyWorld())
+        return worlds[-1]
+
+    reports = iter(
+        [
+            {"success": False, "visited_inspection_points": 5, "uploaded_mb": 300.0,
+             "task_time_s": 500.0, "transmission_delay_s": 100.0},
+            {"success": True, "visited_inspection_points": 6, "uploaded_mb": 450.0,
+             "task_time_s": 200.0, "transmission_delay_s": 80.0},
+        ]
+    )
+    args = Namespace(
+        data_level="low", episodes=2, output_root=str(tmp_path), ga_iterations=1,
+        seed=1, eval_interval=1, uav_h=1.0, outage_max_s=100.0,
+        gamma=0.995, buffer=32, net_width=16, learning_rate=0.001,
+        batch_size=2, train_start=2, train_frequency=1, target_update_interval=2,
+        gradient_clip=1.0, epsilon_start=1.0, epsilon_end=0.05,
+        epsilon_decay_steps=10, checkpoint_interval=1,
+        teacher="mapguide", guide_prob=1.0, guide_min_prob=1.0,
+        bc_weight=1.0, bc_min_weight=0.25, demo_fraction=0.25,
+        guided_warmup_episodes=1, bc_decay_episodes=1, margin=1.0,
+    )
+
+    run_dir = run_training(
+        args,
+        order_solver=lambda payloads, iterations: [1, 6, 2, 3, 5, 4],
+        world_factory=factory,
+        evaluator=lambda *unused: next(reports),
+        guide_factory=_StraightGuide,
+    )
+
+    config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
+    history = np.load(run_dir / "training_history.npz")
+    assert config["teacher"] == "mapguide"
+    assert config["guidance"].startswith("whole-episode MapGuide")
+    assert history["episode_guided"].tolist() == [True, True]
+    # [0.3, 0.2] snaps to heading pi/8 at step 0.25, stored and executed as index 18.
+    expected = DiscreteActionCodec().decode(18)
+    training_world = worlds[0]
+    assert len(training_world.executed) == 4  # two episodes of two slots each
+    for action in training_world.executed:
+        np.testing.assert_allclose(action, expected)
