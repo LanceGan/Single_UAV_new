@@ -1,0 +1,8 @@
+{
+  "low": {
+    "planner_status": "success",
+    "planner_optimality_proven": false,
+    "replay_success": true,
+    "objective_s": 216.5
+  }
+}
