@@ -24,19 +24,28 @@ class World(object):
     VARIANTS = ("baseline", "A", "AB")
     BASE_STATE_DIM = 8
     NEIGHBOR_DIRECTIONS = 8
+
+    @classmethod
+    def state_dim_for(cls, variant: str, include_a2g_snr: bool = True) -> int:
+        """Observation width for a variant/A2G combination (must match ``__init__``)."""
+        base = 6 + (1 if include_a2g_snr else 0) + 1  # 6 shared + A2G? + G2A outage
+        per_direction = 1 + (1 if include_a2g_snr else 0)  # optional A2G + G2A per neighbor
+        return base + (per_direction * cls.NEIGHBOR_DIRECTIONS if variant == "AB" else 0)
     STALL_DISTANCE = 1e-3  # slots moving less than this count as motionless
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
                  data_size = 250, data_sizes=None, outage_max_s=100.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
                  users_name='Users.txt'
                  ,BS_loc=[],
-                 traverse_sequence=[], variant="baseline"):
+                 traverse_sequence=[], variant="baseline", include_a2g_snr=True):
         if variant not in self.VARIANTS:
             raise ValueError(f"unknown variant {variant!r}; expected one of {self.VARIANTS}")
         self.variant = variant
         self.relative_heading = variant in ("A", "AB")
         self.map_neighborhood = variant == "AB"
-        self.state_dim = self.BASE_STATE_DIM + (2 * self.NEIGHBOR_DIRECTIONS if self.map_neighborhood else 0)
+        # A2G-free baselines (DDPG/D3QN) observe G2A only, so the A2G SNR feature is dropped.
+        self.include_a2g_snr = bool(include_a2g_snr)
+        self.state_dim = self.state_dim_for(variant, self.include_a2g_snr)
         self.length = length # 区域大小
         self.width = width
         self.uav_num = uav_num  # 总的无人机数目
@@ -198,16 +207,17 @@ class World(object):
     def observe(self, target_loc):
         uav = self.UAVs[0]
         snr_span = self.a2g_snr_max - self.a2g_snr_min
-        s = np.zeros(self.state_dim)
-        s[0] = uav.x / self.length
-        s[1] = uav.y / self.width
-        # Target relative to the UAV, so one heading rule generalizes across legs.
-        s[2] = (target_loc[0] - uav.x) / self.length
-        s[3] = (target_loc[1] - uav.y) / self.width
-        s[4] = self.data_size / self.max_payload
-        s[5] = self.out_time / self.outage_max_s
-        s[6] = np.clip((self.current_a2g_snr - self.a2g_snr_min) / snr_span, 0.0, 1.0)
-        s[7] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)
+        state = [
+            uav.x / self.length,
+            uav.y / self.width,
+            (target_loc[0] - uav.x) / self.length,
+            (target_loc[1] - uav.y) / self.width,
+            self.data_size / self.max_payload,
+            self.out_time / self.outage_max_s,
+        ]
+        if self.include_a2g_snr:
+            state.append(np.clip((self.current_a2g_snr - self.a2g_snr_min) / snr_span, 0.0, 1.0))
+        state.append(np.clip(self.current_g2a_outage_probability, 0.0, 1.0))
         if self.map_neighborhood:
             # Ring of one-step candidates, starting at the target bearing and turning counter-clockwise.
             bearing = self.target_bearing(target_loc)
@@ -215,9 +225,10 @@ class World(object):
                 angle = bearing + 2 * math.pi * k / self.NEIGHBOR_DIRECTIONS
                 point = np.array([[uav.x + self.dist_max * math.cos(angle), uav.y + self.dist_max * math.sin(angle)]])
                 point = np.clip(point, [self.min_x, self.min_y], [self.max_x, self.max_y])
-                s[8 + k] = np.clip((self.get_date_rate_A2G(point) - self.a2g_snr_min) / snr_span, 0.0, 1.0)
-                s[8 + self.NEIGHBOR_DIRECTIONS + k] = np.clip(self.get_g2a_outage_probability(point), 0.0, 1.0)
-        return s
+                if self.include_a2g_snr:
+                    state.append(np.clip((self.get_date_rate_A2G(point) - self.a2g_snr_min) / snr_span, 0.0, 1.0))
+                state.append(np.clip(self.get_g2a_outage_probability(point), 0.0, 1.0))
+        return np.asarray(state, dtype=float)
 
     def action_to_absolute(self, action):
         """Convert a policy action to the absolute [heading, distance] World executes."""

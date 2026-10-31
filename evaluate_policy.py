@@ -23,8 +23,14 @@ from td3_actor import Actor
 
 ROOT = Path(__file__).resolve().parent
 # Checkpoints trained on a different observation layout cannot be replayed in the current World.
-STATE_SCHEMA = ("v3: uav xy, target-minus-uav xy, pending payload, outage usage, A2G SNR, G2A outage probability"
+STATE_SCHEMA = ("v4: uav xy, target-minus-uav xy, pending payload, outage usage, A2G SNR, G2A outage probability"
                 "; AB adds 8 target-frame one-step A2G SNR then 8 G2A outage samples")
+G2A_STATE_SCHEMA = ("v4: uav xy, target-minus-uav xy, pending payload, outage usage, G2A outage probability"
+                    "; AB adds 8 target-frame one-step G2A outage samples")
+
+
+def state_schema_for(include_a2g_snr: bool) -> str:
+    return STATE_SCHEMA if include_a2g_snr else G2A_STATE_SCHEMA
 REQUIRED_CONFIG_FIELDS = {
     "algorithm",
     "data_level",
@@ -51,6 +57,7 @@ class RunContext:
     order: tuple
     payloads_mb: np.ndarray
     outage_max_s: float
+    include_a2g_snr: bool
     total_steps: int = 1000
     length: float = 20.0
     width: float = 20.0
@@ -79,11 +86,13 @@ def load_run_context(run_dir):
         raise ValueError(f"unsupported algorithm: {config['algorithm']!r}")
     if config["variant"] not in World.VARIANTS:
         raise ValueError(f"unsupported variant: {config['variant']!r}")
-    expected_dim = World.BASE_STATE_DIM + (2 * World.NEIGHBOR_DIRECTIONS if config["variant"] == "AB" else 0)
+    include_a2g_snr = bool(config.get("include_a2g_snr", True))
+    expected_dim = World.state_dim_for(config["variant"], include_a2g_snr)
     if int(config["state_dim"]) != expected_dim:
-        raise ValueError(f"variant {config['variant']} expects state_dim {expected_dim}, got {config['state_dim']}")
-    if config.get("state_schema") != STATE_SCHEMA:
-        raise ValueError(f"run was trained with state schema {config.get('state_schema')!r}, current is {STATE_SCHEMA!r}")
+        raise ValueError(f"variant {config['variant']} with include_a2g_snr={include_a2g_snr} expects state_dim {expected_dim}, got {config['state_dim']}")
+    expected_schema = state_schema_for(include_a2g_snr)
+    if config.get("state_schema") != expected_schema:
+        raise ValueError(f"run was trained with state schema {config.get('state_schema')!r}, current is {expected_schema!r}")
     order = tuple(int(value) for value in config["order"])
     payloads = np.asarray(config["payloads_mb"], dtype=float)
     if len(order) != len(payloads) or sorted(order) != list(range(1, len(payloads) + 1)):
@@ -101,6 +110,7 @@ def load_run_context(run_dir):
         order=order,
         payloads_mb=payloads,
         outage_max_s=float(config["outage_max_s"]),
+        include_a2g_snr=include_a2g_snr,
     )
 
 
@@ -190,6 +200,7 @@ def _build_world(context):
         ),
         traverse_sequence=list(context.order),
         variant=context.variant,
+        include_a2g_snr=context.include_a2g_snr,
     )
 
 

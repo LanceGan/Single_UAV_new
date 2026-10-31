@@ -12,7 +12,7 @@ from map_guidance import MapGuide
 from astar_teacher import AStarTeacher, load_or_plan_teacher_path
 from demonstration import linear_decay
 from mission_preflight import run_preflight
-from evaluate_policy import STATE_SCHEMA, load_run_context, _build_world, rollout, selection_key
+from evaluate_policy import state_schema_for, load_run_context, _build_world, rollout, selection_key
 import json
 import random
 import numpy as np
@@ -241,11 +241,13 @@ if args.teacher == "astar" and profile["guide_prob"] > 0.0:
     teacher_positions, teacher_meta = load_or_plan_teacher_path(data_level, trave_order)
     print("A* demonstration teacher:", {k: teacher_meta.get(k) for k in ("objective_s", "from_cache", "expansions")}, flush=True)
 
+# The proposed TD3 observes the dual map (A2G + G2A); the DDPG baseline observes G2A only.
+include_a2g_snr = profile["base"] == "td3"
 world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, delta_t=delta_t, t=T, uav_h=uav_h,
               data_size=data_size, ini_loc=ini_loc, end_loc=end_loc,
               users_name='results/datas/Users_'+str(user_num)+'.txt',
               BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads, outage_max_s=outage_max_s,
-              variant=args.variant)
+              variant=args.variant, include_a2g_snr=include_a2g_snr)
 s_dim = world.state_dim
 
 preflight = run_preflight(data_level, output_paths["root"] / "preflight", order=trave_order,
@@ -262,7 +264,7 @@ if args.preflight_only:
 (output_paths["root"] / "run_config.json").write_text(json.dumps({
     **vars(args), "state_dim": s_dim, "order": trave_order, "payloads_mb": payloads.tolist(),
     "map_hashes": preflight["map_hashes"], "sequence_method": "GA with exact verification/fallback",
-    "state_schema": STATE_SCHEMA,
+    "state_schema": state_schema_for(include_a2g_snr), "include_a2g_snr": include_a2g_snr,
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
     "reward_schema": "v5-seconds: -(T + tau) + 2x progress + 0.5x uploaded-MB + milestones; T_out only as hard constraint; x0.01",
     "base_agent": profile["base"],

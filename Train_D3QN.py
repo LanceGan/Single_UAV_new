@@ -27,9 +27,10 @@ from training_config import load_fixed_payloads
 
 
 ROOT = Path(__file__).resolve().parent
+D3QN_STATE_DIM = 7  # G2A-only observation: the D3QN baseline does not see A2G
 D3QN_STATE_SCHEMA = (
-    "v3: uav xy, target-minus-uav xy, pending payload, outage usage, "
-    "A2G SNR, G2A outage probability"
+    "v4: uav xy, target-minus-uav xy, pending payload, outage usage, "
+    "G2A outage probability"
 )
 ACTION_SCHEMA = "hover + 16 relative headings at 0.125 + 16 relative headings at 0.25"
 
@@ -123,6 +124,7 @@ def _make_world(*, payloads, order, uav_h, outage_max_s):
         ),
         traverse_sequence=list(order),
         variant="A",
+        include_a2g_snr=False,
     )
 
 
@@ -131,7 +133,7 @@ def _rollout_context(run_dir, config):
         run_dir=Path(run_dir),
         config=config,
         algorithm="d3qn",
-        state_dim=8,
+        state_dim=D3QN_STATE_DIM,
         net_width=int(config["net_width"]),
         variant="A",
         order=tuple(config["order"]),
@@ -197,8 +199,9 @@ def run_training(
         **vars(args),
         "algorithm": "d3qn",
         "variant": "A",
-        "state_dim": 8,
+        "state_dim": D3QN_STATE_DIM,
         "state_schema": D3QN_STATE_SCHEMA,
+        "include_a2g_snr": False,
         "action_count": 33,
         "action_schema": ACTION_SCHEMA,
         "order": order,
@@ -225,14 +228,14 @@ def run_training(
     }
     training_world = world_factory(**world_arguments)
     evaluation_world = world_factory(**world_arguments)
-    if int(training_world.state_dim) != 8:
-        raise ValueError("D3QN baseline requires the Variant-A 8D observation")
+    if int(training_world.state_dim) != D3QN_STATE_DIM:
+        raise ValueError(f"D3QN baseline requires the {D3QN_STATE_DIM}D G2A-only observation")
     # World construction may alter NumPy's global RNG through legacy terrain code.
     np.random.seed(args.seed)
     random.seed(args.seed)
 
     agent = D3QNAgent(
-        state_dim=8,
+        state_dim=D3QN_STATE_DIM,
         action_dim=len(codec),
         hidden_dim=args.net_width,
         learning_rate=args.learning_rate,
@@ -245,9 +248,9 @@ def run_training(
     )
     agent.demo_weight = float(getattr(args, "demo_weight", 1.0))
     agent.demo_margin = float(getattr(args, "demo_margin", 0.8))
-    replay = DiscreteReplayBuffer(8, args.buffer, args.seed)
+    replay = DiscreteReplayBuffer(D3QN_STATE_DIM, args.buffer, args.seed)
     demo_replay = DiscreteReplayBuffer(
-        8, int(getattr(args, "demo_capacity", args.buffer)), args.seed + 1)
+        D3QN_STATE_DIM, int(getattr(args, "demo_capacity", args.buffer)), args.seed + 1)
     demo_report = None
     if teacher == "mapguide":
         demonstration_world = world_factory(**world_arguments)

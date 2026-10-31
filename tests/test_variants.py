@@ -151,3 +151,18 @@ def test_stall_diagnostics_track_consecutive_motionless_slots():
     assert world.max_stall_run == 3
     world.reset()
     assert world.stall_steps == world.max_stall_run == world.fa == 0
+
+
+def test_g2a_only_observation_drops_a2g_snr():
+    world = _world("A", include_a2g_snr=False)
+    state, _ = world.reset()
+    assert world.state_dim == 7 and state.shape == (7,)
+    np.testing.assert_allclose(state[6], np.clip(world.current_g2a_outage_probability, 0.0, 1.0))
+
+
+def test_dual_observation_keeps_a2g_snr_by_default():
+    world = _world("A")
+    state, _ = world.reset()
+    assert world.state_dim == 8 and state.shape == (8,)
+    expected = (world.current_a2g_snr - world.a2g_snr_min) / (world.a2g_snr_max - world.a2g_snr_min)
+    np.testing.assert_allclose(state[6], np.clip(expected, 0.0, 1.0))
