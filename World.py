@@ -30,12 +30,19 @@ class World(object):
                  data_size = 250, data_sizes=None, outage_max_s=100.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
                  users_name='Users.txt'
                  ,BS_loc=[],
-                 traverse_sequence=[], variant="baseline", a2g_blind=False):
+                 traverse_sequence=[], variant="baseline", a2g_blind=False,
+                 objective_w1=0.5, objective_w2=0.5):
         if variant not in self.VARIANTS:
             raise ValueError(f"unknown variant {variant!r}; expected one of {self.VARIANTS}")
         self.variant = variant
         self.relative_heading = variant in ("A", "AB")
         self.map_neighborhood = variant == "AB"
+        # Weighted objective w1*T + w2*tau; (0.5, 0.5) reproduces the legacy
+        # equal-weight reward exactly because both per-slot terms scale by 2*w.
+        self.objective_w1 = float(objective_w1)
+        self.objective_w2 = float(objective_w2)
+        if self.objective_w1 < 0 or self.objective_w2 < 0:
+            raise ValueError("objective weights must be non-negative")
         self.a2g_blind = bool(a2g_blind)
         if self.a2g_blind and self.map_neighborhood:
             raise ValueError("a2g_blind is not supported with the AB map-neighborhood variant")
@@ -248,8 +255,8 @@ class World(object):
         """
         speed = self.dist_max / self.delta_T
         terms = {
-            "time": -self.delta_T,
-            "delay": -self.delta_T if pending_upload else 0.0,
+            "time": -self.delta_T * 2.0 * self.objective_w1,
+            "delay": (-self.delta_T * 2.0 * self.objective_w2) if pending_upload else 0.0,
             "progress": self.PROGRESS_WEIGHT * dis_forward / speed,
             "boundary": -fa * self.BOUNDARY_SCALE,
         }

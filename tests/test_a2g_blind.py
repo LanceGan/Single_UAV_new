@@ -57,6 +57,40 @@ def test_blind_mapguide_plans_uploads_without_any_rate_knowledge():
     assert np.all(np.isfinite(action)) and 0.0 <= action[1] <= 0.25
 
 
+def test_weighted_objective_reward_matches_legacy_at_equal_weights():
+    legacy = _world()
+    balanced = _world(objective_w1=0.5, objective_w2=0.5)
+    tau_heavy = _world(objective_w1=0.2, objective_w2=0.8)
+    for world in (legacy, balanced, tau_heavy):
+        world.reset()
+
+    legacy_r = legacy.get_reward(fa=0.0, dis_forward=0.1, pending_upload=True)
+    balanced_r = balanced.get_reward(fa=0.0, dis_forward=0.1, pending_upload=True)
+    tau_r = tau_heavy.get_reward(fa=0.0, dis_forward=0.1, pending_upload=True)
+
+    assert balanced_r == pytest.approx(legacy_r)
+    # tau-heavy weighting punishes a pending-upload slot harder than balanced:
+    # time term shrinks by 2*0.3*dt, delay term grows by the same amount -> net equal,
+    # so compare a slot WITHOUT pending upload where only the time term applies.
+    legacy_no_pending = legacy.get_reward(fa=0.0, dis_forward=0.1, pending_upload=False)
+    tau_no_pending = tau_heavy.get_reward(fa=0.0, dis_forward=0.1, pending_upload=False)
+    assert tau_no_pending > legacy_no_pending  # smaller w1 -> milder time penalty
+
+
+def test_selection_key_orders_by_weighted_objective():
+    from evaluate_policy import selection_key
+
+    fast = {"success": True, "task_time_s": 150.0, "transmission_delay_s": 100.0,
+            "visited_inspection_points": 6, "uploaded_mb": 450.0}
+    uploader = {"success": True, "task_time_s": 170.0, "transmission_delay_s": 70.0,
+                "visited_inspection_points": 6, "uploaded_mb": 450.0}
+
+    # Equal weights: fast=250, uploader=240 -> the stronger uploader wins.
+    assert selection_key(uploader) < selection_key(fast)
+    assert selection_key(fast, 0.8, 0.2) < selection_key(uploader, 0.8, 0.2)
+    assert selection_key(uploader, 0.2, 0.8) < selection_key(fast, 0.2, 0.8)
+
+
 def test_run_context_round_trips_blind_configuration(tmp_path):
     from evaluate_policy import (
         A2G_BLIND_STATE_SCHEMA,

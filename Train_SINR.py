@@ -65,6 +65,10 @@ def create_parser():
     parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--eval_interval", type=int, default=25)
+    parser.add_argument("--objective_w1", type=float, default=0.5,
+                        help="weight on mission time T in the objective (0.5/0.5 = legacy equal weights)")
+    parser.add_argument("--objective_w2", type=float, default=0.5,
+                        help="weight on transmission delay tau in the objective")
     parser.add_argument("--a2g_blind", action="store_true",
                         help="deny the trajectory stack all A2G knowledge (sequence baselines): "
                              "state drops the A2G SNR feature and the MapGuide teacher is G2A-only")
@@ -268,7 +272,8 @@ world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, de
               data_size=data_size, ini_loc=ini_loc, end_loc=end_loc,
               users_name='results/datas/Users_'+str(user_num)+'.txt',
               BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads, outage_max_s=outage_max_s,
-              variant=args.variant, a2g_blind=args.a2g_blind)
+              variant=args.variant, a2g_blind=args.a2g_blind,
+              objective_w1=args.objective_w1, objective_w2=args.objective_w2)
 s_dim = world.state_dim
 
 preflight = run_preflight(data_level, output_paths["root"] / "preflight", order=trave_order,
@@ -507,7 +512,8 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         writer.add_scalar('eval/outage_time', report["outage_time_s"], episode)
         writer.add_scalar('eval/boundary_collisions', report["boundary_violations"], episode)
         writer.add_scalar('eval/max_stall_run', report["max_stall_run"], episode)
-        if eval_best_report is None or selection_key(report) < selection_key(eval_best_report):
+        if eval_best_report is None or (selection_key(report, args.objective_w1, args.objective_w2)
+                                        < selection_key(eval_best_report, args.objective_w1, args.objective_w2)):
             eval_best_report = {**report, "episode": episode}
             model.save("eval_best", model_path)
         (output_paths["root"] / "eval_history.json").write_text(json.dumps(

@@ -133,9 +133,14 @@ def checkpoint_paths(run_dir, algorithm, episodes):
     return paths
 
 
-def selection_key(report):
-    """Sort key: feasible first, then lower T + tau, then more mission progress."""
-    objective = report["task_time_s"] + report["transmission_delay_s"]
+def selection_key(report, w1=0.5, w2=0.5):
+    """Sort key: feasible first, then lower w1*T + w2*tau, then more mission progress.
+
+    Equal weights reproduce the legacy T + tau ordering (scale is irrelevant
+    to the ordering); weighted-objective runs select their eval_best by the
+    objective they were actually trained for.
+    """
+    objective = 2.0 * (w1 * report["task_time_s"] + w2 * report["transmission_delay_s"])
     progress = (report["visited_inspection_points"], report["uploaded_mb"])
     if report["success"]:
         return (0, objective, 0.0, 0.0)
