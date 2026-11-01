@@ -1,0 +1,9 @@
+{
+  "bars": {
+    "Distance-TSP+TD3 (A2G-aware stack)": 229.0,
+    "Distance-TSP+TD3 (A2G-blind)": 311.0
+  },
+  "references": {
+    "Proposed TD3 (full knowledge)": 235.5
+  }
+}

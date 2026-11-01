@@ -1,0 +1,13 @@
+{
+  "bars": {
+    "Proposed (TD3)": 235.5,
+    "Yang-style+TD3": 254.0,
+    "EEGA-TD3": 279.5,
+    "SA-D3QN": 289.0,
+    "DRL-SA": 296.5,
+    "Distance-TSP+TD3": 311.0
+  },
+  "references": {
+    "A*": 214.0
+  }
+}
