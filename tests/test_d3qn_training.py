@@ -50,8 +50,7 @@ def _config(**overrides):
         "state_schema": D3QN_STATE_SCHEMA,
         "uav_h": 1.0,
         "variant": "A",
-        "state_dim": 7,
-        "include_a2g_snr": False,
+        "state_dim": 8,
         "action_count": 33,
         "action_schema": "hover + 16 relative headings at 0.125 + 16 relative headings at 0.25",
         "gamma": 0.995,
@@ -122,7 +121,7 @@ def test_checkpoint_names_and_eval_best_are_d3qn_specific(tmp_path):
 
 
 class _TinyWorld:
-    state_dim = 7
+    state_dim = 8
 
     def __init__(self):
         self.reset()
@@ -164,7 +163,7 @@ def test_tiny_training_writes_reproducible_artifacts_and_uses_fixed_order(tmp_pa
     config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
     evaluation = json.loads((run_dir / "eval_history.json").read_text(encoding="utf-8"))
     history = np.load(run_dir / "training_history.npz")
-    assert config["variant"] == "A" and config["state_dim"] == 7
+    assert config["variant"] == "A" and config["state_dim"] == 8
     assert config["order"] == [1, 6, 2, 3, 5, 4]
     np.testing.assert_allclose(config["payloads_mb"], [90, 90, 60, 60, 90, 60])
     assert config["guidance"] == "none"
@@ -258,7 +257,7 @@ def test_training_with_injected_demo_records_guidance(tmp_path):
     )
 
     def demo_factory(order, codec):
-        return (np.zeros((4, 7), dtype="float32"), np.zeros(4, dtype="int64"))
+        return (np.zeros((4, 8), dtype="float32"), np.zeros(4, dtype="int64"))
 
     run_dir = run_training(
         args,

@@ -241,8 +241,8 @@ if args.teacher == "astar" and profile["guide_prob"] > 0.0:
     teacher_positions, teacher_meta = load_or_plan_teacher_path(data_level, trave_order)
     print("A* demonstration teacher:", {k: teacher_meta.get(k) for k in ("objective_s", "from_cache", "expansions")}, flush=True)
 
-# The proposed TD3 observes the dual map (A2G + G2A); the DDPG baseline observes G2A only.
-include_a2g_snr = profile["base"] == "td3"
+# Both TD3 and DDPG observe the dual map; DDPG is an algorithm comparison, not a map-awareness baseline.
+include_a2g_snr = True
 world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, delta_t=delta_t, t=T, uav_h=uav_h,
               data_size=data_size, ini_loc=ini_loc, end_loc=end_loc,
               users_name='results/datas/Users_'+str(user_num)+'.txt',

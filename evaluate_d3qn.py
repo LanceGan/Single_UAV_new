@@ -18,7 +18,7 @@ from evaluate_policy import plot_trajectory, rollout
 ROOT = Path(__file__).resolve().parent
 D3QN_STATE_SCHEMA = (
     "v4: uav xy, target-minus-uav xy, pending payload, outage usage, "
-    "G2A outage probability"
+    "A2G SNR, G2A outage probability"
 )
 ACTION_SCHEMA = "hover + 16 relative headings at 0.125 + 16 relative headings at 0.25"
 REQUIRED_CONFIG_FIELDS = {
@@ -66,8 +66,8 @@ def load_d3qn_run_context(run_dir):
         raise ValueError(f"D3QN run_config.json missing required fields: {', '.join(missing)}")
     if config["algorithm"] != "d3qn":
         raise ValueError("D3QN evaluator only accepts algorithm='d3qn'")
-    if config["variant"] != "A" or int(config["state_dim"]) != 7:
-        raise ValueError("D3QN baseline requires Variant A and the 7D G2A-only state")
+    if config["variant"] != "A" or int(config["state_dim"]) != 8:
+        raise ValueError("D3QN baseline requires Variant A and the 8D dual-map state")
     if config["state_schema"] != D3QN_STATE_SCHEMA:
         raise ValueError("D3QN state schema is incompatible with the current World")
     if int(config["action_count"]) != 33 or config["action_schema"] != ACTION_SCHEMA:
@@ -82,7 +82,7 @@ def load_d3qn_run_context(run_dir):
         run_dir=run_dir,
         config=config,
         algorithm="d3qn",
-        state_dim=7,
+        state_dim=8,
         net_width=int(config["net_width"]),
         variant="A",
         action_count=33,
@@ -147,7 +147,6 @@ def _build_world(context):
         ),
         traverse_sequence=list(context.order),
         variant="A",
-        include_a2g_snr=False,
     )
 
 

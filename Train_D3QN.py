@@ -27,10 +27,10 @@ from training_config import load_fixed_payloads
 
 
 ROOT = Path(__file__).resolve().parent
-D3QN_STATE_DIM = 7  # G2A-only observation: the D3QN baseline does not see A2G
+D3QN_STATE_DIM = 8  # dual-map observation (A2G + G2A), same as the proposed TD3
 D3QN_STATE_SCHEMA = (
     "v4: uav xy, target-minus-uav xy, pending payload, outage usage, "
-    "G2A outage probability"
+    "A2G SNR, G2A outage probability"
 )
 ACTION_SCHEMA = "hover + 16 relative headings at 0.125 + 16 relative headings at 0.25"
 
@@ -124,7 +124,6 @@ def _make_world(*, payloads, order, uav_h, outage_max_s):
         ),
         traverse_sequence=list(order),
         variant="A",
-        include_a2g_snr=False,
     )
 
 
@@ -201,7 +200,6 @@ def run_training(
         "variant": "A",
         "state_dim": D3QN_STATE_DIM,
         "state_schema": D3QN_STATE_SCHEMA,
-        "include_a2g_snr": False,
         "action_count": 33,
         "action_schema": ACTION_SCHEMA,
         "order": order,
@@ -229,7 +227,7 @@ def run_training(
     training_world = world_factory(**world_arguments)
     evaluation_world = world_factory(**world_arguments)
     if int(training_world.state_dim) != D3QN_STATE_DIM:
-        raise ValueError(f"D3QN baseline requires the {D3QN_STATE_DIM}D G2A-only observation")
+        raise ValueError(f"D3QN baseline requires the {D3QN_STATE_DIM}D dual-map observation")
     # World construction may alter NumPy's global RNG through legacy terrain code.
     np.random.seed(args.seed)
     random.seed(args.seed)
