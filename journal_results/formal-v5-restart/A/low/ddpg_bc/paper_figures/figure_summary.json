@@ -1,0 +1,20 @@
+{
+  "run_dir": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v5-restart\\A\\low\\ddpg_bc",
+  "algorithm": "ddpg_bc",
+  "data_level": "low",
+  "variant": "A",
+  "evaluation_count": 120,
+  "successful_evaluations": 0,
+  "eval_best_episode": 900,
+  "eval_best": {
+    "success": false,
+    "termination_reason": "timeout",
+    "visited_inspection_points": 6,
+    "uploaded_mb": 450.0,
+    "task_time_s": 500.0,
+    "transmission_delay_s": 94.5,
+    "outage_time_s": 30.0,
+    "flight_distance_m": 6376.344206929207,
+    "total_return": -10.767470498750072
+  }
+}

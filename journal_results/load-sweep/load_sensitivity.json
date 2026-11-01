@@ -1,0 +1,43 @@
+{
+  "levels": [
+    "Low",
+    "Medium",
+    "High"
+  ],
+  "td3": [
+    {
+      "level": "Low",
+      "T": 153.0,
+      "tau": 82.5,
+      "outage": 21.5,
+      "successes": 97,
+      "evaluations": 120
+    },
+    {
+      "level": "Medium",
+      "T": 218.0,
+      "tau": 133.5,
+      "outage": 19.5,
+      "successes": 73,
+      "evaluations": 120
+    },
+    {
+      "level": "High",
+      "T": 300.5,
+      "tau": 200.5,
+      "outage": 17.5,
+      "successes": 39,
+      "evaluations": 120
+    }
+  ],
+  "astar": {
+    "Low": 214.0,
+    "Medium": 318.0,
+    "High": 447.0
+  },
+  "mapguide": {
+    "Low": 273.0,
+    "Medium": 369.0,
+    "High": 492.0
+  }
+}

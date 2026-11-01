@@ -160,6 +160,26 @@ def test_weight_tradeoff_label_parsing_allows_equals_in_labels():
     assert run_dir == "journal_results/weight-sweep/x"
 
 
+def test_load_sweep_point_loading(tmp_path):
+    import json as json_module
+
+    from plot_load_sweep import load_point, parse_point
+
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    (run_dir / "eval_history.json").write_text(json_module.dumps({
+        "eval_best": {"task_time_s": 300.5, "transmission_delay_s": 200.5, "outage_time_s": 17.5},
+        "history": [{"success": True}, {"success": False}, {"success": True}],
+    }))
+
+    label, path = parse_point(f"High={run_dir}")
+    point = load_point(path)
+
+    assert label == "High"
+    assert point["T"] + point["tau"] == pytest.approx(501.0)
+    assert point["successes"] == 2 and point["evaluations"] == 3
+
+
 def test_d3qn_run_figures_render_without_checkpoints(tmp_path):
     run_dir = tmp_path / "d3qn"
     (run_dir / "models").mkdir(parents=True)
