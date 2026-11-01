@@ -1,0 +1,20 @@
+{
+  "run_dir": "F:\\Codes\\Python\\SingleUAV\\journal_results\\formal-v5-restart\\A\\high\\td3_bc",
+  "algorithm": "td3_bc",
+  "data_level": "high",
+  "variant": "A",
+  "evaluation_count": 120,
+  "successful_evaluations": 39,
+  "eval_best_episode": 1975,
+  "eval_best": {
+    "success": true,
+    "termination_reason": "success",
+    "visited_inspection_points": 6,
+    "uploaded_mb": 1500.0,
+    "task_time_s": 300.5,
+    "transmission_delay_s": 200.5,
+    "outage_time_s": 17.5,
+    "flight_distance_m": 7592.778626084328,
+    "total_return": 3.08135522793626
+  }
+}
