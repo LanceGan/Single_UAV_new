@@ -96,15 +96,35 @@
 | MapGuide 规划器 | 273.0 | 弱规划参照 |
 | DDPG / D3QN | 失败 0/120 | 多配方多机交叉验证 |
 
-## 7. 待办总览
+## 7. 待办总览（2026-11-02 大清零）
 
-- [ ] Win：课程版 Proposed low 跑完并随结果分支推送
-- [ ] Win：旧机结果分支（含 formal-v5 三档与高档产物）
-- [ ] Win：D3QN 正确配方重跑（A2G-aware 8 维 + MapGuide + guide 常数 0.5，新奖励 v5）
-- [ ] Win：组 3 原始论文（EEGA / SA-D3QN / Yang-style / DRL-SA）实现细节的 GPT 解读文档 → 放同步信息，Mac 据此做忠实实现
-- [ ] 双方：DDPG 课程口径定稿；D3QN 若以 v5 复活后的奖励版本统一口径（组 1 同组同奖励）
-- [ ] Mac：QoS 扫描训练中（见 §8）
-- [ ] 合并：Win 侧将 feat/mac 的代码提交 merge 回 master（master 当前冻结，由 Win 定时机）
+- [x] 层面 1/2/3 低档全部实验完成（见 §8/§9 与 win-mac §9）
+- [ ] **Win：推送旧机 formal-v5 产物分支（唯一剩余事项，清单见 §10）**
+- [x] 口径定稿（2026-11-02 用户拍板，不再讨论）：
+  - 教师下限差异（TD3 行 0.2 / 盲基线归零 / D3QN 常数 0.5）：**接受，仅内部知晓，论文不注明**；
+  - 多种子：**不加**，单种子可行结果即为论文结果；
+  - 中/高档扩展：**不扩**，基线/QoS/权重维持低档；
+  - 奖励版本：**旧奖励为论文正式口径**（进论文的全部数字均为旧奖励；v5 仅存在于已作废的 d3qn-v3/v4 尝试，Win 侧请将 v5 改动隔离在自己分支，勿再用于论文 run）。
+- 合并 master 的时机仍由 Win 定（master 冻结中）。
+
+## 10. 旧机 formal-v5 产物推送清单（Win 执行）
+
+期刊线 TD3 高档（501.0s）目前只有交接文档里的数字，缺原始产物，导致 Mac 无法生成期刊三档对比图与高档轨迹图。请在**原电脑**上执行：
+
+```bash
+# 在原电脑的仓库里（确认 journal_results/formal-v5-restart 存在）
+git checkout -b feat/win-legacy
+# .gitignore 需放行结果但排除大文件（参照 feat/mac 的做法）：
+#   journal_results/**/models/
+#   journal_results/**/logs/
+git add journal_results/formal-v5-restart
+git commit -m "results: formal-v5-restart 三档原始产物（期刊线 TD3 结果）"
+git push new feat/win-legacy
+```
+
+**必须包含**（每档 td3_bc 目录下）：`run_config.json`、`eval_history.json`（120 次评估全记录）、`UAV_TD3_improved.npz`、`evaluation/` 或轨迹 npz（若有）、`paper_figure_summaries.json`。
+**必须排除**：`models/`（checkpoint，数百 MB）、`logs/`（tfevents，单文件可超 GitHub 100MB 硬限）。
+**注意**：高档（high/td3_bc）是刚需；low/medium 一并推上便于交叉核对。推送后 Mac 自动接手：拉取 → 生成期刊三档对比图（T/τ/T_out vs 负载）+ 高档 eval_best 双地图轨迹图 → 归档 feat/mac。
 
 ## 8. 三组实验设计（2026-11-01 用户定稿）与 Mac 进行中事项
 
