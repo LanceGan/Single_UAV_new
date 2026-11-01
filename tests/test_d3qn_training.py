@@ -305,3 +305,48 @@ def test_mapguide_episodes_execute_snapped_discrete_actions_and_are_marked(tmp_p
     assert len(training_world.executed) == 4  # two episodes of two slots each
     for action in training_world.executed:
         np.testing.assert_allclose(action, expected)
+
+
+def test_action_repeat_executes_k_slots_per_decision_and_pretrain_runs(tmp_path):
+    reports = iter([{"success": True, "visited_inspection_points": 6, "uploaded_mb": 450.0,
+                     "task_time_s": 200.0, "transmission_delay_s": 80.0}])
+    args = Namespace(
+        data_level="low", episodes=1, output_root=str(tmp_path), ga_iterations=1,
+        seed=1, eval_interval=1, uav_h=1.0, outage_max_s=100.0,
+        gamma=0.5, buffer=64, net_width=16, learning_rate=0.001,
+        batch_size=2, train_start=64, train_frequency=1, target_update_interval=2,
+        gradient_clip=1.0, epsilon_start=1.0, epsilon_end=0.05,
+        epsilon_decay_steps=10, checkpoint_interval=1,
+        teacher="mapguide", guide_prob=1.0, guide_min_prob=1.0,
+        bc_weight=1.0, bc_min_weight=0.25, demo_fraction=0.25,
+        guided_warmup_episodes=1, bc_decay_episodes=1, margin=1.0,
+        n_step=2, action_repeat=2, pretrain_demo_episodes=1, pretrain_updates=3,
+    )
+
+    class _FourSlotWorld(_GuidedTinyWorld):
+        def step_inside(self, action, state, step):
+            self.executed.append(np.asarray(action, dtype=float).copy())
+            self.step_number += 1
+            return (np.full(8, self.step_number, dtype=float), 1.0,
+                    self.step_number >= 4, self.step_number, False)
+
+    worlds_override = []
+
+    def four_slot_factory(**kwargs):
+        worlds_override.append(_FourSlotWorld())
+        return worlds_override[-1]
+
+    run_dir = run_training(
+        args,
+        order_solver=lambda payloads, iterations: [1, 6, 2, 3, 5, 4],
+        world_factory=four_slot_factory,
+        evaluator=lambda *unused: next(reports),
+        guide_factory=_StraightGuide,
+    )
+
+    config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
+    assert config["n_step"] == 2 and config["action_repeat"] == 2
+    assert config["pretrain"].startswith("1 guided episodes")
+    # pretrain episode (4 slots) + online episode (4 slots), two slots per decision.
+    training_world = worlds_override[0]
+    assert len(training_world.executed) == 8

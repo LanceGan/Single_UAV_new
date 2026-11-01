@@ -35,6 +35,44 @@ class DuelingQNetwork(nn.Module):
         return self.aggregate(self.value(features), self.advantage(features))
 
 
+class NStepAssembler:
+    """Turn a per-decision transition stream into (1-step, n-step) records.
+
+    Emits, for the oldest buffered decision, both its 1-step fields and the
+    n-step aggregate (discounted reward sum, state after n decisions, done).
+    Truncated horizons only happen at episode end, where done masks the
+    bootstrap anyway, so a fixed per-decision gamma is exact.
+    """
+
+    def __init__(self, n, gamma):
+        self.n = int(n)
+        if self.n < 1:
+            raise ValueError("n must be at least 1")
+        self.gamma = float(gamma)
+        self.pending = []
+
+    def _record(self, horizon):
+        state, action, reward, next_state, done = self.pending[0]
+        nstep_reward = 0.0
+        for index in range(horizon):
+            nstep_reward += (self.gamma ** index) * self.pending[index][2]
+        _, _, _, nstep_next, nstep_done = self.pending[horizon - 1]
+        return (state, action, reward, next_state, done,
+                nstep_reward, nstep_next, nstep_done, self.gamma ** horizon)
+
+    def push(self, state, action, reward, next_state, done):
+        self.pending.append((state, action, reward, next_state, done))
+        records = []
+        if done:
+            while self.pending:
+                records.append(self._record(len(self.pending)))
+                self.pending.pop(0)
+        elif len(self.pending) == self.n:
+            records.append(self._record(self.n))
+            self.pending.pop(0)
+        return records
+
+
 class DiscreteReplayBuffer:
     """Online transitions plus a demonstration partition that is never evicted by them."""
 
@@ -53,11 +91,19 @@ class DiscreteReplayBuffer:
         self.rewards = np.empty((self.capacity, 1), dtype=np.float32)
         self.next_states = np.empty((self.capacity, state_dim), dtype=np.float32)
         self.dones = np.empty((self.capacity, 1), dtype=np.float32)
+        self.nstep_rewards = np.empty((self.capacity, 1), dtype=np.float32)
+        self.nstep_next_states = np.empty((self.capacity, state_dim), dtype=np.float32)
+        self.nstep_dones = np.empty((self.capacity, 1), dtype=np.float32)
+        self.nstep_gammas = np.empty((self.capacity, 1), dtype=np.float32)
         self.demo_states = np.empty((self.demo_capacity, state_dim), dtype=np.float32)
         self.demo_actions = np.empty((self.demo_capacity, 1), dtype=np.int64)
         self.demo_rewards = np.empty((self.demo_capacity, 1), dtype=np.float32)
         self.demo_next_states = np.empty((self.demo_capacity, state_dim), dtype=np.float32)
         self.demo_dones = np.empty((self.demo_capacity, 1), dtype=np.float32)
+        self.demo_nstep_rewards = np.empty((self.demo_capacity, 1), dtype=np.float32)
+        self.demo_nstep_next_states = np.empty((self.demo_capacity, state_dim), dtype=np.float32)
+        self.demo_nstep_dones = np.empty((self.demo_capacity, 1), dtype=np.float32)
+        self.demo_nstep_gammas = np.empty((self.demo_capacity, 1), dtype=np.float32)
         self.position = 0
         self.size = 0
         self.demo_position = 0
@@ -67,7 +113,12 @@ class DiscreteReplayBuffer:
     def __len__(self):
         return self.size + self.demo_size
 
-    def add(self, state, action, reward, next_state, done, demo=False):
+    DEFAULT_NSTEP_GAMMA = 0.995
+
+    def add(self, state, action, reward, next_state, done, demo=False, nstep=None):
+        if nstep is None:  # degenerate n=1 record keeps single-step callers valid
+            nstep = (reward, next_state, done, self.DEFAULT_NSTEP_GAMMA)
+        nstep_reward, nstep_next, nstep_done, nstep_gamma = nstep
         if demo:
             index = self.demo_position
             self.demo_states[index] = state
@@ -75,6 +126,10 @@ class DiscreteReplayBuffer:
             self.demo_rewards[index, 0] = float(reward)
             self.demo_next_states[index] = next_state
             self.demo_dones[index, 0] = float(bool(done))
+            self.demo_nstep_rewards[index, 0] = float(nstep_reward)
+            self.demo_nstep_next_states[index] = nstep_next
+            self.demo_nstep_dones[index, 0] = float(bool(nstep_done))
+            self.demo_nstep_gammas[index, 0] = float(nstep_gamma)
             self.demo_position = (self.demo_position + 1) % self.demo_capacity
             self.demo_size = min(self.demo_size + 1, self.demo_capacity)
             return
@@ -83,6 +138,10 @@ class DiscreteReplayBuffer:
         self.rewards[self.position, 0] = float(reward)
         self.next_states[self.position] = next_state
         self.dones[self.position, 0] = float(bool(done))
+        self.nstep_rewards[self.position, 0] = float(nstep_reward)
+        self.nstep_next_states[self.position] = nstep_next
+        self.nstep_dones[self.position, 0] = float(bool(nstep_done))
+        self.nstep_gammas[self.position, 0] = float(nstep_gamma)
         self.position = (self.position + 1) % self.capacity
         self.size = min(self.size + 1, self.capacity)
 
@@ -113,6 +172,10 @@ class DiscreteReplayBuffer:
                 (self.rewards, self.demo_rewards),
                 (self.next_states, self.demo_next_states),
                 (self.dones, self.demo_dones),
+                (self.nstep_rewards, self.demo_nstep_rewards),
+                (self.nstep_next_states, self.demo_nstep_next_states),
+                (self.nstep_dones, self.demo_nstep_dones),
+                (self.nstep_gammas, self.demo_nstep_gammas),
             )
         ] + [demo_mask]
         if demo_count:
@@ -123,10 +186,14 @@ class DiscreteReplayBuffer:
 
 @torch.no_grad()
 def double_dqn_targets(rewards, dones, next_states, online_network, target_network, gamma):
-    """Online network selects the action; target network evaluates that action."""
+    """Online network selects the action; target network evaluates that action.
+
+    ``gamma`` may be a scalar (1-step) or a per-row tensor (n-step horizons).
+    """
     next_actions = online_network(next_states).argmax(dim=1, keepdim=True)
     next_values = target_network(next_states).gather(1, next_actions)
-    return rewards + float(gamma) * (1.0 - dones) * next_values
+    gamma = gamma if torch.is_tensor(gamma) else float(gamma)
+    return rewards + gamma * (1.0 - dones) * next_values
 
 
 def dqfd_margin_loss(q_values, demo_actions, demo_mask, margin):
@@ -171,6 +238,7 @@ class D3QNAgent:
         self.gradient_clip = float(gradient_clip)
         self.margin = float(margin)
         self.bc_weight = 0.0  # weight on replayed-demo margin; scheduled per episode
+        self.n_step_weight = 1.0  # DQfD keeps the auxiliary n-step TD term at unit weight
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         torch.manual_seed(seed)
         self.rng = np.random.default_rng(seed)
@@ -206,18 +274,24 @@ class D3QNAgent:
         return (penalties + q - q_teacher).clamp(min=0.0).mean()
 
     def learn(self, replay_buffer, demo=None, demo_weight=None):
-        states, actions, rewards, next_states, dones, demo_mask = replay_buffer.sample(
-            self.batch_size, self.device
-        )
+        (states, actions, rewards, next_states, dones,
+         nstep_rewards, nstep_next_states, nstep_dones, nstep_gammas,
+         demo_mask) = replay_buffer.sample(self.batch_size, self.device)
         targets = double_dqn_targets(
             rewards, dones, next_states, self.online_network, self.target_network, self.gamma
         )
         q_values = self.online_network(states)
         predictions = q_values.gather(1, actions)
         td_loss = F.smooth_l1_loss(predictions, targets)
+        # DQfD-style auxiliary n-step return (per-row horizon gamma).
+        nstep_targets = double_dqn_targets(
+            nstep_rewards, nstep_dones, nstep_next_states,
+            self.online_network, self.target_network, nstep_gammas,
+        )
+        nstep_loss = F.smooth_l1_loss(predictions, nstep_targets)
         # Replayed teacher episodes carry a mask; bc_weight is scheduled per episode.
         margin_loss = dqfd_margin_loss(q_values, actions, demo_mask, self.margin)
-        loss = td_loss + float(self.bc_weight) * margin_loss
+        loss = td_loss + float(self.n_step_weight) * nstep_loss + float(self.bc_weight) * margin_loss
         # Fixed demonstration (state, action) pairs feed only this auxiliary term.
         if demo is not None:
             demo_states, demo_actions = demo
@@ -239,6 +313,7 @@ class D3QNAgent:
         return {
             "loss": float(loss.detach().cpu()),
             "td_loss": float(td_loss.detach().cpu()),
+            "nstep_loss": float(nstep_loss.detach().cpu()),
             "margin_loss": float(margin_loss.detach().cpu()),
             "bc_weight": float(self.bc_weight),
             "gradient_norm": min(float(norm), self.gradient_clip),

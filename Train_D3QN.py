@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from D3QN import D3QNAgent, DiscreteReplayBuffer
+from D3QN import D3QNAgent, DiscreteReplayBuffer, NStepAssembler
 from World import World
 from demonstration import linear_decay
 from discrete_actions import DiscreteActionCodec
@@ -78,6 +78,14 @@ def create_parser():
                         help="episodes over which bc_weight decays to bc_min_weight")
     parser.add_argument("--margin", type=float, default=1.0,
                         help="DQfD margin used for replayed demonstrations")
+    parser.add_argument("--n_step", type=int, default=10,
+                        help="auxiliary n-step return horizon (DRL-SA's original Nm-step mechanism)")
+    parser.add_argument("--action_repeat", type=int, default=2,
+                        help="world slots executed per decision (horizon compression)")
+    parser.add_argument("--pretrain_demo_episodes", type=int, default=40,
+                        help="fully guided episodes collected before any learning (DQfD pre-training)")
+    parser.add_argument("--pretrain_updates", type=int, default=20_000,
+                        help="demo-only gradient updates before online interaction")
     parser.add_argument("--device", default=None)
     return parser
 
@@ -242,6 +250,12 @@ def run_training(
                         "then constant" if guided_enabled else "none"),
         "demo_sampling_fraction": demo_fraction if guided_enabled else 0.0,
         "dqfd_margin": margin if guided_enabled else 0.0,
+        "n_step": int(getattr(args, "n_step", 1)),
+        "action_repeat": int(getattr(args, "action_repeat", 1)),
+        "pretrain": (f"{int(getattr(args, 'pretrain_demo_episodes', 0))} guided episodes, "
+                     f"{int(getattr(args, 'pretrain_updates', 0))} demo-only updates"
+                     if guided_enabled else "none"),
+        "evaluation_control": "per-slot argmax (no action repeat at evaluation)",
         "policy_mode": ("epsilon-greedy with whole-episode MapGuide demonstrations; "
                         "deterministic argmax evaluation" if guided_enabled
                         else "epsilon-greedy training; deterministic argmax evaluation"),
@@ -299,21 +313,32 @@ def run_training(
     best_reward = -float("inf")
     global_step = 0
 
-    for episode in range(1, args.episodes + 1):
+    action_repeat = max(1, int(getattr(args, "action_repeat", 1)))
+    n_step = max(1, int(getattr(args, "n_step", 1)))
+    decision_gamma = float(args.gamma) ** action_repeat
+    guide_box = {"guide": None}
+
+    def guided_action_index(episode):
+        uav = training_world.UAVs[0]
+        target_distance = float(np.linalg.norm(
+            np.array([uav.x, uav.y]) - training_world.target_loc
+        ))
+        angle_noise, distance_noise = exploration_scales(
+            episode, args.episodes, target_distance
+        )
+        # MapGuide plans absolute headings; snap them onto the discrete
+        # codec so the stored index is exactly what the world executes.
+        return codec.encode(training_world.absolute_to_action(
+            guide_box["guide"].action(angle_noise, distance_noise, np.random)
+        ))
+
+    def run_episode(episode, guided_run, learning):
+        nonlocal global_step
         state, step = training_world.reset()
         # A fresh guide per episode mirrors Train_SINR: whole demonstration
         # episodes avoid the guide silently repairing the agent's mistakes.
-        guide = guide_factory(training_world) if guided_enabled else None
-        guide_probability = (
-            linear_decay(guide_prob, episode - 1, guided_warmup, floor=guide_min_prob)
-            if guided_enabled else 0.0
-        )
-        guided_run = bool(np.random.random() < guide_probability) if guided_enabled else False
-        episode_guided.append(guided_run)
-        agent.bc_weight = (
-            linear_decay(bc_weight, episode - 1, bc_decay_episodes, floor=bc_min_weight)
-            if guided_enabled else 0.0
-        )
+        guide_box["guide"] = guide_factory(training_world) if guided_run else None
+        assembler = NStepAssembler(n_step, decision_gamma)
         done = False
         episode_reward = 0.0
         losses = []
@@ -324,31 +349,51 @@ def run_training(
             epsilon = epsilon_at_step(
                 global_step, args.epsilon_start, args.epsilon_end, args.epsilon_decay_steps
             )
-            if guided_run:
-                uav = training_world.UAVs[0]
-                target_distance = float(np.linalg.norm(
-                    np.array([uav.x, uav.y]) - training_world.target_loc
-                ))
-                angle_noise, distance_noise = exploration_scales(
-                    episode, args.episodes, target_distance
+            action_index = (guided_action_index(episode) if guided_run
+                            else agent.select_action(state, epsilon))
+            decision_state = state
+            block_reward = 0.0
+            for offset in range(action_repeat):
+                next_state, reward, done, step, _ = training_world.step_inside(
+                    codec.decode(action_index), state, step
                 )
-                # MapGuide plans absolute headings; snap them onto the discrete
-                # codec so the stored index is exactly what the world executes.
-                action_index = codec.encode(training_world.absolute_to_action(
-                    guide.action(angle_noise, distance_noise, np.random)
-                ))
-            else:
-                action_index = agent.select_action(state, epsilon)
-            next_state, reward, done, step, _ = training_world.step_inside(
-                codec.decode(action_index), state, step
-            )
+                block_reward += (float(args.gamma) ** offset) * float(reward)
+                episode_reward += float(reward)
+                state = next_state
+                global_step += 1
+                if done:
+                    break
             # Every episode ending is terminal for bootstrap, including QoS and timeout.
-            replay.add(state, action_index, reward, next_state, done, demo=guided_run)
-            state = next_state
-            episode_reward += float(reward)
-            global_step += 1
-            if len(replay) >= max(args.train_start, args.batch_size) and global_step % args.train_frequency == 0:
+            for record in assembler.push(decision_state, action_index, block_reward, state, done):
+                replay.add(record[0], record[1], record[2], record[3], record[4],
+                           demo=guided_run, nstep=record[5:])
+            if (learning and len(replay) >= max(args.train_start, args.batch_size)
+                    and global_step % args.train_frequency == 0):
                 losses.append(agent.learn(replay, demo=demo)["loss"])
+        return episode_reward, losses, epsilon
+
+    pretrain_episodes = int(getattr(args, "pretrain_demo_episodes", 0)) if guided_enabled else 0
+    pretrain_updates = int(getattr(args, "pretrain_updates", 0)) if guided_enabled else 0
+    if pretrain_episodes > 0:
+        for pretrain_episode in range(1, pretrain_episodes + 1):
+            run_episode(pretrain_episode, guided_run=True, learning=False)
+        agent.bc_weight = bc_weight
+        for _ in range(pretrain_updates):
+            agent.learn(replay, demo=demo)  # online partition empty: demo-only batches
+        global_step = 0  # epsilon schedule starts fresh for online interaction
+
+    for episode in range(1, args.episodes + 1):
+        guide_probability = (
+            linear_decay(guide_prob, episode - 1, guided_warmup, floor=guide_min_prob)
+            if guided_enabled else 0.0
+        )
+        guided_run = bool(np.random.random() < guide_probability) if guided_enabled else False
+        episode_guided.append(guided_run)
+        agent.bc_weight = (
+            linear_decay(bc_weight, episode - 1, bc_decay_episodes, floor=bc_min_weight)
+            if guided_enabled else 0.0
+        )
+        episode_reward, losses, epsilon = run_episode(episode, guided_run, learning=True)
 
         rewards.append(episode_reward)
         episode_losses.append(float(np.mean(losses)) if losses else np.nan)

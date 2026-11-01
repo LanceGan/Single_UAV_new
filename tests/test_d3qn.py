@@ -67,7 +67,8 @@ def test_replay_demo_partition_mixes_fraction_and_survives_online_wraparound():
         replay.add(np.ones(2), 1, 0.0, np.ones(2), False)
 
     assert len(replay) == 8 + 4
-    _, actions, _, _, _, demo_mask = replay.sample(8, "cpu")
+    sample = replay.sample(8, "cpu")
+    actions, demo_mask = sample[1], sample[-1]
     demo_rows = demo_mask.bool().squeeze(1)
     assert demo_mask.sum().item() == 2  # round(8 * 0.25)
     assert set(actions[demo_rows].squeeze(1).tolist()) == {7}
@@ -80,7 +81,8 @@ def test_replay_serves_demonstrations_alone_before_any_online_transition():
     )
     replay.add(np.zeros(2), 3, 1.0, np.zeros(2), True, demo=True)
 
-    _, actions, _, _, _, demo_mask = replay.sample(4, "cpu")
+    sample = replay.sample(4, "cpu")
+    actions, demo_mask = sample[1], sample[-1]
 
     assert demo_mask.sum().item() == 4
     assert set(actions.squeeze(1).tolist()) == {3}
@@ -127,9 +129,38 @@ def test_learn_adds_weighted_margin_term_for_demonstrations():
 
     assert weighted["margin_loss"] > 0.0
     assert weighted["loss"] == pytest.approx(
-        weighted["td_loss"] + 0.7 * weighted["margin_loss"], rel=1e-5
+        weighted["td_loss"] + weighted["nstep_loss"] + 0.7 * weighted["margin_loss"], rel=1e-5
     )
-    assert unweighted["loss"] == pytest.approx(unweighted["td_loss"], rel=1e-6)
+    assert unweighted["loss"] == pytest.approx(
+        unweighted["td_loss"] + unweighted["nstep_loss"], rel=1e-6
+    )
+
+
+def test_nstep_assembler_discounts_and_truncates_at_episode_end():
+    from D3QN import NStepAssembler
+
+    assembler = NStepAssembler(n=3, gamma=0.5)
+    s = [np.full(2, index, dtype=float) for index in range(5)]
+
+    assert assembler.push(s[0], 0, 1.0, s[1], False) == []
+    assert assembler.push(s[1], 1, 2.0, s[2], False) == []
+    records = assembler.push(s[2], 2, 4.0, s[3], False)
+    assert len(records) == 1
+    state, action, reward1, next1, done1, nreward, nnext, ndone, ngamma = records[0]
+    np.testing.assert_array_equal(state, s[0])
+    assert (action, reward1, done1) == (0, 1.0, False)
+    np.testing.assert_array_equal(next1, s[1])
+    assert nreward == pytest.approx(1.0 + 0.5 * 2.0 + 0.25 * 4.0)
+    np.testing.assert_array_equal(nnext, s[3])
+    assert ndone is False and ngamma == pytest.approx(0.5 ** 3)
+
+    # Episode end flushes the remaining two with truncated horizons, done=True.
+    final = assembler.push(s[3], 3, 8.0, s[4], True)
+    assert [record[1] for record in final] == [1, 2, 3]
+    assert final[0][5] == pytest.approx(2.0 + 0.5 * 4.0 + 0.25 * 8.0)
+    assert final[-1][5] == pytest.approx(8.0)
+    assert all(record[7] is True for record in final)
+    assert assembler.pending == []
 
 
 def test_dueling_aggregation_centers_advantage_for_each_sample():
