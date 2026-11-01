@@ -118,10 +118,12 @@ DDPG 之前也失败（0/120），不进论文，仅内部知晓。
 | baseline | 序列算法 | 轨迹算法 | A2G | 当前状态 |
 |---|---|---|---|---|
 | Distance-TSP + TD3 | 距离 TSP | TD3 | ❌ blind | Mac 训练中 |
-| DRL-SA | SA（服务时间） | **D3QN** | ❌ blind | 待实现 |
-| EEGA-TD3 | EEGA（数据×能耗/吞吐） | TD3 | ❌ blind | 待实现 |
-| SA-D3QN | SA（距离 TSP） | **D3QN** | ❌ blind | 待实现 |
-| Yang-style + TD3 | 加权因子（吞吐 vs 数据） | TD3（适配） | ❌ blind | 待实现 |
+| DRL-SA | SA（服务时间） | **D3QN** | ❌ blind | **Win（我们）** |
+| EEGA-TD3 | EEGA（数据×能耗/吞吐） | TD3 | ❌ blind | **Mac** |
+| SA-D3QN | SA（距离 TSP） | **D3QN** | ❌ blind | **Win（我们）** |
+| Yang-style + TD3 | 加权因子（吞吐 vs 数据） | TD3（适配） | ❌ blind | **Mac** |
+
+> 分工：**Win 跑 DRL-SA、SA-D3QN**（都走 D3QN，我们本地已有 D3QN 训练管线）；**Mac 跑 EEGA-TD3、Yang-style+TD3**（都走 TD3）。
 
 ### 8.6 禁止误述
 

@@ -23,6 +23,7 @@ from evaluate_policy import rollout, selection_key
 from astar_teacher import d3qn_demo_pairs
 from map_guidance import MapGuide
 from sequence_runner import solve_ga_order
+from sequence_baselines import distance_tsp_order
 from training_config import load_fixed_payloads
 
 
@@ -31,6 +32,10 @@ D3QN_STATE_DIM = 8  # dual-map observation (A2G + G2A), same as the proposed TD3
 D3QN_STATE_SCHEMA = (
     "v4: uav xy, target-minus-uav xy, pending payload, outage usage, "
     "A2G SNR, G2A outage probability"
+)
+D3QN_G2A_STATE_SCHEMA = (
+    "v4: uav xy, target-minus-uav xy, pending payload, outage usage, "
+    "G2A outage probability"
 )
 ACTION_SCHEMA = "hover + 16 relative headings at 0.125 + 16 relative headings at 0.25"
 
@@ -60,6 +65,10 @@ def create_parser():
     parser.add_argument("--checkpoint_interval", type=int, default=50)
     parser.add_argument("--teacher", choices=("mapguide", "astar", "none"), default="mapguide",
                         help="demonstration source: MapGuide by default; A* and none are optional")
+    parser.add_argument("--a2g_blind", action="store_true",
+                        help="A2G-free baseline (DRL-SA / SA-D3QN): drop the A2G SNR feature from the state (7D G2A-only)")
+    parser.add_argument("--sequence_method", choices=("iga", "distance_tsp"), default="iga",
+                        help="inspection sequence: IGA (proposed) or distance TSP (SA-based baselines)")
     parser.add_argument("--guide_prob", type=float, default=0.5)
     parser.add_argument("--guide_min_prob", type=float, default=0.5,
                         help="demonstration probability floor; 0.5 keeps MapGuide control constant (no decay)")
@@ -103,7 +112,7 @@ def _map_hashes():
     }
 
 
-def _make_world(*, payloads, order, uav_h, outage_max_s):
+def _make_world(*, payloads, order, uav_h, outage_max_s, include_a2g_snr=True):
     return World(
         length=20,
         width=20,
@@ -124,15 +133,16 @@ def _make_world(*, payloads, order, uav_h, outage_max_s):
         ),
         traverse_sequence=list(order),
         variant="A",
+        include_a2g_snr=include_a2g_snr,
     )
 
 
-def _rollout_context(run_dir, config):
+def _rollout_context(run_dir, config, state_dim):
     return SimpleNamespace(
         run_dir=Path(run_dir),
         config=config,
         algorithm="d3qn",
-        state_dim=D3QN_STATE_DIM,
+        state_dim=state_dim,
         net_width=int(config["net_width"]),
         variant="A",
         order=tuple(config["order"]),
@@ -185,7 +195,13 @@ def run_training(
         torch.cuda.manual_seed_all(args.seed)
 
     payloads = load_fixed_payloads(args.data_level)
-    order = list(order_solver(payloads, iterations=args.ga_iterations))
+    a2g_blind = bool(getattr(args, "a2g_blind", False))
+    if getattr(args, "sequence_method", "iga") == "distance_tsp":
+        order = list(distance_tsp_order())
+    else:
+        order = list(order_solver(payloads, iterations=args.ga_iterations))
+    state_dim = 7 if a2g_blind else 8
+    state_schema = D3QN_G2A_STATE_SCHEMA if a2g_blind else D3QN_STATE_SCHEMA
     if sorted(order) != list(range(1, len(payloads) + 1)):
         raise ValueError("IGA order must contain every inspection point exactly once")
     run_dir = Path(args.output_root).resolve() / args.data_level / "d3qn"
@@ -198,8 +214,10 @@ def run_training(
         **vars(args),
         "algorithm": "d3qn",
         "variant": "A",
-        "state_dim": D3QN_STATE_DIM,
-        "state_schema": D3QN_STATE_SCHEMA,
+        "state_dim": state_dim,
+        "state_schema": state_schema,
+        "a2g_blind": a2g_blind,
+        "sequence_selector": getattr(args, "sequence_method", "iga"),
         "action_count": 33,
         "action_schema": ACTION_SCHEMA,
         "order": order,
@@ -223,17 +241,18 @@ def run_training(
         "order": order,
         "uav_h": args.uav_h,
         "outage_max_s": args.outage_max_s,
+        "include_a2g_snr": not a2g_blind,
     }
     training_world = world_factory(**world_arguments)
     evaluation_world = world_factory(**world_arguments)
-    if int(training_world.state_dim) != D3QN_STATE_DIM:
-        raise ValueError(f"D3QN baseline requires the {D3QN_STATE_DIM}D dual-map observation")
+    if int(training_world.state_dim) != state_dim:
+        raise ValueError(f"D3QN baseline requires a {state_dim}D observation")
     # World construction may alter NumPy's global RNG through legacy terrain code.
     np.random.seed(args.seed)
     random.seed(args.seed)
 
     agent = D3QNAgent(
-        state_dim=D3QN_STATE_DIM,
+        state_dim=state_dim,
         action_dim=len(codec),
         hidden_dim=args.net_width,
         learning_rate=args.learning_rate,
@@ -246,9 +265,9 @@ def run_training(
     )
     agent.demo_weight = float(getattr(args, "demo_weight", 1.0))
     agent.demo_margin = float(getattr(args, "demo_margin", 0.8))
-    replay = DiscreteReplayBuffer(D3QN_STATE_DIM, args.buffer, args.seed)
+    replay = DiscreteReplayBuffer(state_dim, args.buffer, args.seed)
     demo_replay = DiscreteReplayBuffer(
-        D3QN_STATE_DIM, int(getattr(args, "demo_capacity", args.buffer)), args.seed + 1)
+        state_dim, int(getattr(args, "demo_capacity", args.buffer)), args.seed + 1)
     demo_report = None
     if teacher == "mapguide":
         demonstration_world = world_factory(**world_arguments)
@@ -263,7 +282,7 @@ def run_training(
         config["mapguide_demo_report"] = demo_report
         (run_dir / "run_config.json").write_text(
             json.dumps(config, indent=2, ensure_ascii=False), encoding="utf-8")
-    context = _rollout_context(run_dir, config)
+    context = _rollout_context(run_dir, config, state_dim)
     paths = checkpoint_paths(run_dir)
     paths["final"].parent.mkdir(parents=True, exist_ok=True)
 
