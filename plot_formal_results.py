@@ -251,6 +251,10 @@ def method_title(algorithm, config):
         return f"Distance-TSP+{base}"
     if "annealing" in sequence:
         return f"DRL-SA ({base} trajectory)"
+    if "EEGA" in sequence:
+        return f"EEGA-{base}"
+    if "Yang" in sequence:
+        return f"Yang-style+{base}"
     return base
 
 

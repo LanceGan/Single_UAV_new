@@ -1,0 +1,20 @@
+{
+  "run_dir": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/course-baselines/eega/A/low/td3_bc",
+  "algorithm": "td3_bc",
+  "data_level": "low",
+  "variant": "A",
+  "evaluation_count": 120,
+  "successful_evaluations": 92,
+  "eval_best_episode": 2500,
+  "eval_best": {
+    "success": true,
+    "termination_reason": "success",
+    "visited_inspection_points": 6,
+    "uploaded_mb": 450.0,
+    "task_time_s": 174.0,
+    "transmission_delay_s": 105.5,
+    "outage_time_s": 25.5,
+    "flight_distance_m": 5806.340463459492,
+    "total_return": 5.175769038141381
+  }
+}

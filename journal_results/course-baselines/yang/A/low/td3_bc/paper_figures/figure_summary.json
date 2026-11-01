@@ -1,0 +1,20 @@
+{
+  "run_dir": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/course-baselines/yang/A/low/td3_bc",
+  "algorithm": "td3_bc",
+  "data_level": "low",
+  "variant": "A",
+  "evaluation_count": 120,
+  "successful_evaluations": 102,
+  "eval_best_episode": 2200,
+  "eval_best": {
+    "success": true,
+    "termination_reason": "success",
+    "visited_inspection_points": 6,
+    "uploaded_mb": 450.0,
+    "task_time_s": 157.5,
+    "transmission_delay_s": 96.5,
+    "outage_time_s": 31.5,
+    "flight_distance_m": 5744.4390058517465,
+    "total_return": 5.56680925305542
+  }
+}

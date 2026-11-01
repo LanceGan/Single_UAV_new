@@ -29,6 +29,8 @@ def test_method_title_qualifies_sequence_baselines():
     assert method_title("td3_bc", {"sequence_method": "GA with exact verification/fallback"}) == "TD3"
     assert method_title("td3_bc", {"sequence_method": "exact distance TSP over all permutations"}) == "Distance-TSP+TD3"
     assert method_title("td3_bc", {"sequence_method": "simulated annealing on G2A flight+outage seconds"}) == "DRL-SA (TD3 trajectory)"
+    assert method_title("td3_bc", {"sequence_method": "EEGA-style GA on L_ij=(I_i/Q_ij)*E_ij"}) == "EEGA-TD3"
+    assert method_title("td3_bc", {"sequence_method": "Yang-style weighted order: flight seconds + I_i/Q_ij"}) == "Yang-style+TD3"
     assert method_title("td3_bc", {}) == "TD3"
 
 
