@@ -70,14 +70,16 @@ DDPG 之前也失败（0/120），不进论文，仅内部知晓。
 
 ## 6. 当前进行中
 
-- **D3QN 正确配方重跑中（Windows）**：A2G-aware 8 维 + guide 0.5 常数 + 新奖励，3000 轮，输出 `journal_results/d3qn-v4`。此前误设的 A2G-free 版 0/120 不算数，以这次为准。
-- **Mac**：Distance-TSP+TD3 与 DRL-SA（A2G-blind）训练中。
+- **D3QN 正确配方重跑中（Windows，层面 1）**：A2G-aware 8 维 + guide 0.5 常数 + v5 奖励，3000 轮，输出 `journal_results/d3qn-v4`。
+- **DRL-SA / SA-D3QN 训练中（Windows，层面 3）**：A2G-blind 7 维 + G2A-only MapGuide 教师 + 距离 TSP 顺序 + course-final（guide 0.5→0）+ v5 奖励，seed 1/2，输出 `journal_results/drl-sa`、`journal_results/sa-d3qn`。二者在 A2G-free 下序列与轨迹相同，仅 seed 不同。
+- **Mac 已完成层面 3 的 TD3 系 baseline（A2G-blind，旧奖励）**：Yang-style+TD3 = 254.0s(102/120)、EEGA-TD3 = 279.5s(92/120)、Distance-TSP+TD3 = 311.0s(56/120)；A2G 可见消融 229.0s(91/120)，即去掉 A2G 恶化 +82s(+35.8%)。
 
 ## 7. 待办
 
 - [ ] 层面 1：D3QN 正确配方结果确认（Win，进行中）
 - [ ] 层面 2：QoS 扫描（TD3，不同 T_out 阈值）
-- [ ] 层面 3 未实现 baseline：**EEGA-TD3、SA-D3QN、Yang-style+TD3**
+- [ ] 层面 3：DRL-SA / SA-D3QN 结果确认（Win 训练中）；EEGA-TD3、Yang-style 已由 Mac 完成
+- [ ] **奖励版本统一**：Win 已用 v5（0.5/MB），Mac baseline 用旧奖励；暂记录不处理，需后续统一
 - [ ] 课程版 Proposed（IGA+TD3 low，Mac 在等，需 ≤229.0s）
 - [ ] 配方口径定稿：`0.5→0`（course-final）vs `0.5→0.2`（legacy-0.2）
 - [ ] 判断好坏一律看纯 actor `eval_best`（无引导、无噪声）
@@ -118,9 +120,9 @@ DDPG 之前也失败（0/120），不进论文，仅内部知晓。
 | baseline | 序列算法 | 轨迹算法 | A2G | 当前状态 |
 |---|---|---|---|---|
 | Distance-TSP + TD3 | 距离 TSP | TD3 | ❌ blind | Mac 训练中 |
-| DRL-SA | SA（服务时间） | **D3QN** | ❌ blind | **Win（我们）** |
+| DRL-SA | SA（服务时间→A2G-free 下退化为距离） | **D3QN** | ❌ blind | **Win 训练中** |
 | EEGA-TD3 | EEGA（数据×能耗/吞吐） | TD3 | ❌ blind | **Mac** |
-| SA-D3QN | SA（距离 TSP） | **D3QN** | ❌ blind | **Win（我们）** |
+| SA-D3QN | SA（距离 TSP） | **D3QN** | ❌ blind | **Win 训练中** |
 | Yang-style + TD3 | 加权因子（吞吐 vs 数据） | TD3（适配） | ❌ blind | **Mac** |
 
 > 分工：**Win 跑 DRL-SA、SA-D3QN**（都走 D3QN，我们本地已有 D3QN 训练管线）；**Mac 跑 EEGA-TD3、Yang-style+TD3**（都走 TD3）。
