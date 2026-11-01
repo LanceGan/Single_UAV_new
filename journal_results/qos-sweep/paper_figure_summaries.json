@@ -1,42 +1,42 @@
 [
   {
-    "run_dir": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/qos-sweep/qos60/A/low/td3_bc",
+    "run_dir": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/qos-sweep/qos30/A/low/td3_bc",
     "algorithm": "td3_bc",
     "data_level": "low",
     "variant": "A",
     "evaluation_count": 120,
-    "successful_evaluations": 95,
-    "eval_best_episode": 2300,
+    "successful_evaluations": 72,
+    "eval_best_episode": 1925,
     "eval_best": {
       "success": true,
       "termination_reason": "success",
       "visited_inspection_points": 6,
       "uploaded_mb": 450.0,
-      "task_time_s": 155.0,
-      "transmission_delay_s": 74.0,
-      "outage_time_s": 18.5,
-      "flight_distance_m": 5785.388416796923,
-      "total_return": 5.522214181753394
+      "task_time_s": 171.0,
+      "transmission_delay_s": 77.5,
+      "outage_time_s": 16.0,
+      "flight_distance_m": 6116.164296120405,
+      "total_return": 5.3254423644196205
     }
   },
   {
-    "run_dir": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/qos-sweep/qos80/A/low/td3_bc",
+    "run_dir": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/qos-sweep/qos40/A/low/td3_bc",
     "algorithm": "td3_bc",
     "data_level": "low",
     "variant": "A",
     "evaluation_count": 120,
-    "successful_evaluations": 81,
-    "eval_best_episode": 1500,
+    "successful_evaluations": 88,
+    "eval_best_episode": 2200,
     "eval_best": {
       "success": true,
       "termination_reason": "success",
       "visited_inspection_points": 6,
       "uploaded_mb": 450.0,
-      "task_time_s": 153.0,
-      "transmission_delay_s": 76.0,
-      "outage_time_s": 20.0,
-      "flight_distance_m": 5779.161927849054,
-      "total_return": 5.525605566129805
+      "task_time_s": 158.5,
+      "transmission_delay_s": 82.0,
+      "outage_time_s": 21.0,
+      "flight_distance_m": 6072.276544570924,
+      "total_return": 5.408069801378456
     }
   }
 ]

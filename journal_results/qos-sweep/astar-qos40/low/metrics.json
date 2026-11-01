@@ -1,0 +1,54 @@
+{
+  "algorithm": "qos_constrained_astar_25m_4neighbor_hover",
+  "search_mode": "sequential",
+  "data_level": "low",
+  "inspection_order": [
+    1,
+    6,
+    2,
+    3,
+    5,
+    4
+  ],
+  "payloads_mb": [
+    90.0,
+    90.0,
+    60.0,
+    60.0,
+    90.0,
+    60.0
+  ],
+  "map_hashes": {
+    "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+    "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+  },
+  "planner": {
+    "status": "success",
+    "message": "feasible path found leg by leg; each leg optimal given its start",
+    "success": true,
+    "optimality_proven": false,
+    "quantized_objective_s": 214.0,
+    "expansions": 42739,
+    "generated_labels": 79607,
+    "runtime_s": 1.3400697488104925,
+    "path_slots": 270
+  },
+  "world_replay": {
+    "success": true,
+    "termination_reason": "success",
+    "task_time_s": 135.0,
+    "transmission_delay_s": 79.0,
+    "objective_s": 214.0,
+    "outage_time_s": 27.5,
+    "outage_limit_s": 40.0,
+    "flight_distance_m": 6291.401219466857,
+    "uploaded_mb": 449.9999999999999,
+    "expected_upload_mb": 450.0,
+    "trajectory_steps": 270,
+    "visited_inspection_points": 6,
+    "expected_inspection_points": 6,
+    "variant": "A",
+    "metrics_source": "real World replay"
+  },
+  "comparison_metrics_source": "world_replay"
+}

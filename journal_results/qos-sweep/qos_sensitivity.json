@@ -2,6 +2,24 @@
   "astar_reference_s": 214.0,
   "points": [
     {
+      "budget_s": 30.0,
+      "objective_s": 248.5,
+      "outage_s": 16.0,
+      "success_rate": 0.6,
+      "evaluations": 120,
+      "successes": 72,
+      "best_episode": 1925
+    },
+    {
+      "budget_s": 40.0,
+      "objective_s": 240.5,
+      "outage_s": 21.0,
+      "success_rate": 0.7333333333333333,
+      "evaluations": 120,
+      "successes": 88,
+      "best_episode": 2200
+    },
+    {
       "budget_s": 60.0,
       "objective_s": 229.0,
       "outage_s": 18.5,
