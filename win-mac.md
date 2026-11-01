@@ -70,7 +70,7 @@ DDPG 之前也失败（0/120），不进论文，仅内部知晓。
 
 ## 6. 当前进行中
 
-- **D3QN 正确配方已基本跑完（Windows，层面 1）**：A2G-aware 8 维 + guide 0.5 常数 + v5 奖励，3000 轮，输出 `journal_results/d3qn-v4`。**0/107 成功（已 2675 轮），判定失败**，详见 §9。
+- **D3QN 正确配方已基本跑完（Windows，层面 1）**：A2G-aware 8 维 + guide 0.5 常数 + v5 奖励，3000 轮，输出 `journal_results/d3qn-v4`。**0/120 成功（3000 轮跑完，最终判定失败）**，详见 §9。
 - **DRL-SA / SA-D3QN 训练中（Windows，层面 3）**：A2G-blind 7 维 + G2A-only MapGuide 教师 + 距离 TSP 顺序 + course-final（guide 0.5→0）+ v5 奖励，seed 1/2，输出 `journal_results/drl-sa`、`journal_results/sa-d3qn`。二者在 A2G-free 下序列与轨迹相同，仅 seed 不同。
 - **Mac 已完成层面 3 的 TD3 系 baseline（A2G-blind，旧奖励）**：Yang-style+TD3 = 254.0s(102/120)、EEGA-TD3 = 279.5s(92/120)、Distance-TSP+TD3 = 311.0s(56/120)；A2G 可见消融 229.0s(91/120)，即去掉 A2G 恶化 +82s(+35.8%)。
 
