@@ -112,4 +112,12 @@
 
 **组 2（全知 Proposed 场景敏感性）**：固定 IGA+TD3+全知，扫数据量与 QoS。数据量轴 ✅（235.5/351.5/501.0）。QoS 轴 🔄：低档 `T_out^max ∈ {60, 80, 100}`，60/80 两个 TD3 run Mac 训练中（配方与 235.5 完全一致：0.2 教师下限、旧奖励），输出 `journal_results/qos-sweep/qos{60,80}/`。**A\* 参照已出：60/80/100s 下全部 214.0s**（最优解 T_out≈25s，三档预算均不束紧）——参照线平坦，TD3 曲线的变化反映约束对学习的压力，这是组 2 的解读框架。
 
-**组 3（他文基线，全 A2G-free）**：Distance-TSP+TD3 ✅ 311.0、DRL-SA ✅ 311.0；**EEGA-TD3 (GA proxy)：普通 GA（距离适应度）在 seed 1 收敛到与精确 TSP 相同的顺序 [1,6,5,2,3,4]（4438.9m）→ 无需单独训练，课程表该行引用盲版 Distance-TSP 的训练结果并脚注说明**（求解器已实现：`sequence_optimizers.ga_proxy_order`，`--sequence_method ga_proxy` 可随时独立训练；seed 4/5 会收敛到次优解，证明是真 GA 非穷举）。SA-D3QN、Yang-style 等 Win 的原文解读文档到位后实现。
+**组 3（他文基线，全 A2G-free）**：分工（2026-11-01 定）——**Win 做两个 D3QN 系（DRL-SA=SA(服务时间)+盲D3QN、SA-D3QN=SA(距离)+盲D3QN），Mac 做两个 TD3 系**。吞吐量代理统一用 **G2A 互易估计**（层面 3 不读 A2G 图；原文用各自信道模型，互易估计最贴近该设定，报告注明适配）。
+
+- Distance-TSP+TD3 ✅ 311.0（盲）；
+- **EEGA-TD3 🔄 Mac 训练中**：忠实边权 `L_ij=(I_i/Q_ij)·E_ij`（Q 为 G2A 互易、E∝飞行秒；起点航段按字面公式零代价，已记录不打补丁；自适应算子原文未公开，用标准锦标赛/OX/交换并披露）。顺序 **[1,6,5,3,2,4]**（种子稳定），输出 `course-baselines/eega/`；
+- **Yang-style+TD3 🔄 Mac 训练中**：边代价=飞行秒+I_i/Q_ij，720 排列精确求解；顺序 **[1,6,5,4,2,3]**。原文轨迹为 SCA/BCD，+TD3 为适配（已在 meta 声明）。输出 `course-baselines/yang/`；
+- 早先的 SA+TD3 盲版 run（311.0，`course-baselines/drl-sa/`）按新规范**不再是正式 DRL-SA**（原文轨迹为 D3QN）——改标签为 **"G2A-SA+TD3"** 留作会议延续基线/消融，数据不弃；
+- GA-proxy 退役：已有忠实 EEGA 边权实现，`ga_proxy` 仅留档。
+
+**顺序差异化全景**（低档）：IGA `[1,6,2,3,5,4]` / TSP `[1,6,5,2,3,4]` / EEGA `[1,6,5,3,2,4]` / Yang `[1,6,5,4,2,3]`——四种方法四种顺序，序列对比叙事成立。

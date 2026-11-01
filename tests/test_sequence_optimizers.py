@@ -5,9 +5,12 @@ from sequence_optimizers import (
     _path_cost,
     distance_matrix_m,
     distance_tsp_order,
+    eega_cost_matrix,
+    eega_order,
     g2a_edge_seconds,
     ga_proxy_order,
     sa_order,
+    yang_order,
 )
 
 
@@ -95,6 +98,46 @@ def test_ga_proxy_finds_the_line_optimum():
 
     assert order == exact
     assert meta["distance_m"] == pytest.approx(exact_meta["distance_m"])
+
+
+class _FlatSnrMaps:
+    """Constant G2A SNR everywhere -> constant reciprocal rate."""
+
+    def g2a_snr_db(self, point_km):
+        return 0.0  # rate = log2(2) = 1
+
+
+def test_eega_cost_matrix_is_payload_weighted_and_start_legs_are_free():
+    nodes = _square_nodes()
+    light = eega_cost_matrix(nodes, [10.0, 10.0, 10.0, 10.0], maps=_FlatSnrMaps())
+    heavy = eega_cost_matrix(nodes, [10.0, 100.0, 10.0, 10.0], maps=_FlatSnrMaps())
+
+    assert np.all(light[0, 1:] == 0.0)  # literal formula: no payload at the start yet
+    np.testing.assert_allclose(heavy[2], 10.0 * light[2])  # node 2 payload scaled x10
+    np.testing.assert_allclose(heavy[1], light[1])
+
+
+def test_eega_and_yang_orders_are_valid_and_deterministic_on_repository_data():
+    from training_config import load_fixed_payloads
+
+    payloads = load_fixed_payloads("low")
+    eega_first, eega_meta = eega_order(payloads, seed=1)
+    eega_second, _ = eega_order(payloads, seed=1)
+    yang_first, yang_meta = yang_order(payloads)
+    yang_second, _ = yang_order(payloads)
+
+    assert eega_first == eega_second and yang_first == yang_second
+    assert sorted(eega_first) == [1, 2, 3, 4, 5, 6]
+    assert sorted(yang_first) == [1, 2, 3, 4, 5, 6]
+    assert all(type(gene) is int for gene in eega_first + yang_first)
+    assert eega_meta["uses_a2g"] is False and yang_meta["uses_a2g"] is False
+    assert eega_meta["uses_payloads"] is True and yang_meta["uses_payloads"] is True
+
+
+def test_yang_cost_shifts_toward_offload_when_payloads_grow():
+    nodes = _square_nodes()
+    light, _ = yang_order([1.0, 1.0, 1.0, 1.0], nodes_km=nodes, maps=_FlatSnrMaps())
+    assert sorted(light) == [1, 2, 3, 4]
 
 
 def test_sa_detours_around_outage_corridor():
