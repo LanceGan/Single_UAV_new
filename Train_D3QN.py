@@ -272,7 +272,7 @@ def run_training(
     if teacher == "mapguide":
         demonstration_world = world_factory(**world_arguments)
         transitions, demo_report = collect_mapguide_demonstration(
-            args.data_level, order, codec=codec, world=demonstration_world)
+            args.data_level, order, codec=codec, world=demonstration_world, a2g_blind=a2g_blind)
         for index in range(len(transitions["actions"])):
             demo_replay.add(
                 transitions["states"][index], transitions["actions"][index],
@@ -304,7 +304,7 @@ def run_training(
             floor=float(getattr(args, "guide_min_prob", 0.0)))
             if teacher == "mapguide" else 0.0)
         guided_episode = bool(teacher == "mapguide" and np.random.random() < guide_probability)
-        guide = MapGuide(training_world) if guided_episode else None
+        guide = MapGuide(training_world, a2g_blind=a2g_blind) if guided_episode else None
         done = False
         episode_reward = 0.0
         losses = []

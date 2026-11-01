@@ -29,13 +29,13 @@ def discrete_mapguide_action(world, guide, codec):
     return codec.nearest(relative)
 
 
-def collect_mapguide_demonstration(level, order, codec=None, world=None):
+def collect_mapguide_demonstration(level, order, codec=None, world=None, a2g_blind=False):
     """Collect one successful discrete MapGuide trajectory and full transitions."""
     codec = codec or DiscreteActionCodec()
     with contextlib.redirect_stdout(io.StringIO()):
         world = world or build_world(level, order)
         state, step = world.reset()
-    guide = MapGuide(world)
+    guide = MapGuide(world, a2g_blind=a2g_blind)
     transitions = {name: [] for name in
                    ("states", "actions", "rewards", "next_states", "dones")}
     uploaded = 0.0
