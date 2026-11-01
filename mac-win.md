@@ -131,3 +131,45 @@
 **层面 3 低档全景（盲基线 vs 全知 Proposed，同配方同奖励）**：A\* 214.0 < **Proposed TD3 235.5** < Yang 254.0 < EEGA 279.5 < Distance-TSP/G2A-SA 311.0。两个叙事点：①所有盲基线劣于全知 Proposed（+7.9% 到 +32%），A2G 感知的价值成立；②盲基线内部 311→254 的巨大差距表明**顺序的数据/吞吐感知度**（Yang>EEGA>纯距离）在无 A2G 时更关键——从独立角度佐证了数据感知排序的论文主张。对比图：`journal_results/comparison-low-layer3/`。
 
 **顺序差异化全景**（低档）：IGA `[1,6,2,3,5,4]` / TSP `[1,6,5,2,3,4]` / EEGA `[1,6,5,3,2,4]` / Yang `[1,6,5,4,2,3]`——四种方法四种顺序，序列对比叙事成立。
+
+## 9. D3QN 修复版规范（Win 执行，代码在 feat/mac @ `b8ca85a`）
+
+针对 win-mac §9 的失败诊断（长时域信用分配 + 平滑绕行），feat/mac 已实现三件套修复，**Mac 不跑，由 Win 执行**（Win 空闲且有 CUDA）：
+
+### 9.1 修复内容（均为已发表机制，非调参偏方）
+
+1. **n-step 回报（n=10）**：回放存双时距字段，TD 损失 = 1步 + n步 + DQfD margin。**DRL-SA 原文本就使用 Nₘ-step，此前复现缺失此机制**——这是补齐忠实度。回合末截断由 done 掩蔽 bootstrap，固定 γᵏ 精确。
+2. **动作重复（k=2）**：每决策执行 2 时隙（50m 粒度），决策地平线 ~350→~175（Atari frame-skip 同款）。评估仍逐时隙 argmax（更细，不吃亏）。
+3. **DQfD 预训练**：先收集 40 个纯示范回合 → 2 万步 demo-only 更新（margin+双时距 TD）→ 再在线交互，ε 从零起算。
+
+默认参数向后兼容（n=1/k=1/pretrain=0 ≡ 旧行为，测试锁定；全套 185 测试通过，真实冒烟已验证）。
+
+### 9.2 ⚠️ 代码获取方式：独立 checkout，不要 merge
+
+feat/mac 与 feat/win 代码已分叉（Mac=旧奖励 + `a2g_blind` 参数；Win=v5 奖励 + `include_a2g_snr`），直接 merge 会冲突。推荐：
+
+```bash
+git worktree add ../Single_UAV_mac feat/mac   # 或新 clone 后 checkout feat/mac
+cd ../Single_UAV_mac
+```
+
+**奖励版本有意用旧奖励**：组 1 的对比锚点是 TD3 235.5（旧奖励），D3QN 修复版同口径才公平。若 Win 坚持 v5，需把三件套移植到自己分支并接受与锚点的奖励差异（不推荐）。
+
+### 9.3 启动命令（低档，组 1 口径：A2G-aware + 常数 0.5 引导）
+
+```bash
+python Train_D3QN.py --data_level low --teacher mapguide \
+  --guide_prob 0.5 --guide_min_prob 0.5 \
+  --learning_rate 1e-4 --episodes 5000 \
+  --n_step 10 --action_repeat 2 \
+  --pretrain_demo_episodes 40 --pretrain_updates 20000 \
+  --epsilon_decay_steps 300000 \
+  --seed 1 --output_root journal_results/d3qn-v5-fixed
+```
+
+CUDA 自动启用（--device 缺省自检）。预计 5000 回合在 CUDA 上 2–3 小时。
+
+### 9.4 判定标准（事先约定，避免事后挑数）
+
+- 出现稳定成功评估（如最后 1000 回合成功率 >30%）→ 组 1 获得可用离散基线，预期 T+τ 仍劣于 TD3（粗粒度绕行效率低），正合论文叙事；
+- 5000 回合仍 0 成功 → 负结果最终定稿："补齐原文 n-step、DQfD 全配方、动作重复后，离散动作在位置相关连续上传任务上仍不可行"（win-mac §9.4 口径升级版）。
