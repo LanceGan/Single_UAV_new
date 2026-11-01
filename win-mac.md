@@ -7,7 +7,7 @@
 Mac 已在自己的 `feat/mac` 维护了 `mac-win.md`。要点与冲突：
 
 - Mac 已实现 `--a2g_blind`：Distance-TSP+TD3 与 DRL-SA 的轨迹栈去掉 A2G（7D 状态、G2A-only 教师），**DDPG/D3QN（轨迹算法对照）与 A\*（oracle）保持 A2G**。
-- ⚠️ **冲突待用户裁决**：Win 侧按用户指示把 DDPG/D3QN 改成了 A2G-free（7D 状态）；Mac 认为 DDPG/D3QN 应保持 A2G（它们是轨迹算法对照，不是地图感知基线）。两边的 A2G-free 对象不一致。
+- ✅ **已定**：DDPG/D3QN 是与 TD3 的算法对比，保持 A2G（8 维双地图状态）；A2G-free 只适用于 TSP/SA 序列基线。Win 已把 DDPG/D3QN 改回 A2G-aware。
 - 配方口径：Mac 把 `0.5→0`（guide 归零）称为 course-final（课程正式），把 `0.5→0.2`（持久下限）称为 legacy-0.2（期刊历史）。Win 当前 TD3/DDPG 用的是 0.2 下限。
 - Mac 等待 Win：课程版 Proposed（IGA+TD3，low，需 ≤229.0s）、期刊高档 formal-v5、DDPG 课程口径确认。
 
@@ -35,7 +35,7 @@ Mac 已在自己的 `feat/mac` 维护了 `mac-win.md`。要点与冲突：
 | TD3 / A* / MapGuide | ✅ 有 | 我们自己的方法 |
 | 距离 TSP | ✅ 无 | 只看飞行距离（已正确） |
 | G2A-SA | ✅ 无 | 只看距离 + G2A 中断（已正确） |
-| **DDPG / DQN** | ❌ 待改 | 状态目前含 A2G SNR，需改成只含 G2A 的 7 维观察 |
+| DDPG / D3QN | ✅ 有 | 与 TD3 的算法对比，保持 8 维双地图状态 |
 
 ## 3. 序列基线结果（已补齐）
 
@@ -71,7 +71,7 @@ Mac 已在自己的 `feat/mac` 维护了 `mac-win.md`。要点与冲突：
 
 ## 7. 待办 / 注意
 
-- **DDPG/DQN 改 A2G-free（待确认）**：若需忠实复现，把这两个 DRL 基线状态里的 A2G SNR 去掉（改成 7 维 G2A-only 观察）并重跑；否则只在论文里说明其 G2A-only 的设定。
+- ~~DDPG/DQN 改 A2G-free~~ 已取消：DDPG/D3QN 保持 A2G-aware（与 TD3 同状态）。A2G-free 只用于 TSP/SA 序列基线（Mac 侧 --a2g_blind 已做）。
 - **TD3 三档配方不完全一致**：低/中来自 Mac（0.2 下限配方），高来自 Win（旧 0 衰减配方）。论文里若要求完全一致，可考虑在 Windows 用 `guide_min_prob=0.2` 重训一版 high。
 - 判断方法好坏一律看**纯 actor 的 `eval_best`**（无引导、无噪声），不看训练奖励曲线。
 - 环境：Windows 用 `D:/Anaconda/envs/pytorch/python.exe`（Py3.11 + CUDA）；默认 `python` 是 3.14，没有 torch/pytest，不要用。
