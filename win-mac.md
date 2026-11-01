@@ -1,77 +1,83 @@
-# Win ↔ Mac 协同说明（2026-10-31）
+# Win ↔ Mac 协同说明（2026-11-01）
 
 本文件是 Windows 机与 Mac 机之间的交接约定，两边会话开始前先读这一份，保持一致。
 
-## 0. Mac 侧同步（mac-win.md，2026-11-01）
+## 1. 实验设计（三层，已定）
 
-Mac 已在自己的 `feat/mac` 维护了 `mac-win.md`。要点与冲突：
+### 层面 1：轨迹方法对比（突出 TD3 优势）
 
-- Mac 已实现 `--a2g_blind`：Distance-TSP+TD3 与 DRL-SA 的轨迹栈去掉 A2G（7D 状态、G2A-only 教师），**DDPG/D3QN（轨迹算法对照）与 A\*（oracle）保持 A2G**。
-- ✅ **已定**：DDPG/D3QN 是与 TD3 的算法对比，保持 A2G（8 维双地图状态）；A2G-free 只适用于 TSP/SA 序列基线。Win 已把 DDPG/D3QN 改回 A2G-aware。
-- 配方口径：Mac 把 `0.5→0`（guide 归零）称为 course-final（课程正式），把 `0.5→0.2`（持久下限）称为 legacy-0.2（期刊历史）。Win 当前 TD3/DDPG 用的是 0.2 下限。
-- Mac 等待 Win：课程版 Proposed（IGA+TD3，low，需 ≤229.0s）、期刊高档 formal-v5、DDPG 课程口径确认。
+- 固定：巡检顺序算法（IGA）+ A2G/G2A **全知**（双地图）。
+- 变量：轨迹方法 = **TD3 vs D3QN vs A\***。
+- 目的：所有条件相同下突出 TD3。
 
-## 1. 论文结果分配（已定）
+### 层面 2：QoS 与数据量敏感性
 
-主方法 TD3 的三档结果分别来自两台机器：
+- 固定：IGA 序列 + 双地图全知 + **TD3**。
+- 变量：QoS 阈值、数据量（低/中/高）。
+- 看端到端指标与轨迹变化。
 
-| 方法 | 低负载 T+τ (s) | 中负载 T+τ (s) | 高负载 T+τ (s) | 来源 |
+### 层面 3：其他论文 baseline 对比（A2G-free）
+
+这些 baseline 的原始论文都没有 A2G；为忠实复现并突出 A2G 地图的价值，**它们一律不能考虑 A2G**：
+
+1. Distance-TSP + TD3
+2. DRL-SA
+3. EEGA-TD3
+4. SA-D3QN
+5. Yang-style + TD3
+
+## 2. A2G 原则（只适用于层面 3 的 baseline）
+
+| 方法 | 所属层面 | A2G | 说明 |
+|---|---|---|---|
+| TD3（IGA 序） | 1、2 | ✅ 有 | 本文方法，双地图 |
+| D3QN（IGA 序） | 1 | ✅ 有 | 与 TD3 的算法对比，同状态 |
+| A\*（IGA 序） | 1 | ✅ 有 | oracle |
+| MapGuide | 参照 | ✅ 有 | 我们的规划器 |
+| **Distance-TSP + TD3** | 3 | ❌ 无 | 只距离 + A2G-blind TD3 |
+| **DRL-SA** | 3 | ❌ 无 | 只 G2A + A2G-blind TD3 |
+| **EEGA-TD3** | 3 | ❌ 无 | 待实现 |
+| **SA-D3QN** | 3 | ❌ 无 | 待实现 |
+| **Yang-style + TD3** | 3 | ❌ 无 | 待实现 |
+
+DDPG 之前也失败（0/120），不进论文，仅内部知晓。
+
+## 3. 结果分配（层面 1、2）
+
+| 方法 | 低 T+τ (s) | 中 T+τ (s) | 高 T+τ (s) | 来源 |
 |---|---|---|---|---|
-| **TD3** | **235.5**（97/120） | **351.5**（73/120） | **501.0**（39/120） | 低/中 → Mac；高 → Win |
-| A* | 214.0 | 318.0 | 447.0 | Win（`astar-fixed`，逐段最优，World 重放） |
-| MapGuide | 273.0 | 369.0 | 492.0 | Win（Dijkstra + 上传点启发式） |
+| **TD3** | 235.5（97/120） | 351.5（73/120） | 501.0（39/120） | 低/中 → Mac；高 → Win |
+| A\* | 214.0 | 318.0 | 447.0 | Win |
+| D3QN | 失败 0/120 | — | — | 负结果，一句话带过 |
 
-- **失败结果不进论文**，仅内部知晓：DDPG 0/120、D3QN 0/120（Mac 上 A* 示范对与 MapGuide 整回合两种配方都失败）。
-- **TD3 high** 用 Win 的 `formal-v5-restart` 结果（Mac 的 high 只有 1/120，已弃用）。
+## 4. 分支约定
 
-## 2. A2G 原则（仅"其他论文的 baseline"不得使用 A2G）
+| 分支 | 用途 |
+|---|---|
+| `master` | **冻结，不更新** |
+| `feat/win` | Windows 结果 + 代码改动 |
+| `feat/mac` | Mac 结果 + Mac 领先的代码 |
 
-- **我们的方法保留 A2G**：TD3、A*、MapGuide 都应使用 A2G（找高上传点、优化上传时延 τ），这是本工作的核心。
-- **选自其他论文的 DRL baseline 不应有 A2G**：DQN、DDPG 原始论文没有 A2G，复现时应只给 G2A（状态里去掉 A2G SNR 维度），以忠实复现并体现 A2G 的价值。
-- 序列 baseline 本来就 A2G-free：距离 TSP 只看距离、G2A-SA 只看距离+G2A 中断，已正确。
+- 推送走 `git push new <分支>`（`new` = `Single_UAV_new`），不要碰 `origin`（旧仓库）。
+- `journal_results/**/models/` 与 `logs/` 不入库；数字都在 `eval_history.json` / `*.npz` / `paper_figures/`。
 
-| 方法 | A2G | 说明 |
-|---|---|---|
-| TD3 / A* / MapGuide | ✅ 有 | 我们自己的方法 |
-| 距离 TSP | ✅ 无 | 只看飞行距离（已正确） |
-| G2A-SA | ✅ 无 | 只看距离 + G2A 中断（已正确） |
-| DDPG / D3QN | ✅ 有 | 与 TD3 的算法对比，保持 8 维双地图状态 |
+## 5. Windows 已做的代码改动
 
-## 3. 序列基线结果（已补齐）
-
-- 距离 TSP 顺序 = G2A-SA 顺序 = **[1,6,5,2,3,4]**（G2A 中断不改变本场景的最优序列，5 个种子一致，且穷举验证为距离+中断的全局最优）。
-- 距离 TSP 顺序在 MapGuide 轨迹下**全面优于 IGA 顺序**：TSP 264.5/365.5/488.5 vs IGA 273.0/369.0/492.0。
-- A\* 下两者接近：TSP 216.5/317.0/445.5 vs IGA 214.0/318.0/447.0。
-- 结论：数据感知 IGA 的经验优势有限；主贡献应放在 **TD3 连续轨迹优化**，序列作为次要消融如实报告。
-
-## 4. Windows 已做的代码改动
-（Mac 需知，且与 Mac 旧结果不兼容）
-
-1. **奖励 v5**：上传奖励改为 `0.5 s/MB`（原来按"本航段数据量占比"归一化，数据量越大单步奖励越小，悬停上传几乎总是净负）。现在高效上传的净收益为正。
-   - ⚠️ Mac 上 `formal-v7` 的所有结果用的是**旧奖励**。当前 Windows 代码是新奖励，两者不能混用；如果要重训，用新奖励重跑。
-2. **示范概率**：
-   - TD3/DDPG（`*_bc`）：`guide_min_prob=0.2`（前 400 回合从 0.5 降到 0.2，之后保持）。
-   - D3QN：`guide_min_prob=0.5`（**常数，不衰减**，先确保能完成任务）。
-   - 教师默认 MapGuide；`--teacher astar` 保留为可选消融。
-3. 行为克隆权重：TD3/DDPG 前 600 回合 1.0 → 0.25 后保持。
-
-## 5. 分支约定
-
-| 分支 | 用途 | 当前指向 |
-|---|---|---|
-| `master` | **冻结，不更新** | `71b62b1` |
-| `feat/win` | Windows 结果 + 代码改动 | `51956e4` |
-| `feat/mac` | Mac 结果 | `083fb19` |
-
-推送一律走 `git push new <分支>`（`new` = `Single_UAV_new`），不要碰 `origin`（旧仓库）。
+1. **奖励 v5**：上传奖励改为 `0.5 s/MB`（不再按航段数据量归一化），高效上传净收益为正。
+2. **示范概率**：TD3/DDPG（`*_bc`）`guide_min_prob=0.2`；D3QN `guide_min_prob=0.5`（常数）。
+3. **World** 新增 `include_a2g_snr` 参数 + `state_dim_for()`：关闭时状态去 A2G SNR（8→7 维），供层面 3 的 A2G-blind 实验复用（上传奖励保留）。
+4. 行为克隆权重：TD3/DDPG 1.0 → 0.25 下限。
 
 ## 6. 当前进行中
 
-- **D3QN 已判定失败（0/120）**：Windows 用新奖励 + A2G-free 7 维状态 + MapGuide 常数 0.5 引导跑满 3000 轮，纯 actor 评估 0 成功，最佳仅 4 点（ep25），之后长期停在 0–2 点。至此 D3QN 在四种配方下全部失败（Mac 的 A\* 示范对、MapGuide 整回合；Win 的 A2G 感知、A2G-free），结论稳健：**离散动作空间无法完成本导航+连续上传任务**。论文里作为负结果/消融一句话带过即可，不再投入训练。
+- **D3QN 正确配方重跑中（Windows）**：A2G-aware 8 维 + guide 0.5 常数 + 新奖励，3000 轮，输出 `journal_results/d3qn-v4`。此前误设的 A2G-free 版 0/120 不算数，以这次为准。
+- **Mac**：Distance-TSP+TD3 与 DRL-SA（A2G-blind）训练中。
 
-## 7. 待办 / 注意
+## 7. 待办
 
-- ~~DDPG/DQN 改 A2G-free~~ 已取消：DDPG/D3QN 保持 A2G-aware（与 TD3 同状态）。A2G-free 只用于 TSP/SA 序列基线（Mac 侧 --a2g_blind 已做）。
-- **TD3 三档配方不完全一致**：低/中来自 Mac（0.2 下限配方），高来自 Win（旧 0 衰减配方）。论文里若要求完全一致，可考虑在 Windows 用 `guide_min_prob=0.2` 重训一版 high。
-- 判断方法好坏一律看**纯 actor 的 `eval_best`**（无引导、无噪声），不看训练奖励曲线。
-- 环境：Windows 用 `D:/Anaconda/envs/pytorch/python.exe`（Py3.11 + CUDA）；默认 `python` 是 3.14，没有 torch/pytest，不要用。
+- [ ] 层面 1：D3QN 正确配方结果确认（Win，进行中）
+- [ ] 层面 2：QoS 扫描（TD3，不同 T_out 阈值）
+- [ ] 层面 3 未实现 baseline：**EEGA-TD3、SA-D3QN、Yang-style+TD3**
+- [ ] 课程版 Proposed（IGA+TD3 low，Mac 在等，需 ≤229.0s）
+- [ ] 配方口径定稿：`0.5→0`（course-final）vs `0.5→0.2`（legacy-0.2）
+- [ ] 判断好坏一律看纯 actor `eval_best`（无引导、无噪声）
