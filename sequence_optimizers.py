@@ -77,6 +77,66 @@ def g2a_cost_matrix_s(nodes_km, maps=None):
     return cost
 
 
+def _ordered_crossover(parent_a, parent_b, rng):
+    size = len(parent_a)
+    i, j = sorted(rng.choice(size, size=2, replace=False))
+    child = [None] * size
+    child[i:j + 1] = parent_a[i:j + 1]
+    fill = [gene for gene in parent_b if gene not in child]
+    for index in range(size):
+        if child[index] is None:
+            child[index] = fill.pop(0)
+    return child
+
+
+def ga_proxy_order(nodes_km=None, seed=1, population=24, generations=200,
+                   crossover_rate=0.9, mutation_rate=0.2, elite=2):
+    """Ordinary GA stand-in for EEGA ("EEGA-TD3 (GA proxy)").
+
+    Fitness is total geometric distance only; EEGA's energy and throughput
+    mechanisms are NOT implemented, so results must carry the proxy label
+    until the original paper's formulas are available.
+    """
+    nodes = load_planning_nodes() if nodes_km is None else np.asarray(nodes_km, dtype=float)
+    metres = distance_matrix_m(nodes)
+    rng = np.random.default_rng(seed)
+    inner = list(range(1, len(nodes) - 1))
+
+    def fitness(order):
+        return _path_cost(metres, order)
+
+    population_list = [list(rng.permutation(inner)) for _ in range(int(population))]
+    for _ in range(int(generations)):
+        ranked = sorted(population_list, key=fitness)
+        next_population = [order.copy() for order in ranked[:int(elite)]]
+        while len(next_population) < len(population_list):
+            contenders = [ranked[index] for index in rng.choice(len(ranked), size=3, replace=False)]
+            parent_a = min(contenders, key=fitness)
+            contenders = [ranked[index] for index in rng.choice(len(ranked), size=3, replace=False)]
+            parent_b = min(contenders, key=fitness)
+            child = (_ordered_crossover(parent_a, parent_b, rng)
+                     if rng.random() < crossover_rate else parent_a.copy())
+            if rng.random() < mutation_rate:
+                i, j = sorted(rng.choice(len(child), size=2, replace=False))
+                child[i], child[j] = child[j], child[i]
+            next_population.append(child)
+        population_list = next_population
+    best = min(population_list, key=fitness)
+    best = [int(gene) for gene in best]
+    meta = {
+        "method": "ordinary GA proxy for EEGA (distance-only fitness)",
+        "seed": int(seed),
+        "distance_m": fitness(best),
+        "population": int(population),
+        "generations": int(generations),
+        "uses_g2a": False,
+        "uses_a2g": False,
+        "uses_payloads": False,
+        "proxy_disclaimer": "EEGA energy/throughput mechanisms not implemented",
+    }
+    return list(best), meta
+
+
 def sa_order(nodes_km=None, maps=None, seed=1, initial_temperature=None,
              cooling=0.995, sweeps=4000):
     """Simulated annealing on G2A-only edge seconds (conference DRL-SA style).

@@ -100,6 +100,16 @@
 
 - [ ] Win：课程版 Proposed low 跑完并随结果分支推送
 - [ ] Win：旧机结果分支（含 formal-v5 三档与高档产物）
-- [ ] 双方：DDPG 课程口径定稿
-- [ ] Mac：EEGA-TD3 (GA proxy)（P3，等指令）
-- [ ] 合并：Win 侧将 feat/mac 的代码提交 merge 回 master
+- [ ] Win：D3QN 正确配方重跑（A2G-aware 8 维 + MapGuide + guide 常数 0.5，新奖励 v5）
+- [ ] Win：组 3 原始论文（EEGA / SA-D3QN / Yang-style / DRL-SA）实现细节的 GPT 解读文档 → 放同步信息，Mac 据此做忠实实现
+- [ ] 双方：DDPG 课程口径定稿；D3QN 若以 v5 复活后的奖励版本统一口径（组 1 同组同奖励）
+- [ ] Mac：QoS 扫描训练中（见 §8）
+- [ ] 合并：Win 侧将 feat/mac 的代码提交 merge 回 master（master 当前冻结，由 Win 定时机）
+
+## 8. 三组实验设计（2026-11-01 用户定稿）与 Mac 进行中事项
+
+**组 1（全知轨迹算法对比）**：固定 IGA 序 + 双图全知，TD3 vs D3QN vs A\*。TD3 235.5 ✅、A\* 214.0 ✅、D3QN 等 Win 重跑。⚠️ 奖励版本需同组统一（TD3 旧奖励 / D3QN v5）。
+
+**组 2（全知 Proposed 场景敏感性）**：固定 IGA+TD3+全知，扫数据量与 QoS。数据量轴 ✅（235.5/351.5/501.0）。QoS 轴 🔄：低档 `T_out^max ∈ {60, 80, 100}`，60/80 两个 TD3 run Mac 训练中（配方与 235.5 完全一致：0.2 教师下限、旧奖励），输出 `journal_results/qos-sweep/qos{60,80}/`。**A\* 参照已出：60/80/100s 下全部 214.0s**（最优解 T_out≈25s，三档预算均不束紧）——参照线平坦，TD3 曲线的变化反映约束对学习的压力，这是组 2 的解读框架。
+
+**组 3（他文基线，全 A2G-free）**：Distance-TSP+TD3 ✅ 311.0、DRL-SA ✅ 311.0；**EEGA-TD3 (GA proxy)：普通 GA（距离适应度）在 seed 1 收敛到与精确 TSP 相同的顺序 [1,6,5,2,3,4]（4438.9m）→ 无需单独训练，课程表该行引用盲版 Distance-TSP 的训练结果并脚注说明**（求解器已实现：`sequence_optimizers.ga_proxy_order`，`--sequence_method ga_proxy` 可随时独立训练；seed 4/5 会收敛到次优解，证明是真 GA 非穷举）。SA-D3QN、Yang-style 等 Win 的原文解读文档到位后实现。

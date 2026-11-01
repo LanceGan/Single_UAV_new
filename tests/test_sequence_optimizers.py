@@ -6,6 +6,7 @@ from sequence_optimizers import (
     distance_matrix_m,
     distance_tsp_order,
     g2a_edge_seconds,
+    ga_proxy_order,
     sa_order,
 )
 
@@ -75,6 +76,25 @@ def test_sa_reaches_exact_optimum_on_clear_map_and_is_seed_deterministic():
     assert meta_first["objective_s"] == pytest.approx(exact_meta["distance_m"] / 50.0)
     assert sa_first == exact
     assert meta_first["uses_a2g"] is False and meta_first["uses_payloads"] is False
+
+
+def test_ga_proxy_returns_plain_int_permutation_and_is_seed_deterministic():
+    first, meta = ga_proxy_order(seed=1)
+    second, _ = ga_proxy_order(seed=1)
+
+    assert first == second
+    assert sorted(first) == [1, 2, 3, 4, 5, 6]
+    assert all(type(gene) is int for gene in first)  # run_config json-serializable
+    assert meta["uses_a2g"] is False and meta["uses_payloads"] is False
+    assert "proxy" in meta["proxy_disclaimer"] or "EEGA" in meta["proxy_disclaimer"]
+
+
+def test_ga_proxy_finds_the_line_optimum():
+    order, meta = ga_proxy_order(_square_nodes(), seed=1, generations=120)
+    exact, exact_meta = distance_tsp_order(_square_nodes())
+
+    assert order == exact
+    assert meta["distance_m"] == pytest.approx(exact_meta["distance_m"])
 
 
 def test_sa_detours_around_outage_corridor():

@@ -45,7 +45,7 @@ def load_users() -> np.ndarray:
     return np.loadtxt(ROOT / "results" / "datas" / "Users_6.txt")[:, :2]
 
 
-def build_world(order: Sequence[int], payloads_mb: np.ndarray) -> World:
+def build_world(order: Sequence[int], payloads_mb: np.ndarray, outage_max_s: float = 100.0) -> World:
     with contextlib.redirect_stdout(io.StringIO()):
         return World(
             length=20,
@@ -57,7 +57,7 @@ def build_world(order: Sequence[int], payloads_mb: np.ndarray) -> World:
             uav_h=1.0,
             data_size=300,
             data_sizes=np.asarray(payloads_mb, dtype=float),
-            outage_max_s=100.0,
+            outage_max_s=float(outage_max_s),
             ini_loc=START.tolist(),
             end_loc=END.tolist(),
             users_name=str(ROOT / "results" / "datas" / "Users_6.txt"),
@@ -267,12 +267,13 @@ def run_level(level: str, args) -> dict:
         snr_db_by_node=snr,
         outage_by_node=outage,
         bucket_mb=args.bucket_mb,
+        qos_slots=int(round(args.outage_max_s / 0.5)),
         max_expansions=args.max_expansions,
         max_labels=args.max_labels,
         max_runtime_s=args.max_runtime_s,
     )
     result = planner.plan_sequential() if args.mode == "sequential" else planner.plan()
-    world = build_world(order, payloads)
+    world = build_world(order, payloads, outage_max_s=args.outage_max_s)
     replay_report, trace = replay_node_path(world, graph, result.node_path)
     replay_report["termination_reason"] = (
         replay_report["termination_reason"]
@@ -300,6 +301,8 @@ def main() -> None:
     parser.add_argument("--mode", choices=("sequential", "joint"), default="sequential",
                         help="sequential: optimal per leg given the previous arrival (fast, upper bound); "
                              "joint: whole-mission A* (optimal on this graph, may hit search limits)")
+    parser.add_argument("--outage-max-s", type=float, default=100.0,
+                        help="hard G2A outage budget for both the planner and the World replay")
     parser.add_argument("--bucket-mb", type=float, default=1.0)
     parser.add_argument("--max-expansions", type=int, default=500_000)
     parser.add_argument("--max-labels", type=int, default=1_000_000)

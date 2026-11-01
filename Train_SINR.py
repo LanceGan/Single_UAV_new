@@ -6,7 +6,7 @@ from World import World
 from reward_logging import log_reward_terms
 from training_config import ALGORITHMS, build_output_paths, load_fixed_payloads, resolve_algorithm
 from sequence_runner import solve_ga_order
-from sequence_optimizers import distance_tsp_order, sa_order
+from sequence_optimizers import distance_tsp_order, ga_proxy_order, sa_order
 from training_transitions import replay_terminal_mask
 from exploration import exploration_scales
 from map_guidance import MapGuide
@@ -68,9 +68,10 @@ def create_parser():
     parser.add_argument("--a2g_blind", action="store_true",
                         help="deny the trajectory stack all A2G knowledge (sequence baselines): "
                              "state drops the A2G SNR feature and the MapGuide teacher is G2A-only")
-    parser.add_argument("--sequence_method", choices=("iga", "distance_tsp", "sa"), default="iga",
+    parser.add_argument("--sequence_method", choices=("iga", "distance_tsp", "sa", "ga_proxy"), default="iga",
                         help="inspection order: data-aware IGA (proposed), exact distance TSP "
-                             "(no maps/payloads), or G2A-only simulated annealing (DRL-SA baseline)")
+                             "(no maps/payloads), G2A-only simulated annealing (DRL-SA baseline), "
+                             "or ordinary GA proxy for EEGA (distance-only fitness)")
     parser.add_argument("--variant", choices=World.VARIANTS, default="baseline",
                         help="ablation: baseline (absolute heading), A (target-relative heading), AB (A + map neighborhood)")
     return parser
@@ -246,6 +247,8 @@ if args.sequence_method == "distance_tsp":
     trave_order, sequence_meta = distance_tsp_order()
 elif args.sequence_method == "sa":
     trave_order, sequence_meta = sa_order(seed=args.seed)
+elif args.sequence_method == "ga_proxy":
+    trave_order, sequence_meta = ga_proxy_order(seed=args.seed)
 else:
     trave_order = solve_ga_order(payloads, iterations=args.ga_iterations)
     sequence_meta = {"method": "GA with exact verification/fallback",
