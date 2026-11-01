@@ -1,0 +1,32 @@
+{
+  "astar_reference_s": 214.0,
+  "points": [
+    {
+      "budget_s": 60.0,
+      "objective_s": 229.0,
+      "outage_s": 18.5,
+      "success_rate": 0.7916666666666666,
+      "evaluations": 120,
+      "successes": 95,
+      "best_episode": 2300
+    },
+    {
+      "budget_s": 80.0,
+      "objective_s": 229.0,
+      "outage_s": 20.0,
+      "success_rate": 0.675,
+      "evaluations": 120,
+      "successes": 81,
+      "best_episode": 1500
+    },
+    {
+      "budget_s": 100.0,
+      "objective_s": 235.5,
+      "outage_s": 21.5,
+      "success_rate": 0.8083333333333333,
+      "evaluations": 120,
+      "successes": 97,
+      "best_episode": 2450
+    }
+  ]
+}

@@ -127,6 +127,29 @@ def test_reward_comparison_renders_with_short_series(tmp_path):
     assert (tmp_path / "rewards.pdf").is_file()
 
 
+def test_qos_sweep_renders_and_summarizes(tmp_path):
+    import json as json_module
+
+    from plot_qos_sweep import load_point, plot_sweep
+
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    history = {
+        "eval_best": {"episode": 100, "task_time_s": 150.0, "transmission_delay_s": 80.0,
+                      "outage_time_s": 20.0},
+        "history": [{"success": True}, {"success": False}],
+    }
+    (run_dir / "eval_history.json").write_text(json_module.dumps(history))
+    _style()
+
+    point = load_point(run_dir)
+    assert point["objective_s"] == pytest.approx(230.0)
+    assert point["success_rate"] == pytest.approx(0.5)
+
+    plot_sweep([(60.0, point), (100.0, point)], 214.0, tmp_path / "sweep", "t")
+    assert (tmp_path / "sweep.png").is_file() and (tmp_path / "sweep.pdf").is_file()
+
+
 def test_d3qn_run_figures_render_without_checkpoints(tmp_path):
     run_dir = tmp_path / "d3qn"
     (run_dir / "models").mkdir(parents=True)
