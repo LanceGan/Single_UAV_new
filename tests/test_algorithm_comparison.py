@@ -152,6 +152,14 @@ def test_qos_sweep_renders_and_summarizes(tmp_path):
     assert (tmp_path / "sweep.png").is_file() and (tmp_path / "sweep.pdf").is_file()
 
 
+def test_weight_tradeoff_label_parsing_allows_equals_in_labels():
+    from plot_weight_tradeoff import parse_pair
+
+    label, run_dir = parse_pair("w1=0.8, w2=0.2=journal_results/weight-sweep/x")
+    assert label == "w1=0.8, w2=0.2"
+    assert run_dir == "journal_results/weight-sweep/x"
+
+
 def test_d3qn_run_figures_render_without_checkpoints(tmp_path):
     run_dir = tmp_path / "d3qn"
     (run_dir / "models").mkdir(parents=True)

@@ -255,6 +255,10 @@ def method_title(algorithm, config):
         return f"EEGA-{base}"
     if "Yang" in sequence:
         return f"Yang-style+{base}"
+    w1 = float(config.get("objective_w1", 0.5))
+    w2 = float(config.get("objective_w2", 0.5))
+    if (w1, w2) != (0.5, 0.5):
+        return f"{base} (w1={w1:g}, w2={w2:g})"
     return base
 
 
