@@ -107,31 +107,6 @@
   - 奖励版本：**旧奖励为论文正式口径**（进论文的全部数字均为旧奖励；v5 仅存在于已作废的 d3qn-v3/v4 尝试，Win 侧请将 v5 改动隔离在自己分支，勿再用于论文 run）。
 - 合并 master 的时机仍由 Win 定（master 冻结中）。
 
-## 10. 旧机 formal-v5 产物推送清单（Win 执行）✅ 已完成（feat/win-legacy，Mac 已接手出图）
-
-## 11. d3qn-v5-fixed 数据推送清单（Win 执行，论文奖励曲线第四条线急需）
-
-论文的奖励曲线图要加入修复版 D3QN 的收敛曲线，写作侧缺曲线数据。请在 Win 上把修复版 D3QN run 的以下文件推上来（追加到 `feat/win-legacy` 分支即可）：
-
-```bash
-# 在跑 d3qn-v5-fixed 的那个 checkout（应为 feat/mac 的 worktree）里：
-git checkout feat/win-legacy   # 或在原仓库 cherry 对应文件后推送
-git add journal_results/d3qn-v5-fixed/low/d3qn/training_history.npz \
-        journal_results/d3qn-v5-fixed/low/d3qn/run_config.json \
-        journal_results/d3qn-v5-fixed/low/d3qn/eval_history.json
-git commit -m "results: d3qn-v5-fixed 低档曲线数据与配置留档"
-git push new feat/win-legacy
-```
-
-**必须包含**：`training_history.npz`（含 `episode_rewards` 与 `episode_guided`，奖励曲线靠它）；**建议一并**：`run_config.json`、`eval_history.json`（留档审计）。**排除**：`models/`、`logs/`（老约定）。
-**顺带可选（避免下次再跑一趟）**：`drl-sa`、`sa-d3qn` 两个修复版 run 的同样三件文件。
-
-⚠️ **推送时请确认并在提交信息里写明奖励版本**：目录名 `d3qn-v5-fixed` 的 "v5" 是**第五次尝试的编号，不是奖励 v5**。按 §9.3 规范该 run 应从 feat/mac worktree 启动 = **旧奖励**（与 TD3/DDPG 曲线同尺度，图注无需提奖励版本）。若实际是在 Win 自己的 v5 奖励分支上跑的，必须说明——那样四条曲线奖励尺度不同，图注必须注明不可比。核验方法：该 checkout 的 `World.py` 若含 `UPLOAD_LEG_REWARD = 10.0` 且无 0.5/MB 平率逻辑即为旧奖励。
-
-推送完成后：Mac/写作侧 `git fetch` 取数，重跑奖励曲线图（加第四条线），配文补一句 D3QN 收敛描述。
-
-
-
 ## 8. 三组实验设计（2026-11-01 用户定稿）与 Mac 进行中事项
 
 **组 1（全知轨迹算法对比）**：固定 IGA 序 + 双图全知，TD3 vs D3QN vs A\*。TD3 235.5 ✅、A\* 214.0 ✅、D3QN 等 Win 重跑。⚠️ 奖励版本需同组统一（TD3 旧奖励 / D3QN v5）。
@@ -210,3 +185,26 @@ CUDA 自动启用（--device 缺省自检）。预计 5000 回合在 CUDA 上 2�
 ### 9.4 判定结果（2026-11-02 已出，走分支一）✅
 
 修复版成功——见 win-mac.md §9（Win 执行并记录）：层面 1 A2G-aware **274.5s**（末千回合成功率 67.5%）；层面 3 盲版 SA-D3QN **289.0s**、DRL-SA **296.5s**。D3QN 结论反转为"补齐原文 n-step 等机制后离散可学，但绕行粗、劣于连续 TD3 约 14%"。层面 3 完整排序（全盲）：Yang 254.0 < EEGA 279.5 < SA-D3QN 289.0 < DRL-SA 296.5 < TSP+TD3 311.0，全部劣于全知 Proposed 235.5。**全三层低档实验至此全部完成。**
+
+## 10. 旧机 formal-v5 产物推送清单（Win 执行）✅ 已完成（feat/win-legacy，Mac 已接手出图）
+
+## 11. d3qn-v5-fixed 数据推送清单（Win 执行，论文奖励曲线第四条线急需）
+
+论文的奖励曲线图要加入修复版 D3QN 的收敛曲线，写作侧缺曲线数据。请在 Win 上把修复版 D3QN run 的以下文件推上来（追加到 `feat/win-legacy` 分支即可）：
+
+```bash
+# 在跑 d3qn-v5-fixed 的那个 checkout（应为 feat/mac 的 worktree）里：
+git checkout feat/win-legacy   # 或在原仓库 cherry 对应文件后推送
+git add journal_results/d3qn-v5-fixed/low/d3qn/training_history.npz \
+        journal_results/d3qn-v5-fixed/low/d3qn/run_config.json \
+        journal_results/d3qn-v5-fixed/low/d3qn/eval_history.json
+git commit -m "results: d3qn-v5-fixed 低档曲线数据与配置留档"
+git push new feat/win-legacy
+```
+
+**必须包含**：`training_history.npz`（含 `episode_rewards` 与 `episode_guided`，奖励曲线靠它）；**建议一并**：`run_config.json`、`eval_history.json`（留档审计）。**排除**：`models/`、`logs/`（老约定）。
+**顺带可选（避免下次再跑一趟）**：`drl-sa`、`sa-d3qn` 两个修复版 run 的同样三件文件。
+
+⚠️ **推送时请确认并在提交信息里写明奖励版本**：目录名 `d3qn-v5-fixed` 的 "v5" 是**第五次尝试的编号，不是奖励 v5**。按 §9.3 规范该 run 应从 feat/mac worktree 启动 = **旧奖励**（与 TD3/DDPG 曲线同尺度，图注无需提奖励版本）。若实际是在 Win 自己的 v5 奖励分支上跑的，必须说明——那样四条曲线奖励尺度不同，图注必须注明不可比。核验方法：该 checkout 的 `World.py` 若含 `UPLOAD_LEG_REWARD = 10.0` 且无 0.5/MB 平率逻辑即为旧奖励。
+
+推送完成后：Mac/写作侧 `git fetch` 取数，重跑奖励曲线图（加第四条线），配文补一句 D3QN 收敛描述。
