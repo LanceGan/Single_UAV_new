@@ -107,24 +107,30 @@
   - 奖励版本：**旧奖励为论文正式口径**（进论文的全部数字均为旧奖励；v5 仅存在于已作废的 d3qn-v3/v4 尝试，Win 侧请将 v5 改动隔离在自己分支，勿再用于论文 run）。
 - 合并 master 的时机仍由 Win 定（master 冻结中）。
 
-## 10. 旧机 formal-v5 产物推送清单（Win 执行）
+## 10. 旧机 formal-v5 产物推送清单（Win 执行）✅ 已完成（feat/win-legacy，Mac 已接手出图）
 
-期刊线 TD3 高档（501.0s）目前只有交接文档里的数字，缺原始产物，导致 Mac 无法生成期刊三档对比图与高档轨迹图。请在**原电脑**上执行：
+## 11. d3qn-v5-fixed 数据推送清单（Win 执行，论文奖励曲线第四条线急需）
+
+论文的奖励曲线图要加入修复版 D3QN 的收敛曲线，写作侧缺曲线数据。请在 Win 上把修复版 D3QN run 的以下文件推上来（追加到 `feat/win-legacy` 分支即可）：
 
 ```bash
-# 在原电脑的仓库里（确认 journal_results/formal-v5-restart 存在）
-git checkout -b feat/win-legacy
-# .gitignore 需放行结果但排除大文件（参照 feat/mac 的做法）：
-#   journal_results/**/models/
-#   journal_results/**/logs/
-git add journal_results/formal-v5-restart
-git commit -m "results: formal-v5-restart 三档原始产物（期刊线 TD3 结果）"
+# 在跑 d3qn-v5-fixed 的那个 checkout（应为 feat/mac 的 worktree）里：
+git checkout feat/win-legacy   # 或在原仓库 cherry 对应文件后推送
+git add journal_results/d3qn-v5-fixed/low/d3qn/training_history.npz \
+        journal_results/d3qn-v5-fixed/low/d3qn/run_config.json \
+        journal_results/d3qn-v5-fixed/low/d3qn/eval_history.json
+git commit -m "results: d3qn-v5-fixed 低档曲线数据与配置留档"
 git push new feat/win-legacy
 ```
 
-**必须包含**（每档 td3_bc 目录下）：`run_config.json`、`eval_history.json`（120 次评估全记录）、`UAV_TD3_improved.npz`、`evaluation/` 或轨迹 npz（若有）、`paper_figure_summaries.json`。
-**必须排除**：`models/`（checkpoint，数百 MB）、`logs/`（tfevents，单文件可超 GitHub 100MB 硬限）。
-**注意**：高档（high/td3_bc）是刚需；low/medium 一并推上便于交叉核对。推送后 Mac 自动接手：拉取 → 生成期刊三档对比图（T/τ/T_out vs 负载）+ 高档 eval_best 双地图轨迹图 → 归档 feat/mac。
+**必须包含**：`training_history.npz`（含 `episode_rewards` 与 `episode_guided`，奖励曲线靠它）；**建议一并**：`run_config.json`、`eval_history.json`（留档审计）。**排除**：`models/`、`logs/`（老约定）。
+**顺带可选（避免下次再跑一趟）**：`drl-sa`、`sa-d3qn` 两个修复版 run 的同样三件文件。
+
+⚠️ **推送时请确认并在提交信息里写明奖励版本**：目录名 `d3qn-v5-fixed` 的 "v5" 是**第五次尝试的编号，不是奖励 v5**。按 §9.3 规范该 run 应从 feat/mac worktree 启动 = **旧奖励**（与 TD3/DDPG 曲线同尺度，图注无需提奖励版本）。若实际是在 Win 自己的 v5 奖励分支上跑的，必须说明——那样四条曲线奖励尺度不同，图注必须注明不可比。核验方法：该 checkout 的 `World.py` 若含 `UPLOAD_LEG_REWARD = 10.0` 且无 0.5/MB 平率逻辑即为旧奖励。
+
+推送完成后：Mac/写作侧 `git fetch` 取数，重跑奖励曲线图（加第四条线），配文补一句 D3QN 收敛描述。
+
+
 
 ## 8. 三组实验设计（2026-11-01 用户定稿）与 Mac 进行中事项
 
