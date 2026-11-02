@@ -82,12 +82,27 @@ def actor_reward_series(rewards, guided, limit=DISPLAY_EPISODE_LIMIT):
     return episodes[keep], rewards[keep]
 
 
-def plot_rewards_display(rewards, guided, stem, title, window=200, limit=DISPLAY_EPISODE_LIMIT):
-    """Course-report reward curve: first ``limit`` episodes, actor episodes only."""
-    episodes, actor = actor_reward_series(rewards, guided, limit=limit)
+def plot_rewards_display(rewards, guided, stem, title, window=200, limit=DISPLAY_EPISODE_LIMIT,
+                         actor_only=True):
+    """Display reward curve for the first ``limit`` episodes.
+
+    ``actor_only=True`` drops demonstration episodes (agent's own competence);
+    ``actor_only=False`` shows the raw training returns exactly as collected,
+    demonstration episodes included.
+    """
+    if actor_only:
+        episodes, actor = actor_reward_series(rewards, guided, limit=limit)
+        label = "Actor episode return"
+        subtitle = f"first {limit} episodes, actor episodes only"
+    else:
+        all_rewards = np.asarray(rewards, dtype=float)
+        episodes = np.arange(1, all_rewards.size + 1)
+        keep = episodes <= int(limit)
+        episodes, actor = episodes[keep], all_rewards[keep]
+        label = "Training episode return (demonstrations included)"
+        subtitle = f"first {limit} episodes, all training episodes"
     figure, axis = plt.subplots(figsize=(8.2, 4.6), constrained_layout=True)
-    axis.plot(episodes, actor, color="0.72", linewidth=0.6, alpha=0.6,
-              label="Actor episode return")
+    axis.plot(episodes, actor, color="0.72", linewidth=0.6, alpha=0.6, label=label)
     if actor.size >= window:
         kernel = np.ones(window, dtype=float) / window
         averages = np.convolve(actor, kernel, mode="valid")
@@ -97,7 +112,7 @@ def plot_rewards_display(rewards, guided, stem, title, window=200, limit=DISPLAY
     axis.set_xlim(0, limit)
     axis.set_xlabel("Training episode")
     axis.set_ylabel("Episode return")
-    axis.set_title(f"{title} (first {limit} episodes, actor episodes only)")
+    axis.set_title(f"{title} ({subtitle})")
     axis.grid(alpha=0.25)
     axis.legend(loc="best")
     _save_pair(figure, stem)
@@ -213,6 +228,8 @@ def _generate_d3qn_figures(run_dir, config):
     plot_objectives(series, output / "objective_vs_episode", title)
     plot_rewards(rewards, series, output / "reward_vs_episode", title)
     plot_rewards_display(rewards, guided, output / "reward_vs_episode_0_2000", title)
+    plot_rewards_display(rewards, guided, output / "reward_vs_episode_0_2000_all", title,
+                         actor_only=False)
 
     eval_best_report = None
     checkpoint = d3qn_checkpoint_paths(run_dir)["eval_best"]
@@ -283,6 +300,8 @@ def generate_run_figures(run_dir):
     guided = (np.asarray(reward_archive["ep_guided"], dtype=bool)
               if "ep_guided" in reward_archive else np.zeros(rewards.size, dtype=bool))
     plot_rewards_display(rewards, guided, output / "reward_vs_episode_0_2000", title)
+    plot_rewards_display(rewards, guided, output / "reward_vs_episode_0_2000_all", title,
+                         actor_only=False)
 
     paths = checkpoint_paths(run_dir, context.algorithm, context.config["episodes"])
     if "eval_best" not in paths or not paths["eval_best"].is_file():
