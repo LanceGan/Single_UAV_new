@@ -2,6 +2,7 @@
   "bars": {
     "A*": 214.0,
     "TD3 (proposed)": 235.5,
+    "PSO-trajectory": 249.5,
     "MapGuide planner": 273.0,
     "D3QN": 274.5
   },

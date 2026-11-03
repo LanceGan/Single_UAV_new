@@ -35,6 +35,7 @@
 |---|---|---|---|
 | A\* | 214.0 | 离线参照，高档单次搜索可达数百秒 | `journal_results/analysis-astar-order-check/`（低）；教师缓存 meta |
 | **TD3** | **235.5** | T=153.0，τ=82.5，T_out=21.5，97/120 | `journal_results/formal-v7/A/low/td3_bc/` |
+| PSO-trajectory | 249.5 | 离线元启发式轨迹规划（28 维航路点+悬停编码，全知双地图，单实例求解 ~25 分钟）；T=136.5 最快但 τ=113.0、T_out=46.0——"飞得快、传得差"，双地图精细利用正是其短板 | `journal_results/pso-trajectory/low/` |
 | MapGuide | 273.0 | 规划器参照 | Win 记录（win-mac §3） |
 | D3QN | 274.5 | 末千回合成功率 67.5%；含 n-step/动作重复/DQfD 预训练 | Win `journal_results/d3qn-v5-fixed`（数字见 win-mac §9） |
 
@@ -84,7 +85,7 @@ T 随 w₁ 单调、τ 反向单调；措辞用"权重调节侧重点"（T/τ �
 | # | 路径（`journal_results/` 下，另注明者除外） | 建议用途 / caption 要点 |
 |---|---|---|
 | F1 | `paper_figures/algorithm_framework/proposed_iga_td3_framework.*`（仓库根） | 方法框架图 |
-| F2 | `summary-bars/layer1_methods.*` | 层面 1 柱状：A\*/TD3/MapGuide/D3QN |
+| F2 | `summary-bars/layer1_methods.*` | 层面 1 柱状：A\*/TD3/PSO-trajectory/MapGuide/D3QN。叙事点：在线毫秒策略 TD3 优于拿全图离线搜 25 分钟的元启发式（249.5），回答"为何不用 GA/PSO 直接求轨迹" |
 | F3 | `formal-v7/A/low/td3_bc/paper_figures/trajectory_eval_best_dual_maps.*` | 低档 TD3 轨迹叠双地图（避开中断区+贴高 SNR 绕行） |
 | F4 | 同上 medium / `formal-v5-restart/A/high/...` | 中、高档轨迹（三档可并排） |
 | F5 | `comparison-low/comparison_rewards.*` | 0–2000 轮纯 actor 奖励曲线（TD3 收敛 vs DDPG/D3QN 旧配方不收敛；若仅需 TD3 可用单图 `formal-v7/.../reward_vs_episode_0_2000.*`） |
@@ -95,6 +96,7 @@ T 随 w₁ 单调、τ 反向单调；措辞用"权重调节侧重点"（T/τ �
 | F9 | `summary-bars/layer3_baselines.*` | 层面 3 终版柱状（Proposed 高亮 + A\* 参考线） |
 | F10 | `summary-bars/a2g_ablation.*` | A2G 消融柱状（229 vs 311 + Proposed 线） |
 | F11 | `comparison-low-layer3/comparison_objective.*` | 可选：TD3 系基线训练全程可行目标曲线（含不可行存在带） |
+| F12 | `pso-trajectory/low/trajectory_dual_maps.*` | 可选：PSO 轨迹叠双地图——与 TD3 轨迹（F3）对照可见其直线穿越中断区的粗糙绕行 |
 
 ## 5. 表述规则与禁止清单（硬约束）
 

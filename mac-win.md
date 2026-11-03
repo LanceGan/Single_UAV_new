@@ -93,6 +93,7 @@
 | Proposed（IGA+TD3，course-final） | **待 Win** | 课程主行 |
 | Distance-TSP+TD3 | 229.0 | Mac，course-final |
 | DRL-SA | 229.0 | Mac，course-final，与上行确定性相同 |
+| PSO-trajectory | 249.5 | 离线元启发式轨迹（Mac，2026-11-02 新增）：T=136.5 最快但 τ=113.0/T_out=46.0，全知+单实例 25 分钟求解仍劣于 TD3 ——回答"为何不用元启发式求轨迹" |
 | MapGuide 规划器 | 273.0 | 弱规划参照 |
 | DDPG / D3QN | 失败 0/120 | 多配方多机交叉验证 |
 
