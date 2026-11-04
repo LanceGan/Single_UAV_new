@@ -209,3 +209,22 @@ git push new feat/win-legacy
 ⚠️ **推送时请确认并在提交信息里写明奖励版本**：目录名 `d3qn-v5-fixed` 的 "v5" 是**第五次尝试的编号，不是奖励 v5**。按 §9.3 规范该 run 应从 feat/mac worktree 启动 = **旧奖励**（与 TD3/DDPG 曲线同尺度，图注无需提奖励版本）。若实际是在 Win 自己的 v5 奖励分支上跑的，必须说明——那样四条曲线奖励尺度不同，图注必须注明不可比。核验方法：该 checkout 的 `World.py` 若含 `UPLOAD_LEG_REWARD = 10.0` 且无 0.5/MB 平率逻辑即为旧奖励。
 
 推送完成后：Mac/写作侧 `git fetch` 取数，重跑奖励曲线图（加第四条线），配文补一句 D3QN 收敛描述。
+
+## 12. Mac 端论文写作交接（2026-11-04）
+
+Mac 端的正式实验已经按论文锁定范围全部完成，后续论文写作统一交给 Win 端。两套仓库的分工如下：
+
+| 仓库 | 远程 | 交接分支 | 内容 |
+|---|---|---|---|
+| 实验仓库 `Single_UAV_new` | `git@github.com:LanceGan/Single_UAV_new.git` | `feat/mac` | 代码、正式结果、图表生成工具、双机备忘、论文写作手册 |
+| 论文仓库 `P3` | `git@github.com:LanceGan/P3_journal.git` | `feat/mac` | `journal.tex`、`refs.bib`、`figs/` 和当前编译版 `P3.pdf` |
+
+Win 端写作时应以：
+
+1. `PAPER_WRITING_HANDOVER.md` 作为数字、图注和方法表述的唯一权威口径；
+2. 实验仓库的 `journal_results/` 核对原始评估与图；
+3. 论文仓库的 `feat/mac` 作为当前 Mac 端稿件基线。
+
+Mac 端论文仓库已经成稿，不再把“待论文成稿”列为实验待办。当前收尾项只有目标期刊适配和终稿检查。注意 `P3.pdf` 的最后编译时间早于最近一次标题修改，正式审阅前需要重新编译。
+
+训练 checkpoint（`models/`）与原始 TensorBoard 日志（`logs/`）继续按既有约定保留在本机，不进入 GitHub；论文写作和结果核对所需的配置、评估历史、轨迹、训练曲线及图表均已同步。
