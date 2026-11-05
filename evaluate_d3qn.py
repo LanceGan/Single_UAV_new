@@ -12,15 +12,17 @@ import torch
 from D3QN import D3QNAgent, DuelingQNetwork
 from World import World
 from discrete_actions import DiscreteActionCodec
-from evaluate_policy import plot_trajectory, rollout
+from evaluate_policy import (
+    A2G_BLIND_STATE_SCHEMA,
+    STATE_SCHEMA,
+    plot_trajectory,
+    rollout,
+)
 
 
 ROOT = Path(__file__).resolve().parent
-D3QN_STATE_SCHEMA = (
-    "v4-max-contiguous: uav xy, target-minus-uav xy, pending payload, "
-    "current contiguous outage usage, "
-    "A2G SNR, G2A outage probability"
-)
+D3QN_STATE_SCHEMA = STATE_SCHEMA
+D3QN_G2A_STATE_SCHEMA = A2G_BLIND_STATE_SCHEMA
 ACTION_SCHEMA = "hover + 16 relative headings at 0.125 + 16 relative headings at 0.25"
 REQUIRED_CONFIG_FIELDS = {
     "algorithm", "data_level", "episodes", "map_hashes", "net_width", "order",
@@ -42,6 +44,7 @@ class D3QNRunContext:
     order: tuple
     payloads_mb: np.ndarray
     outage_max_s: float
+    a2g_blind: bool = False
     total_steps: int = 1000
     length: float = 20.0
     width: float = 20.0
@@ -68,9 +71,14 @@ def load_d3qn_run_context(run_dir):
         raise ValueError(f"D3QN run_config.json missing required fields: {', '.join(missing)}")
     if config["algorithm"] != "d3qn":
         raise ValueError("D3QN evaluator only accepts algorithm='d3qn'")
-    if config["variant"] != "A" or int(config["state_dim"]) != 8:
-        raise ValueError("D3QN baseline requires Variant A and state_dim 8")
-    if config["state_schema"] != D3QN_STATE_SCHEMA:
+    a2g_blind = bool(config.get("a2g_blind", False))
+    expected_dim = 7 if a2g_blind else 8
+    expected_schema = D3QN_G2A_STATE_SCHEMA if a2g_blind else D3QN_STATE_SCHEMA
+    if config["variant"] != "A" or int(config["state_dim"]) != expected_dim:
+        raise ValueError(
+            f"D3QN baseline requires Variant A and state_dim {expected_dim}"
+        )
+    if config["state_schema"] != expected_schema:
         raise ValueError("D3QN state schema is incompatible with the current World")
     if config["qos_constraint"] != "max_contiguous_outage":
         raise ValueError("D3QN run does not use max_contiguous_outage")
@@ -86,13 +94,14 @@ def load_d3qn_run_context(run_dir):
         run_dir=run_dir,
         config=config,
         algorithm="d3qn",
-        state_dim=8,
+        state_dim=expected_dim,
         net_width=int(config["net_width"]),
         variant="A",
         action_count=33,
         order=order,
         payloads_mb=payloads,
         outage_max_s=float(config["outage_max_s"]),
+        a2g_blind=a2g_blind,
     )
 
 
@@ -151,6 +160,7 @@ def _build_world(context):
         ),
         traverse_sequence=list(context.order),
         variant="A",
+        a2g_blind=context.a2g_blind,
     )
 
 

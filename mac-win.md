@@ -128,6 +128,8 @@
 
 **组 3（他文基线，全 A2G-free）**：分工（2026-11-01 定）——**Win 做两个 D3QN 系（DRL-SA=SA(服务时间)+盲D3QN、SA-D3QN=SA(距离)+盲D3QN），Mac 做两个 TD3 系**。吞吐量代理统一用 **G2A 互易估计**（层面 3 不读 A2G 图；原文用各自信道模型，互易估计最贴近该设定，报告注明适配）。
 
+`Train_D3QN.py` 的 v4 入口现支持 `--sequence_method {iga,distance_tsp,sa,sa_service,sa_distance}` 和 `--a2g_blind`。正式命令：DRL-SA 用 `sa_service + a2g_blind`，SA-D3QN 用 `sa_distance + a2g_blind`；两者均为 7 维 G2A-only 状态，完整命令见 `RERUN_ASSIGNMENT.md`。
+
 - Distance-TSP+TD3 ✅ 311.0（盲，56/120）；
 - **EEGA-TD3 ✅ 279.5（盲，92/120，ep 不详见 eval_history；T=174.0，τ=105.5，T_out=25.5）**，顺序 [1,6,5,3,2,4]；
 - **Yang-style+TD3 ✅ 254.0（盲，102/120；T=157.5，τ=96.5，T_out=31.5）**，顺序 [1,6,5,4,2,3]；

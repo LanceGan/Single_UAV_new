@@ -294,3 +294,85 @@ def sa_order(nodes_km=None, maps=None, seed=1, initial_temperature=None,
         "uses_payloads": False,
     }
     return best, meta
+
+
+def distance_sa_order(nodes_km=None, seed=1, initial_temperature=None,
+                      cooling=0.995, sweeps=4000):
+    """Simulated annealing on pure flight distance for the SA-D3QN baseline."""
+    nodes = load_planning_nodes() if nodes_km is None else np.asarray(nodes_km, dtype=float)
+    cost_matrix = distance_matrix_m(nodes)
+    rng = np.random.default_rng(seed)
+    current = list(range(1, len(nodes) - 1))
+    rng.shuffle(current)
+    current_cost = _path_cost(cost_matrix, current)
+    best, best_cost = current.copy(), current_cost
+    temperature = (
+        float(initial_temperature)
+        if initial_temperature is not None
+        else max(0.3 * current_cost, 1e-9)
+    )
+    for _ in range(int(sweeps)):
+        i, j = sorted(rng.choice(len(current), size=2, replace=False))
+        candidate = current.copy()
+        candidate[i], candidate[j] = candidate[j], candidate[i]
+        candidate_cost = _path_cost(cost_matrix, candidate)
+        delta = candidate_cost - current_cost
+        if delta <= 0 or rng.random() < math.exp(-delta / max(temperature, 1e-12)):
+            current, current_cost = candidate, candidate_cost
+            if current_cost < best_cost:
+                best, best_cost = current.copy(), current_cost
+        temperature *= float(cooling)
+    return best, {
+        "method": "simulated annealing on pure flight distance",
+        "seed": int(seed),
+        "distance_m": float(best_cost),
+        "sweeps": int(sweeps),
+        "cooling": float(cooling),
+        "uses_g2a": False,
+        "uses_a2g": False,
+        "uses_payloads": False,
+    }
+
+
+def service_sa_order(payloads_mb, nodes_km=None, maps=None, seed=1,
+                     initial_temperature=None, cooling=0.995, sweeps=4000):
+    """Simulated annealing on flight plus payload offload time (DRL-SA).
+
+    The baseline is A2G-map-unaware, so the throughput estimate comes from G2A
+    reciprocity. Upload physics remains active in the real environment.
+    """
+    nodes = load_planning_nodes() if nodes_km is None else np.asarray(nodes_km, dtype=float)
+    flight_s, rate, node_payloads = _leg_tables(nodes, payloads_mb, maps)
+    cost_matrix = flight_s + node_payloads[:, None] / np.maximum(rate, 1e-9)
+    rng = np.random.default_rng(seed)
+    current = list(range(1, len(nodes) - 1))
+    rng.shuffle(current)
+    current_cost = _path_cost(cost_matrix, current)
+    best, best_cost = current.copy(), current_cost
+    temperature = (
+        float(initial_temperature)
+        if initial_temperature is not None
+        else max(0.3 * current_cost, 1e-9)
+    )
+    for _ in range(int(sweeps)):
+        i, j = sorted(rng.choice(len(current), size=2, replace=False))
+        candidate = current.copy()
+        candidate[i], candidate[j] = candidate[j], candidate[i]
+        candidate_cost = _path_cost(cost_matrix, candidate)
+        delta = candidate_cost - current_cost
+        if delta <= 0 or rng.random() < math.exp(-delta / max(temperature, 1e-12)):
+            current, current_cost = candidate, candidate_cost
+            if current_cost < best_cost:
+                best, best_cost = current.copy(), current_cost
+        temperature *= float(cooling)
+    return best, {
+        "method": "simulated annealing on flight plus payload offload time",
+        "seed": int(seed),
+        "objective_s": float(best_cost),
+        "sweeps": int(sweeps),
+        "cooling": float(cooling),
+        "uses_g2a": True,
+        "uses_a2g": False,
+        "uses_payloads": True,
+        "throughput_estimate": "G2A reciprocity",
+    }

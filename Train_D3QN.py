@@ -18,27 +18,35 @@ from D3QN import D3QNAgent, DiscreteReplayBuffer, NStepAssembler
 from World import World
 from demonstration import linear_decay
 from discrete_actions import DiscreteActionCodec
-from evaluate_policy import rollout, selection_key
+from evaluate_policy import (
+    A2G_BLIND_STATE_SCHEMA,
+    STATE_SCHEMA,
+    rollout,
+    selection_key,
+)
 from exploration import exploration_scales
 from astar_teacher import d3qn_demo_pairs
 from map_guidance import MapGuide
 from sequence_runner import solve_ga_order
+from sequence_optimizers import (
+    distance_sa_order,
+    distance_tsp_order,
+    sa_order,
+    service_sa_order,
+)
 from training_config import load_fixed_payloads
 
 
 ROOT = Path(__file__).resolve().parent
-D3QN_STATE_SCHEMA = (
-    "v4-max-contiguous: uav xy, target-minus-uav xy, pending payload, "
-    "current contiguous outage usage, "
-    "A2G SNR, G2A outage probability"
-)
+D3QN_STATE_SCHEMA = STATE_SCHEMA
+D3QN_G2A_STATE_SCHEMA = A2G_BLIND_STATE_SCHEMA
 ACTION_SCHEMA = "hover + 16 relative headings at 0.125 + 16 relative headings at 0.25"
 
 
 def create_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data_level", choices=("low", "medium", "high"), default="low")
-    parser.add_argument("--episodes", type=int, default=3000)
+    parser.add_argument("--episodes", type=int, default=5000)
     parser.add_argument("--output_root", default="journal_results/d3qn-baseline")
     parser.add_argument("--ga_iterations", type=int, default=500)
     parser.add_argument("--seed", type=int, default=1)
@@ -49,7 +57,7 @@ def create_parser():
     parser.add_argument("--gamma", type=float, default=0.995)
     parser.add_argument("--buffer", type=int, default=200_000)
     parser.add_argument("--net_width", type=int, default=256)
-    parser.add_argument("--learning_rate", type=float, default=1e-3)
+    parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--train_start", type=int, default=2_000)
     parser.add_argument("--train_frequency", type=int, default=2)
@@ -57,18 +65,30 @@ def create_parser():
     parser.add_argument("--gradient_clip", type=float, default=10.0)
     parser.add_argument("--epsilon_start", type=float, default=1.0)
     parser.add_argument("--epsilon_end", type=float, default=0.05)
-    parser.add_argument("--epsilon_decay_steps", type=int, default=150_000)
+    parser.add_argument("--epsilon_decay_steps", type=int, default=300_000)
     parser.add_argument("--checkpoint_interval", type=int, default=50)
-    parser.add_argument("--teacher", choices=("astar", "mapguide", "none"), default="astar",
+    parser.add_argument("--teacher", choices=("astar", "mapguide", "none"), default="mapguide",
                         help="demonstration source: A* pairs for the margin loss, whole-episode "
                              "MapGuide replayed into the demo partition, or none")
+    parser.add_argument("--a2g_blind", action="store_true",
+                        help="drop the A2G SNR feature for A2G-unaware baselines")
+    parser.add_argument(
+        "--sequence_method",
+        choices=("iga", "distance_tsp", "sa", "sa_service", "sa_distance"),
+        default="iga",
+        help=(
+            "iga: proposed sequence; distance_tsp: exact distance TSP; "
+            "sa: G2A flight+outage SA; sa_service: service-time SA used by DRL-SA; "
+            "sa_distance: distance-only SA used by SA-D3QN"
+        ),
+    )
     parser.add_argument("--demo_weight", type=float, default=1.0, help="weight on the DQfD margin loss")
     parser.add_argument("--demo_margin", type=float, default=0.8, help="Q margin required around demonstrated actions")
     parser.add_argument("--guided_warmup_episodes", type=int, default=400,
                         help="episodes over which the whole-episode MapGuide probability decays to guide_min_prob")
     parser.add_argument("--guide_prob", type=float, default=0.5,
                         help="initial whole-episode MapGuide probability (mapguide teacher only)")
-    parser.add_argument("--guide_min_prob", type=float, default=0.2,
+    parser.add_argument("--guide_min_prob", type=float, default=0.5,
                         help="MapGuide probability kept for the rest of training (mapguide teacher only)")
     parser.add_argument("--bc_weight", type=float, default=1.0,
                         help="initial DQfD margin weight on replayed demonstrations (mapguide teacher only)")
@@ -123,7 +143,7 @@ def _map_hashes():
     }
 
 
-def _make_world(*, payloads, order, uav_h, outage_max_s):
+def _make_world(*, payloads, order, uav_h, outage_max_s, a2g_blind=False):
     return World(
         length=20,
         width=20,
@@ -144,20 +164,22 @@ def _make_world(*, payloads, order, uav_h, outage_max_s):
         ),
         traverse_sequence=list(order),
         variant="A",
+        a2g_blind=a2g_blind,
     )
 
 
-def _rollout_context(run_dir, config):
+def _rollout_context(run_dir, config, state_dim):
     return SimpleNamespace(
         run_dir=Path(run_dir),
         config=config,
         algorithm="d3qn",
-        state_dim=8,
+        state_dim=int(state_dim),
         net_width=int(config["net_width"]),
         variant="A",
         order=tuple(config["order"]),
         payloads_mb=np.asarray(config["payloads_mb"], dtype=float),
         outage_max_s=float(config["outage_max_s"]),
+        a2g_blind=bool(config.get("a2g_blind", False)),
         total_steps=1000,
         length=20.0,
         width=20.0,
@@ -199,9 +221,9 @@ def run_training(
         raise ValueError("episodes must be positive")
     if args.eval_interval <= 0 or args.checkpoint_interval <= 0:
         raise ValueError("evaluation and checkpoint intervals must be positive")
-    guided_enabled = getattr(args, "teacher", "astar") == "mapguide"
+    guided_enabled = getattr(args, "teacher", "none") == "mapguide"
     guide_prob = float(getattr(args, "guide_prob", 0.5))
-    guide_min_prob = float(getattr(args, "guide_min_prob", 0.2))
+    guide_min_prob = float(getattr(args, "guide_min_prob", 0.5))
     if not 0.0 <= guide_min_prob <= guide_prob:
         raise ValueError("guide_min_prob must be between zero and guide_prob")
     bc_weight = float(getattr(args, "bc_weight", 1.0))
@@ -217,9 +239,33 @@ def run_training(
         torch.cuda.manual_seed_all(args.seed)
 
     payloads = load_fixed_payloads(args.data_level)
-    order = list(order_solver(payloads, iterations=args.ga_iterations))
+    a2g_blind = bool(getattr(args, "a2g_blind", False))
+    if a2g_blind and getattr(args, "teacher", "none") == "astar":
+        raise ValueError("A* demonstration pairs do not support a2g_blind")
+    sequence_selector = getattr(args, "sequence_method", "iga")
+    if sequence_selector == "distance_tsp":
+        order, sequence_meta = distance_tsp_order()
+    elif sequence_selector == "sa":
+        order, sequence_meta = sa_order(seed=args.seed)
+    elif sequence_selector == "sa_service":
+        order, sequence_meta = service_sa_order(payloads, seed=args.seed)
+    elif sequence_selector == "sa_distance":
+        order, sequence_meta = distance_sa_order(seed=args.seed)
+    elif sequence_selector == "iga":
+        order = list(order_solver(payloads, iterations=args.ga_iterations))
+        sequence_meta = {
+            "method": "GA with exact verification/fallback",
+            "uses_g2a": True,
+            "uses_a2g": True,
+            "uses_payloads": True,
+        }
+    else:
+        raise ValueError(f"unsupported sequence method: {sequence_selector!r}")
+    order = [int(node) for node in order]
+    state_dim = 7 if a2g_blind else 8
+    state_schema = D3QN_G2A_STATE_SCHEMA if a2g_blind else D3QN_STATE_SCHEMA
     if sorted(order) != list(range(1, len(payloads) + 1)):
-        raise ValueError("IGA order must contain every inspection point exactly once")
+        raise ValueError("sequence must contain every inspection point exactly once")
     run_dir = Path(args.output_root).resolve() / args.data_level / "d3qn"
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -236,15 +282,18 @@ def run_training(
         **vars(args),
         "algorithm": "d3qn",
         "variant": "A",
-        "state_dim": 8,
-        "state_schema": D3QN_STATE_SCHEMA,
+        "state_dim": state_dim,
+        "state_schema": state_schema,
+        "a2g_blind": a2g_blind,
         "qos_constraint": "max_contiguous_outage",
         "action_count": 33,
         "action_schema": ACTION_SCHEMA,
         "order": order,
         "payloads_mb": payloads.tolist(),
         "map_hashes": _map_hashes(),
-        "sequence_method": "GA with exact verification/fallback",
+        "sequence_selector": sequence_selector,
+        "sequence_method": sequence_meta["method"],
+        "sequence_meta": sequence_meta,
         "guidance": guidance,
         "demo_pairs": int(len(demo[1])) if demo is not None else 0,
         "guide_schedule": (f"{guide_prob} -> {guide_min_prob} over {guided_warmup} episodes, "
@@ -275,17 +324,21 @@ def run_training(
         "order": order,
         "uav_h": args.uav_h,
         "outage_max_s": args.outage_max_s,
+        "a2g_blind": a2g_blind,
     }
     training_world = world_factory(**world_arguments)
     evaluation_world = world_factory(**world_arguments)
-    if int(training_world.state_dim) != 8:
-        raise ValueError("D3QN baseline requires the Variant-A 8D observation")
+    if int(training_world.state_dim) != state_dim:
+        raise ValueError(
+            f"D3QN baseline requires a {state_dim}D observation, "
+            f"got {training_world.state_dim}"
+        )
     # World construction may alter NumPy's global RNG through legacy terrain code.
     np.random.seed(args.seed)
     random.seed(args.seed)
 
     agent = D3QNAgent(
-        state_dim=8,
+        state_dim=state_dim,
         action_dim=len(codec),
         hidden_dim=args.net_width,
         learning_rate=args.learning_rate,
@@ -300,10 +353,10 @@ def run_training(
     agent.demo_weight = float(getattr(args, "demo_weight", 1.0))
     agent.demo_margin = float(getattr(args, "demo_margin", 0.8))
     replay = DiscreteReplayBuffer(
-        8, args.buffer, args.seed,
+        state_dim, args.buffer, args.seed,
         demo_capacity=args.buffer, demo_fraction=demo_fraction,
     )
-    context = _rollout_context(run_dir, config)
+    context = _rollout_context(run_dir, config, state_dim)
     paths = checkpoint_paths(run_dir)
     paths["final"].parent.mkdir(parents=True, exist_ok=True)
 
@@ -340,7 +393,14 @@ def run_training(
         state, step = training_world.reset()
         # A fresh guide per episode mirrors Train_SINR: whole demonstration
         # episodes avoid the guide silently repairing the agent's mistakes.
-        guide_box["guide"] = guide_factory(training_world) if guided_run else None
+        if guided_run:
+            guide_box["guide"] = (
+                guide_factory(training_world, use_a2g=not a2g_blind)
+                if guide_factory is MapGuide
+                else guide_factory(training_world)
+            )
+        else:
+            guide_box["guide"] = None
         assembler = NStepAssembler(n_step, decision_gamma)
         done = False
         episode_reward = 0.0

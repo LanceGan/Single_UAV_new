@@ -84,15 +84,56 @@ journal_results/v4-models/load/high/
 
 ### 2.4 层面 1 的 D3QN
 
-在低负载、6 s 下重训：
+在低负载、6 s 下重训 A2G-aware D3QN：
 
-- D3QN，A2G-aware；
-- 使用既定 n-step=10、action_repeat=2、DQfD 预训练配方。
+- episodes：5000；
+- teacher：MapGuide；
+- `guide_prob=0.5`，`guide_min_prob=0.5`；
+- `n_step=10`；
+- `action_repeat=2`；
+- DQfD 预训练 40 回合、20000 updates；
+- learning rate `1e-4`；
+- epsilon decay 300000 steps；
+- seed 1，eval interval 25。
+
+`guide_min_prob=0.5` 表示 MapGuide 概率在预训练/在线训练阶段保持 0.5，
+不再衰减到 0.2。评估仍然是纯 argmax、无 MapGuide。
 
 输出：
 
 ```text
 journal_results/v4-models/layer1/d3qn/
+```
+
+完整命令：
+
+```powershell
+$PY = "D:/Anaconda/envs/pytorch/python.exe"
+
+& $PY Train_D3QN.py `
+  --data_level low `
+  --episodes 5000 `
+  --output_root journal_results/v4-models/layer1/d3qn `
+  --sequence_method iga `
+  --outage_max_s 6 `
+  --teacher mapguide `
+  --guide_prob 0.5 `
+  --guide_min_prob 0.5 `
+  --guided_warmup_episodes 400 `
+  --demo_fraction 0.25 `
+  --demo_weight 1.0 `
+  --demo_margin 0.8 `
+  --bc_weight 1.0 `
+  --bc_min_weight 0.25 `
+  --bc_decay_episodes 600 `
+  --n_step 10 `
+  --action_repeat 2 `
+  --pretrain_demo_episodes 40 `
+  --pretrain_updates 20000 `
+  --learning_rate 1e-4 `
+  --epsilon_decay_steps 300000 `
+  --seed 1 `
+  --eval_interval 25
 ```
 
 ### 2.5 层面 3 的五个基线
@@ -111,7 +152,84 @@ journal_results/v4-models/layer1/d3qn/
 journal_results/v4-baselines/<method>/
 ```
 
-DRL-SA 与 SA-D3QN 必须在 Win 现有 D3QN 入口中合入 v4 状态与连续中断终止规则，不能沿用旧检查点。
+DRL-SA 与 SA-D3QN 的序列选择已经在 v4 `Train_D3QN.py` 中实现：
+
+- DRL-SA：`--sequence_method sa_service --a2g_blind`；
+- SA-D3QN：`--sequence_method sa_distance --a2g_blind`。
+
+两者共享同一 D3QN 修复配方：5000 episodes、MapGuide 概率恒定 0.5、
+7 维 G2A-only 状态、n-step 10、动作重复 2、DQfD 预训练。MapGuide 教师也
+自动切换为 G2A-only，不读取 A2G 地图。
+
+DRL-SA：
+
+```powershell
+& $PY Train_D3QN.py `
+  --data_level low `
+  --episodes 5000 `
+  --output_root journal_results/v4-baselines/drl-sa `
+  --sequence_method sa_service `
+  --a2g_blind `
+  --outage_max_s 6 `
+  --teacher mapguide `
+  --guide_prob 0.5 `
+  --guide_min_prob 0.5 `
+  --guided_warmup_episodes 400 `
+  --demo_fraction 0.25 `
+  --demo_weight 1.0 `
+  --demo_margin 0.8 `
+  --bc_weight 1.0 `
+  --bc_min_weight 0.25 `
+  --bc_decay_episodes 600 `
+  --n_step 10 `
+  --action_repeat 2 `
+  --pretrain_demo_episodes 40 `
+  --pretrain_updates 20000 `
+  --learning_rate 1e-4 `
+  --epsilon_decay_steps 300000 `
+  --seed 1 `
+  --eval_interval 25
+```
+
+SA-D3QN：
+
+```powershell
+& $PY Train_D3QN.py `
+  --data_level low `
+  --episodes 5000 `
+  --output_root journal_results/v4-baselines/sa-d3qn `
+  --sequence_method sa_distance `
+  --a2g_blind `
+  --outage_max_s 6 `
+  --teacher mapguide `
+  --guide_prob 0.5 `
+  --guide_min_prob 0.5 `
+  --guided_warmup_episodes 400 `
+  --demo_fraction 0.25 `
+  --demo_weight 1.0 `
+  --demo_margin 0.8 `
+  --bc_weight 1.0 `
+  --bc_min_weight 0.25 `
+  --bc_decay_episodes 600 `
+  --n_step 10 `
+  --action_repeat 2 `
+  --pretrain_demo_episodes 40 `
+  --pretrain_updates 20000 `
+  --learning_rate 1e-4 `
+  --epsilon_decay_steps 300000 `
+  --seed 1 `
+  --eval_interval 25
+```
+
+结果验收时必须确认：
+
+```text
+state_dim = 7
+a2g_blind = true
+state_schema 以 v4-max-contiguous-blind 开头
+DRL-SA 的 sequence_selector = sa_service
+SA-D3QN 的 sequence_selector = sa_distance
+```
 
 ### 2.6 A2G 可见性消融
 

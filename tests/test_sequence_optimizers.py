@@ -4,12 +4,14 @@ import pytest
 from sequence_optimizers import (
     _path_cost,
     distance_matrix_m,
+    distance_sa_order,
     distance_tsp_order,
     eega_cost_matrix,
     eega_order,
     g2a_edge_seconds,
     ga_proxy_order,
     sa_order,
+    service_sa_order,
     yang_order,
 )
 
@@ -79,6 +81,34 @@ def test_sa_reaches_exact_optimum_on_clear_map_and_is_seed_deterministic():
     assert meta_first["objective_s"] == pytest.approx(exact_meta["distance_m"] / 50.0)
     assert sa_first == exact
     assert meta_first["uses_a2g"] is False and meta_first["uses_payloads"] is False
+
+
+def test_distance_sa_is_deterministic_and_uses_no_radio_maps_or_payloads():
+    first, meta = distance_sa_order(_square_nodes(), seed=3)
+    second, _ = distance_sa_order(_square_nodes(), seed=3)
+
+    assert first == second
+    assert sorted(first) == [1, 2, 3, 4]
+    assert meta["uses_g2a"] is False
+    assert meta["uses_a2g"] is False
+    assert meta["uses_payloads"] is False
+
+
+def test_service_sa_is_deterministic_and_uses_payload_with_g2a_rate():
+    payloads = [10.0, 80.0, 10.0, 10.0]
+    first, meta = service_sa_order(
+        payloads, _square_nodes(), maps=_FlatSnrMaps(), seed=3
+    )
+    second, _ = service_sa_order(
+        payloads, _square_nodes(), maps=_FlatSnrMaps(), seed=3
+    )
+
+    assert first == second
+    assert sorted(first) == [1, 2, 3, 4]
+    assert meta["uses_g2a"] is True
+    assert meta["uses_a2g"] is False
+    assert meta["uses_payloads"] is True
+    assert meta["throughput_estimate"] == "G2A reciprocity"
 
 
 def test_ga_proxy_returns_plain_int_permutation_and_is_seed_deterministic():

@@ -8,8 +8,10 @@ import pytest
 
 from D3QN import D3QNAgent
 from Train_D3QN import (
+    D3QN_G2A_STATE_SCHEMA,
     D3QN_STATE_SCHEMA,
     checkpoint_paths,
+    create_parser,
     epsilon_at_step,
     evaluation_action,
     run_training,
@@ -62,6 +64,21 @@ def test_epsilon_schedule_reaches_floor_without_undershooting():
     assert epsilon_at_step(1000, 1.0, 0.05, 100) == pytest.approx(0.05)
 
 
+def test_formal_d3qn_defaults_match_the_five_thousand_episode_recipe():
+    args = create_parser().parse_args([])
+    assert args.episodes == 5000
+    assert args.learning_rate == pytest.approx(1e-4)
+    assert args.teacher == "mapguide"
+    assert args.guide_prob == pytest.approx(0.5)
+    assert args.guide_min_prob == pytest.approx(0.5)
+    assert args.n_step == 10
+    assert args.action_repeat == 2
+    assert args.pretrain_demo_episodes == 40
+    assert args.pretrain_updates == 20_000
+    assert args.sequence_method == "iga"
+    assert args.a2g_blind is False
+
+
 def test_periodic_evaluation_action_is_argmax_only_and_guide_free():
     calls = []
 
@@ -88,6 +105,18 @@ def test_run_context_rejects_continuous_or_incompatible_configuration(tmp_path):
     )
     with pytest.raises(ValueError, match="D3QN"):
         load_d3qn_run_context(tmp_path)
+
+
+def test_run_context_accepts_seven_dimensional_a2g_blind_configuration(tmp_path):
+    config = _config(
+        state_dim=7,
+        state_schema=D3QN_G2A_STATE_SCHEMA,
+        a2g_blind=True,
+    )
+    (tmp_path / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
+    context = load_d3qn_run_context(tmp_path)
+    assert context.state_dim == 7
+    assert context.a2g_blind is True
 
 
 def test_d3qn_checkpoint_round_trip_does_not_use_continuous_actor_loader(tmp_path):
@@ -123,6 +152,18 @@ class _TinyWorld:
     def step_inside(self, action, state, step):
         self.step_number += 1
         return np.full(8, self.step_number, dtype=float), 1.0, self.step_number >= 2, self.step_number, False
+
+
+class _BlindTinyWorld(_TinyWorld):
+    state_dim = 7
+
+    def reset(self):
+        self.step_number = 0
+        return np.zeros(7, dtype=float), 0
+
+    def step_inside(self, action, state, step):
+        self.step_number += 1
+        return np.full(7, self.step_number, dtype=float), 1.0, self.step_number >= 2, self.step_number, False
 
 
 def test_tiny_training_writes_reproducible_artifacts_and_uses_fixed_order(tmp_path):
@@ -163,6 +204,33 @@ def test_tiny_training_writes_reproducible_artifacts_and_uses_fixed_order(tmp_pa
     assert history["episode_losses"].shape == (2,)
     for path in checkpoint_paths(run_dir).values():
         assert path.is_file()
+
+
+def test_blind_distance_sa_training_uses_seven_dimensions_and_records_selector(tmp_path):
+    reports = iter([
+        {"success": True, "visited_inspection_points": 6, "uploaded_mb": 450.0,
+         "task_time_s": 200.0, "transmission_delay_s": 80.0},
+    ])
+    args = Namespace(
+        data_level="low", episodes=1, output_root=str(tmp_path), ga_iterations=1,
+        seed=1, eval_interval=1, uav_h=1.0, outage_max_s=6.0,
+        gamma=0.995, buffer=32, net_width=16, learning_rate=0.0001,
+        batch_size=2, train_start=2, train_frequency=1, target_update_interval=2,
+        gradient_clip=1.0, epsilon_start=1.0, epsilon_end=0.05,
+        epsilon_decay_steps=10, checkpoint_interval=1, teacher="none",
+        a2g_blind=True, sequence_method="sa_distance",
+    )
+    run_dir = run_training(
+        args,
+        world_factory=lambda **kwargs: _BlindTinyWorld(),
+        evaluator=lambda *unused: next(reports),
+    )
+    config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
+    assert config["state_dim"] == 7
+    assert config["a2g_blind"] is True
+    assert config["sequence_selector"] == "sa_distance"
+    assert config["sequence_method"] == "simulated annealing on pure flight distance"
+    assert config["qos_constraint"] == "max_contiguous_outage"
 
 
 def test_demonstration_margin_loss_is_finite_and_nonnegative():
