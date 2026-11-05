@@ -445,7 +445,8 @@ Mac 本地按顺序启动两项的脚本为 `run_mac_d3qn_baselines.sh`；先完
 再启动 SA-D3QN，避免两个 MPS 进程争用同一设备。
 
 后续五个 Mac 任务（层面 1 D3QN、三个 TD3 基线和 A2G 可见版）已集中在
-`run_mac_v4_remaining.sh`，应在上述两项结束后串行启动。
+`run_mac_v4_remaining.sh`。`run_mac_after_d3qn_chain.sh` 可等待当前
+`run_mac_d3qn_baselines.sh` 进程结束后自动串行启动该队列。
 
 ## 4. 推荐执行顺序
 
