@@ -15,7 +15,8 @@ from sequence_runner import solve_ga_order
 from training_config import load_fixed_payloads
 
 
-def run_preflight(level, output_dir=None, order=None, outage_max_s=100, total_steps=1000):
+def run_preflight(level, output_dir=None, order=None, outage_max_s=100,
+                  total_steps=1000, a2g_blind=False):
     payloads = load_fixed_payloads(level)
     with contextlib.redirect_stdout(io.StringIO()):
         order = solve_ga_order(payloads, iterations=50) if order is None else order
@@ -25,7 +26,7 @@ def run_preflight(level, output_dir=None, order=None, outage_max_s=100, total_st
                       BS_loc=np.array([[4.77,4.56,0.25],[14.89,4.89,0.25],[4.63,13.78,0.25],[13.48,14.89,0.25]]),
                       traverse_sequence=order)
     state, t = world.reset()
-    guide = MapGuide(world)
+    guide = MapGuide(world, use_a2g=not bool(a2g_blind))
     trace, visits = [], []
     total_reward = uploaded = 0.0
     done = terminal = False

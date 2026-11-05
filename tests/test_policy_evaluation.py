@@ -179,6 +179,14 @@ def test_checkpoint_paths_for_demonstration_variants_use_base_agent_file_names(t
     assert paths["final"].name == "td3_bc_td3_actor1000.pth"
 
 
+def test_checkpoint_paths_and_display_name_support_ppo(tmp_path):
+    from evaluate_policy import checkpoint_paths, method_display_name
+
+    paths = checkpoint_paths(tmp_path, "ppo", 3000)
+    assert paths["final"].name == "ppo_ppo_actor3000.pth"
+    assert method_display_name("ppo") == "PPO"
+
+
 def test_standard_agent_best_episode_is_never_marked_guided():
     from evaluate_policy import training_provenance
 

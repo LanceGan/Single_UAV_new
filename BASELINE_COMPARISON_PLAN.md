@@ -64,11 +64,11 @@ T_{\mathrm{out}}^{\mathrm{cont}}\leq T_{\mathrm{out}}^{\mathrm{cont,max}}.
 | 编号 | 论文显示名称 | 顺序优化 | 轨迹优化 | 优先级 |
 |---|---|---|---|---|
 | B1 | EEGA-TD3 (GA proxy) | 普通GA代理 | TD3 | 高 |
-| B2 | DRL-SA | SA | 连续DRL/TD3 | 高 |
+| B2 | DRL-SA | SA（服务时间） | D3QN | 高 |
 | B3 | Distance-TSP+TD3 | 精确距离TSP | TD3 | 最高 |
 | B4 | D3QN | Data-aware IGA | D3QN | 已实现 |
 | B5 | A* | Data-aware IGA | QoS约束A* | 已实现 |
-| B6 | DDPG | Data-aware IGA | DDPG | 已实现 |
+| B6 | PPO | Data-aware IGA | PPO | 新实现，替代内部失败负例 DDPG |
 
 ### 3.3 暂缓方法
 
@@ -197,18 +197,14 @@ EEGA-TD3（普通GA代理）
 
 ---
 
-## 8. DDPG
+## 8. PPO
 
-DDPG使用与TD3相同：
+PPO 使用与 TD3 相同的固定 IGA 顺序、状态、连续动作边界、奖励、连续中断约束和
+纯策略最终评估。线上训练采用 clipped surrogate、GAE、熵项和值函数；MapGuide
+示范仅用于训练开始前的 Actor 监督预训练，不计入最终策略评估的引导控制。
 
-- 状态；
-- 连续动作；
-- MapGuide示范；
-- ReplayBuffer；
-- 训练回合数；
-- 纯Actor评估规则。
-
-仅网络更新机制不同。若DDPG因单Critic高估导致无可行结果，应如实报告失败，不得给失败轨迹计算可行排名。
+历史 DDPG 在两种 MapGuide 配方下均为 0/120 成功，保留为内部负例，不进入
+正式基线表。
 
 ---
 

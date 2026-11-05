@@ -23,7 +23,12 @@ from plot_formal_results import (
     evaluation_series,
 )
 
-METHOD_COLORS = {"TD3": "#0072B2", "DDPG": "#D55E00", "D3QN": "#009E73"}
+METHOD_COLORS = {
+    "TD3": "#0072B2",
+    "PPO": "#CC79A7",
+    "DDPG": "#D55E00",
+    "D3QN": "#009E73",
+}
 
 
 def load_series(run_dir):

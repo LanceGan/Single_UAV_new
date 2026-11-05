@@ -124,6 +124,8 @@
 
 **正式 QoS 实验交 Win**：按照 `QOS_RETRAINING_PLAN.md` 对 3 个权重 × `{3,4,5,6,8}s` 共 15 组分别从头训练。新旧约束的结果不得混合。
 
+**连续 DRL baseline 变更（2026-11-05）**：DDPG 旧结果的两种 MapGuide 配方均为 0/120 成功，保留为内部负例；新版层面 1 增加 PPO 连续动作基线，训练入口为 `Train_PPO.py`，完整命令见 `RERUN_ASSIGNMENT.md`。PPO 与 TD3 使用相同状态、动作界、IGA 顺序、奖励和连续中断约束。
+
 **2026-11-05 全量重跑分工**：所有神经网络训练、周期性评估和 `eval_best` 产生由 Win 执行；A*、MapGuide、PSO、顺序核验、结果审计和最终图表由 Mac 执行。6 s 是主方法和 baseline 的统一比较预算；6 s 三权重结果同时复用为 Proposed 低档和权重实验。具体矩阵和复用关系见 `RERUN_ASSIGNMENT.md`。Win 今天用累计中断口径跑出的 QoS 结果全部作废留档。
 
 **组 3（他文基线，全 A2G-free）**：分工（2026-11-01 定）——**Win 做两个 D3QN 系（DRL-SA=SA(服务时间)+盲D3QN、SA-D3QN=SA(距离)+盲D3QN），Mac 做两个 TD3 系**。吞吐量代理统一用 **G2A 互易估计**（层面 3 不读 A2G 图；原文用各自信道模型，互易估计最贴近该设定，报告注明适配）。

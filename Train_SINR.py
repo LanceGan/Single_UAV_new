@@ -42,7 +42,7 @@ def create_parser():
     parser.add_argument("--episodes", help="training episode count", type=int, default=2000)
     parser.add_argument("--output_root", default="journal_results")
     parser.add_argument("--ga_iterations", type=int, default=500)
-    parser.add_argument("--algorithm", choices=sorted(ALGORITHMS), default="td3",
+    parser.add_argument("--algorithm", choices=("td3", "ddpg", "td3_bc", "ddpg_bc"), default="td3",
                         help="td3/ddpg are standard agents; td3_bc/ddpg_bc add MapGuide demonstrations and imitation")
     parser.add_argument("--outage_max_s", type=float, default=100.0,
                         help="hard maximum-continuous G2A outage budget")
@@ -278,7 +278,8 @@ world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, de
 s_dim = world.state_dim
 
 preflight = run_preflight(data_level, output_paths["root"] / "preflight", order=trave_order,
-                          outage_max_s=outage_max_s, total_steps=T)
+                          outage_max_s=outage_max_s, total_steps=T,
+                          a2g_blind=args.a2g_blind)
 print("Mission preflight:", {k: preflight[k] for k in (
     "success", "time_s", "outage_s", "total_outage_s", "uploaded_mb", "visited_points"
 )}, flush=True)

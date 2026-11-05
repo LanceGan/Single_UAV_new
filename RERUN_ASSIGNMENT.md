@@ -136,6 +136,61 @@ $PY = "D:/Anaconda/envs/pytorch/python.exe"
   --eval_interval 25
 ```
 
+### 2.4b 层面 1 的连续 DRL 对比：PPO
+
+DDPG 的旧正式运行在两种配方下均为 0/120 成功，且出现长时间停滞，保留为
+内部负例，不进入新版主表。连续 DRL 对比改用 PPO。
+
+固定条件：
+
+- 低负载、6 s、Variant A、IGA 顺序、seed 1；
+- 3000 episodes；
+- PPO clipped surrogate + GAE；
+- MapGuide 20 个示范回合预训练，随后 5000 次监督 actor updates；
+- 网络宽度 256；
+- actor learning rate `3e-4`，critic learning rate `1e-3`；
+- `n_steps=1024`、batch 256、10 update epochs；
+- gamma `0.995`、GAE lambda `0.95`、clip ratio `0.2`；
+- 最终评估使用策略均值，不采样、不使用 MapGuide。
+
+输出：
+
+```text
+journal_results/v4-models/ppo/A/low/ppo/
+```
+
+命令：
+
+```powershell
+& $PY Train_PPO.py `
+  --data_level low `
+  --episodes 3000 `
+  --output_root journal_results/v4-models/ppo `
+  --sequence_method iga `
+  --outage_max_s 6 `
+  --teacher mapguide `
+  --pretrain_demo_episodes 20 `
+  --pretrain_updates 5000 `
+  --demo_noise_scale 0.25 `
+  --net_width 256 `
+  --learning_rate 3e-4 `
+  --critic_learning_rate 1e-3 `
+  --n_steps 1024 `
+  --batch_size 256 `
+  --update_epochs 10 `
+  --gamma 0.995 `
+  --gae_lambda 0.95 `
+  --clip_ratio 0.2 `
+  --entropy_coef 0.01 `
+  --value_coef 0.5 `
+  --max_grad_norm 0.5 `
+  --seed 1 `
+  --eval_interval 25
+```
+
+Win 端必须使用 GPU（`--device` 缺省会自动选择 CUDA）；如果显式指定设备，
+可加 `--device cuda`。
+
 ### 2.5 层面 3 的五个基线
 
 全部在低负载、6 s 下重训：
