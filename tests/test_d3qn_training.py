@@ -64,9 +64,9 @@ def test_epsilon_schedule_reaches_floor_without_undershooting():
     assert epsilon_at_step(1000, 1.0, 0.05, 100) == pytest.approx(0.05)
 
 
-def test_formal_d3qn_defaults_match_the_five_thousand_episode_recipe():
+def test_formal_d3qn_defaults_match_the_three_thousand_episode_recipe():
     args = create_parser().parse_args([])
-    assert args.episodes == 5000
+    assert args.episodes == 3000
     assert args.learning_rate == pytest.approx(1e-4)
     assert args.teacher == "mapguide"
     assert args.guide_prob == pytest.approx(0.5)

@@ -86,7 +86,7 @@ journal_results/v4-models/load/high/
 
 在低负载、6 s 下重训 A2G-aware D3QN：
 
-- episodes：5000；
+- episodes：3000（与 Proposed TD3 同步）；
 - teacher：MapGuide；
 - `guide_prob=0.5`，`guide_min_prob=0.5`；
 - `n_step=10`；
@@ -112,7 +112,7 @@ $PY = "D:/Anaconda/envs/pytorch/python.exe"
 
 & $PY Train_D3QN.py `
   --data_level low `
-  --episodes 5000 `
+  --episodes 3000 `
   --output_root journal_results/v4-models/layer1/d3qn `
   --sequence_method iga `
   --outage_max_s 6 `
@@ -230,6 +230,10 @@ state_schema 以 v4-max-contiguous-blind 开头
 DRL-SA 的 sequence_selector = sa_service
 SA-D3QN 的 sequence_selector = sa_distance
 ```
+
+注意：3000 回合只用于层面 1 的 D3QN，以和 TD3 的 3000 回合正式预算对齐。
+层面 3 的 DRL-SA/SA-D3QN 保留 5000 回合的修复版 D3QN 配方，不把两类
+实验的 episode 预算混为同一控制变量。
 
 ### 2.6 A2G 可见性消融
 

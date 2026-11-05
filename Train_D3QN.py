@@ -46,7 +46,7 @@ ACTION_SCHEMA = "hover + 16 relative headings at 0.125 + 16 relative headings at
 def create_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data_level", choices=("low", "medium", "high"), default="low")
-    parser.add_argument("--episodes", type=int, default=5000)
+    parser.add_argument("--episodes", type=int, default=3000)
     parser.add_argument("--output_root", default="journal_results/d3qn-baseline")
     parser.add_argument("--ga_iterations", type=int, default=500)
     parser.add_argument("--seed", type=int, default=1)

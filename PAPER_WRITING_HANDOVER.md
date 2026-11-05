@@ -117,7 +117,7 @@ T 随 w₁ 单调、τ 反向单调；措辞用"权重调节侧重点"（T/τ �
 5. **高档措辞**：TD3（501.0）略高于 MapGuide（492.0），写法建议为"在高负载下与规划器参照相当（差距 <2%），同时保持毫秒级在线决策（规划器需对全图重算）"；低/中档 TD3 明显占优可直说；
 6. 适配声明：DRL-SA 原文轨迹为 D3QN（本文如此复现 ✓ 可直说）；Yang 原文为 SCA/BCD，"+TD3" 必须声明为本文适配；EEGA 的自适应算子参数原文未公开，本文用标准 GA 算子并披露；层面 3 的吞吐估计 Q 来自 **G2A 互易估计**（原文无独立 A2G 图，各自用信道模型）；
 
-7. 新版 D3QN 统一配方是 5000 episodes、`guide_prob=guide_min_prob=0.5`、`n_step=10`、`action_repeat=2`、40 回合/20000 update 的 DQfD 预训练、学习率 `1e-4`。DRL-SA 使用服务时间 SA（`sequence_selector=sa_service`，G2A 互易吞吐），SA-D3QN 使用纯距离 SA（`sequence_selector=sa_distance`），两者均为 7 维 A2G-blind 状态。
+7. 层面 1 的 D3QN 使用 3000 episodes，与 Proposed TD3 同步；其余修复机制为 `guide_prob=guide_min_prob=0.5`、`n_step=10`、`action_repeat=2`、40 回合/20000 update 的 DQfD 预训练、学习率 `1e-4`。层面 3 的 DRL-SA/SA-D3QN 保留 5000 episodes。DRL-SA 使用服务时间 SA（`sequence_selector=sa_service`，G2A 互易吞吐），SA-D3QN 使用纯距离 SA（`sequence_selector=sa_distance`），两者均为 7 维 A2G-blind 状态。
 8. **DDPG 不出现在论文中**（内部负结果）；
 9. 单种子：所有数字为单一种子（seed 1）正式运行结果，论文**不要出现 mean±std 或"多种子"字样**，也不必主动强调单种子；
 10. **以下内部事项不写入论文**：各方法示范教师调度的细节差异（0.2 下限/归零/常数 0.5）；A\* 教师失败实验；course-baselines-a2g-visible 的中间消融目录结构；两台机器与分支的分工。
