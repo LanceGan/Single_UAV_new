@@ -27,11 +27,12 @@ class World(object):
     STALL_DISTANCE = 1e-3  # slots moving less than this count as motionless
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
-                 data_size = 250, data_sizes=None, outage_max_s=100.0, ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
+                 data_size = 250, data_sizes=None, outage_max_s=100.0,
+                 ini_loc=[10.93,4.4],end_loc=[15.5,18.8],
                  users_name='Users.txt'
                  ,BS_loc=[],
                  traverse_sequence=[], variant="baseline", a2g_blind=False,
-                 objective_w1=0.5, objective_w2=0.5):
+                 objective_w1=0.5, objective_w2=0.5, state_outage_max_s=None):
         if variant not in self.VARIANTS:
             raise ValueError(f"unknown variant {variant!r}; expected one of {self.VARIANTS}")
         self.variant = variant
@@ -71,6 +72,12 @@ class World(object):
         self.total_engy = 0.0
         self.out_time = 0.0
         self.outage_max_s = outage_max_s
+        # Training and deployment normally share one budget.  A separate state
+        # scale lets an already-trained policy be replayed under a different
+        # feasibility cutoff without changing its observation distribution.
+        self.state_outage_max_s = (
+            outage_max_s if state_outage_max_s is None else float(state_outage_max_s)
+        )
         self.NON_COMM_PENALTY = -5 # 不满足通信阈值的惩罚
         self.NON_COVER_PENALTY = -10 # 不满足覆盖阈值的惩罚
         
@@ -216,7 +223,7 @@ class World(object):
         s[2] = (target_loc[0] - uav.x) / self.length
         s[3] = (target_loc[1] - uav.y) / self.width
         s[4] = self.data_size / self.max_payload
-        s[5] = self.out_time / self.outage_max_s
+        s[5] = self.out_time / self.state_outage_max_s
         if self.a2g_blind:
             # Sequence baselines are denied uplink knowledge: no A2G SNR feature.
             s[6] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)

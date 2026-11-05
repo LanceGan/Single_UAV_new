@@ -201,6 +201,7 @@ def _build_world(context):
         data_size=300,
         data_sizes=context.payloads_mb,
         outage_max_s=context.outage_max_s,
+        state_outage_max_s=float(context.config["outage_max_s"]),
         ini_loc=[2.62, 2.65],
         end_loc=[18.95, 11.12],
         users_name=str(ROOT / "results" / "datas" / "Users_6.txt"),

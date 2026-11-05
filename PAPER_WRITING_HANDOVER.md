@@ -49,7 +49,17 @@
 | 中 | 351.5 | 318.0 | 369.0 | T=218.0 τ=133.5 T_out=19.5（73/120） |
 | 高 | 501.0 | 447.0 | 492.0 | T=300.5 τ=200.5 T_out=17.5（39/120） |
 
-**QoS 五点**（低档，`journal_results/qos-sweep/qos_sensitivity.json`）：30s→248.5（T_out 16.0，60%）、40s→240.5、60s→229.0、80s→229.0、100s→235.5；A\* 五点全 214.0。解读：策略固有中断需求 ~20s，预算 ≥60s 不束紧（平坦段差异属噪声），逼近 20s 时约束咬合。
+**QoS 中间版（2026-11-05，不重训）**：旧 `qos-sweep/qos_sensitivity.*` 的 40/60/80/100s 基本不束缚，不能作为主敏感性曲线。作为过渡结果，固定三组已经训练好的 TD3，仅改变测试预算 `{20,25,30,35,40}s`，对每组 60 个周期性 Actor 快照做确定性重放，并按各自目标重新选择最佳可行快照。该实验测的是**固定策略对收紧 QoS 的鲁棒性**，不是各预算下重新训练的效应。正式论文版本由 Win 按 `QOS_RETRAINING_PLAN.md` 完成逐预算重训后替换。
+
+归一化目标记为 `J=2(w₁T+w₂τ_total)`，单元格为 `J (可行快照率)`：
+
+| 权重 | 20s | 25s | 30s | 35s | 40s |
+|---|---:|---:|---:|---:|---:|
+| (0.8,0.2) | 270.4 (10.0%) | 262.2 (70.0%) | 258.8 (80.0%) | 258.8 (85.0%) | 258.8 (86.7%) |
+| (0.5,0.5) | 246.5 (18.3%) | 235.5 (61.7%) | 235.5 (73.3%) | 235.5 (78.3%) | 235.5 (78.3%) |
+| (0.2,0.8) | 193.8 (13.3%) | 183.4 (71.7%) | 183.4 (80.0%) | 183.4 (80.0%) | 183.4 (80.0%) |
+
+三组曲线不可按 J 数值直接互相排名，因为目标权重不同；应比较各自随预算的变化。A* 在同一顺序下重跑：20s 未找到可行路径，25s 为 235.0s，30–40s 均为 214.0s（`T_out=27.5s`）。完整数据见 `journal_results/qos-sweep-reweighted/qos_reweighted.json`。
 
 **目标权重**（低档，`journal_results/weight-sweep/weight_summary.json`）：
 
@@ -90,7 +100,7 @@ T 随 w₁ 单调、τ 反向单调；措辞用"权重调节侧重点"（T/τ �
 | F4 | 同上 medium / `formal-v5-restart/A/high/...` | 中、高档轨迹（三档可并排） |
 | F5 | `comparison-low/comparison_rewards.*` | 0–2000 轮纯 actor 奖励曲线（TD3 收敛 vs DDPG/D3QN 旧配方不收敛；若仅需 TD3 可用单图 `formal-v7/.../reward_vs_episode_0_2000.*`） |
 | F6 | `load-sweep/load_sensitivity.*` | 层面 2 数据量轴（左：三方法；右：T/τ 分解+T_out 标注） |
-| F7 | `qos-sweep/qos_sensitivity.*` | 层面 2 QoS 轴（左：目标 vs 预算；右：用量远低于束缚线） |
+| F7 | `qos-sweep-reweighted/qos_reweighted.*` | 仅作 QoS 中间对照：固定 100s 训练策略的后评估重放。正式论文图使用 Win 按 `QOS_RETRAINING_PLAN.md` 完成的逐预算重训结果 |
 | F8 | `weight-sweep/weight_trajectories_dual_maps.*` + `weight_tradeoff.*` | 层面 2 权重轴（轨迹分化 + T-τ 散点） |
 | F8b | `weight-sweep/w80-20/.../paper_figures/reward_vs_episode_0_2000_all.*`、`formal-v7/A/low/td3_bc/.../reward_vs_episode_0_2000_all.*`、`weight-sweep/w20-80/.../paper_figures/reward_vs_episode_0_2000_all.*` | 三个权重组的训练收敛曲线（**用户定稿：用 `_all` 版=全部训练回合的真实奖励，含示范回合**；同窗口同规则并排）。三条均为低→高收敛（秒值显示：起点约 −260~−450，峰值 +480~+590）；(0.8,0.2)/(0.2,0.8) 平台稳定（末段 σ≤0.36），(0.5,0.5) 平台至 ~1280 后有已知波动——caption 用既定句式"最终策略由全程周期性无探索评估选出（eval_best）"。图注注明"训练回合含示范回合（概率 0.5→0.2）"。actor-only 版（无 `_all` 后缀）保留作内部核对，不进论文 |
 | F9 | `summary-bars/layer3_baselines.*` | 层面 3 终版柱状（Proposed 高亮 + A\* 参考线） |
