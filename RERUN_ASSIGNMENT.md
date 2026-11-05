@@ -24,10 +24,10 @@ journal_results/v4-summary/
 - `journal_results/qos-sweep-reweighted/`
 - Win 在 2026-11-05 用累计中断口径启动的 QoS 结果
 
-## 2. Win：GPU 神经网络训练
+## 2. 神经网络实验矩阵（Win / Mac）
 
-Win 负责 QoS、PPO、Proposed 中高档、层面 1 D3QN、三个 TD3 基线和 A2G
-消融；DRL-SA 与 SA-D3QN 两个 D3QN 实验族由 Mac 执行。每组都必须满足：
+Win 负责 QoS、PPO、Proposed 中高档；Mac 负责层面 1 D3QN、三个 TD3
+基线、A2G 消融，以及 DRL-SA/SA-D3QN。每组都必须满足：
 
 ```text
 state_schema starts with "v4-max-contiguous"
@@ -45,7 +45,7 @@ qos_constraint = "max_contiguous_outage"
 - 最终只选择可行 `eval_best`；
 - 固定地图、起终点、运动约束、上传规则。
 
-### 2.2 Qos 网格：15 组 TD3
+### 2.2 QoS 网格：15 组 TD3（Win）
 
 | 权重 | 预算 |
 |---|---|
@@ -68,7 +68,7 @@ journal_results/v4-qos/<weight>/qos<budget>
 
 8 s 结果只作为 QoS 轴的非束缚端点，不用于主方法和 baseline 比较。
 
-### 2.3 数据量敏感性 TD3
+### 2.3 数据量敏感性 TD3（Win）
 
 在非束缚预算 6 s 下新增：
 
@@ -83,7 +83,7 @@ journal_results/v4-models/load/medium/
 journal_results/v4-models/load/high/
 ```
 
-### 2.4 层面 1 的 D3QN
+### 2.4 层面 1 的 D3QN（Mac）
 
 在低负载、6 s 下重训 A2G-aware D3QN：
 
@@ -137,7 +137,7 @@ $PY = "D:/Anaconda/envs/pytorch/python.exe"
   --eval_interval 25
 ```
 
-### 2.4b 层面 1 的连续 DRL 对比：PPO
+### 2.4b 层面 1 的连续 DRL 对比：PPO（Win）
 
 DDPG 的旧正式运行在两种配方下均为 0/120 成功，且出现长时间停滞，保留为
 内部负例，不进入新版主表。连续 DRL 对比改用 PPO。
@@ -192,7 +192,7 @@ journal_results/v4-models/ppo/A/low/ppo/
 Win 端必须使用 GPU（`--device` 缺省会自动选择 CUDA）；如果显式指定设备，
 可加 `--device cuda`。
 
-### 2.5 层面 3 的三个 TD3 基线（Win）
+### 2.5 层面 3 的三个 TD3 基线（Mac）
 
 全部在低负载、6 s 下重训：
 
@@ -206,14 +206,57 @@ Win 端必须使用 GPU（`--device` 缺省会自动选择 CUDA）；如果显�
 journal_results/v4-baselines/{distance-tsp,eega,yang}/
 ```
 
+Mac 使用以下公共参数运行三个 TD3 基线；分别替换
+`--sequence_method` 和 `--output_root`：
+
+```bash
+python3 Train_SINR.py \
+  --variant A \
+  --data_level low \
+  --algorithm td3_bc \
+  --teacher mapguide \
+  --guide_min_prob 0.2 \
+  --episodes 3000 \
+  --seed 1 \
+  --eval_interval 25 \
+  --outage_max_s 6 \
+  --a2g_blind \
+  --device mps \
+  --sequence_method distance_tsp \
+  --output_root journal_results/v4-baselines/distance-tsp
+```
+
+另外两组只替换：
+
+```text
+EEGA: --sequence_method eega --output_root journal_results/v4-baselines/eega
+Yang: --sequence_method yang --output_root journal_results/v4-baselines/yang
+```
+
 DRL-SA 与 SA-D3QN 为独立 D3QN 实验族，整体转移到 Mac，命令见 §3.6。
 这样不拆分同一比较族，同时减少 Win 的 GPU 队列。
 
-### 2.6 A2G 可见性消融
+### 2.6 A2G 可见性消融（Mac）
 
 在低负载、6 s 下重训 Distance-TSP+TD3 的 A2G-aware 版本；A2G-blind 版本直接复用层面 3 的 Distance-TSP+TD3。
 
-### 2.7 Win 回传门槛
+```bash
+python3 Train_SINR.py \
+  --variant A \
+  --data_level low \
+  --algorithm td3_bc \
+  --teacher mapguide \
+  --guide_min_prob 0.2 \
+  --episodes 3000 \
+  --seed 1 \
+  --eval_interval 25 \
+  --outage_max_s 6 \
+  --device mps \
+  --sequence_method distance_tsp \
+  --output_root journal_results/v4-baselines/distance-tsp-a2g-visible
+```
+
+### 2.7 两侧结果回传门槛
 
 每个 run 至少回传：
 
@@ -235,7 +278,7 @@ preflight/
 }
 ```
 
-如字段缺失，Mac 拒收该结果。
+如字段缺失，结果不得进入最终汇总。
 
 ## 3. Mac：确定性算法、两个 D3QN 基线与审计
 
@@ -401,6 +444,9 @@ SA-D3QN sequence_selector = sa_distance
 Mac 本地按顺序启动两项的脚本为 `run_mac_d3qn_baselines.sh`；先完成 DRL-SA，
 再启动 SA-D3QN，避免两个 MPS 进程争用同一设备。
 
+后续五个 Mac 任务（层面 1 D3QN、三个 TD3 基线和 A2G 可见版）已集中在
+`run_mac_v4_remaining.sh`，应在上述两项结束后串行启动。
+
 ## 4. 推荐执行顺序
 
 1. Mac 发布 v4 代码、测试、A* 标定和两份计划；
@@ -422,7 +468,8 @@ Mac 本地按顺序启动两项的脚本为 `run_mac_d3qn_baselines.sh`；先完
 - [x] 低负载顺序质量 A* 审计
 - [x] PSO 6 s 正式重跑并记录失败
 - [~] Mac 正在跑 DRL-SA D3QN（2026-11-05 启动）
-- [ ] Mac 等 DRL-SA 完成后跑 SA-D3QN D3QN
+- [ ] Mac 随后串行跑 SA-D3QN D3QN
+- [ ] Mac 随后串行跑层面 1 D3QN、Distance-TSP、EEGA、Yang 和 A2G 可见版 TD3
 - [ ] Win 神经网络结果回传后的汇总、审计和图表
 
 ## 5. 验收原则

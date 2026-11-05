@@ -7,9 +7,11 @@ from torch.utils.tensorboard import SummaryWriter
 from demonstration import behavior_cloning_loss
 from td3_actor import Actor
 
-if torch.cuda.is_available():
-    torch.cuda.set_device(0)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def _default_device():
+    if torch.cuda.is_available():
+        torch.cuda.set_device(0)
+        return torch.device("cuda")
+    return torch.device("cpu")
 
 
 class Q_Critic(nn.Module):
@@ -78,15 +80,17 @@ class TD3(object):
 		net_width=128,
 		a_lr=1e-4,
 		c_lr=1e-4,
-		Q_batchsize = 256
+		Q_batchsize = 256,
+		device=None
 	):
+		self.device = torch.device(device) if device is not None else _default_device()
 		self.writer = SummaryWriter(train_path)
-		max_action = torch.tensor(max_action, dtype=torch.float32).to(device)
-		self.actor = Actor(state_dim, action_dim, net_width, max_action).to(device)
+		max_action = torch.tensor(max_action, dtype=torch.float32).to(self.device)
+		self.actor = Actor(state_dim, action_dim, net_width, max_action).to(self.device)
 		self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=a_lr)
 		self.actor_target = copy.deepcopy(self.actor)
 
-		self.q_critic = Q_Critic(state_dim, action_dim, net_width).to(device)
+		self.q_critic = Q_Critic(state_dim, action_dim, net_width).to(self.device)
 		self.q_critic_optimizer = torch.optim.Adam(self.q_critic.parameters(), lr=c_lr)
 		self.q_critic_target = copy.deepcopy(self.q_critic)
 
@@ -108,7 +112,7 @@ class TD3(object):
 
 	def select_action(self, state):#only used when interact with the env
 		with torch.no_grad():
-			state = torch.FloatTensor(state.reshape(1, -1)).to(device)
+			state = torch.FloatTensor(state.reshape(1, -1)).to(self.device)
 			a = self.actor(state)
 		return a.cpu().numpy().flatten()
 
@@ -161,7 +165,7 @@ class TD3(object):
 				target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 			self.delay_counter = -1
-	
+
 
 	def save(self,episode,model_path):
 		torch.save(self.actor.state_dict(), model_path+"td3_actor{}.pth".format(episode))

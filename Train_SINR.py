@@ -80,6 +80,8 @@ def create_parser():
                              "or Yang-style weighted order (the last two use G2A-reciprocity throughput)")
     parser.add_argument("--variant", choices=World.VARIANTS, default="baseline",
                         help="ablation: baseline (absolute heading), A (target-relative heading), AB (A + map neighborhood)")
+    parser.add_argument("--device", default=None,
+                        help="training device override, e.g. cuda or mps")
     return parser
 
 class AdaptiveExploration:
@@ -343,6 +345,7 @@ kwargs = {
     "a_lr": 1e-4,
     "c_lr": 1e-3,
     "Q_batchsize": 256,
+    "device": args.device,
 }
 model = TD3(**kwargs) if profile["base"] == "td3" else DDPG(**kwargs)
 model_path = str(output_paths["model_prefix"])
