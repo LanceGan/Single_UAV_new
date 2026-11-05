@@ -24,9 +24,10 @@ journal_results/v4-summary/
 - `journal_results/qos-sweep-reweighted/`
 - Win 在 2026-11-05 用累计中断口径启动的 QoS 结果
 
-## 2. Win：所有需要神经网络的训练
+## 2. Win：GPU 神经网络训练
 
-Win 负责所有使用 PyTorch 的训练、周期性评估和 `eval_best` 产生。每组都必须满足：
+Win 负责 QoS、PPO、Proposed 中高档、层面 1 D3QN、三个 TD3 基线和 A2G
+消融；DRL-SA 与 SA-D3QN 两个 D3QN 实验族由 Mac 执行。每组都必须满足：
 
 ```text
 state_schema starts with "v4-max-contiguous"
@@ -39,7 +40,7 @@ qos_constraint = "max_contiguous_outage"
 - Variant A；
 - TD3 或 D3QN；
 - seed 1；
-- 每个正式 run 3000 episodes；
+- TD3、PPO 和层面 1 D3QN 使用 3000 episodes，层面 3 D3QN 使用 5000 episodes；
 - 每 25 episodes 做一次纯 Actor 确定性评估；
 - 最终只选择可行 `eval_best`；
 - 固定地图、起终点、运动约束、上传规则。
@@ -191,104 +192,22 @@ journal_results/v4-models/ppo/A/low/ppo/
 Win 端必须使用 GPU（`--device` 缺省会自动选择 CUDA）；如果显式指定设备，
 可加 `--device cuda`。
 
-### 2.5 层面 3 的五个基线
+### 2.5 层面 3 的三个 TD3 基线（Win）
 
 全部在低负载、6 s 下重训：
 
 - Distance-TSP+TD3，A2G-blind；
 - EEGA-TD3，A2G-blind；
 - Yang-style+TD3，A2G-blind；
-- DRL-SA（SA 顺序 + D3QN 轨迹），A2G-blind；
-- SA-D3QN（距离型 SA + D3QN 轨迹），A2G-blind。
 
 输出：
 
 ```text
-journal_results/v4-baselines/<method>/
+journal_results/v4-baselines/{distance-tsp,eega,yang}/
 ```
 
-DRL-SA 与 SA-D3QN 的序列选择已经在 v4 `Train_D3QN.py` 中实现：
-
-- DRL-SA：`--sequence_method sa_service --a2g_blind`；
-- SA-D3QN：`--sequence_method sa_distance --a2g_blind`。
-
-两者共享同一 D3QN 修复配方：5000 episodes、MapGuide 概率恒定 0.5、
-7 维 G2A-only 状态、n-step 10、动作重复 2、DQfD 预训练。MapGuide 教师也
-自动切换为 G2A-only，不读取 A2G 地图。
-
-DRL-SA：
-
-```powershell
-& $PY Train_D3QN.py `
-  --data_level low `
-  --episodes 5000 `
-  --output_root journal_results/v4-baselines/drl-sa `
-  --sequence_method sa_service `
-  --a2g_blind `
-  --outage_max_s 6 `
-  --teacher mapguide `
-  --guide_prob 0.5 `
-  --guide_min_prob 0.5 `
-  --guided_warmup_episodes 400 `
-  --demo_fraction 0.25 `
-  --demo_weight 1.0 `
-  --demo_margin 0.8 `
-  --bc_weight 1.0 `
-  --bc_min_weight 0.25 `
-  --bc_decay_episodes 600 `
-  --n_step 10 `
-  --action_repeat 2 `
-  --pretrain_demo_episodes 40 `
-  --pretrain_updates 20000 `
-  --learning_rate 1e-4 `
-  --epsilon_decay_steps 300000 `
-  --seed 1 `
-  --eval_interval 25
-```
-
-SA-D3QN：
-
-```powershell
-& $PY Train_D3QN.py `
-  --data_level low `
-  --episodes 5000 `
-  --output_root journal_results/v4-baselines/sa-d3qn `
-  --sequence_method sa_distance `
-  --a2g_blind `
-  --outage_max_s 6 `
-  --teacher mapguide `
-  --guide_prob 0.5 `
-  --guide_min_prob 0.5 `
-  --guided_warmup_episodes 400 `
-  --demo_fraction 0.25 `
-  --demo_weight 1.0 `
-  --demo_margin 0.8 `
-  --bc_weight 1.0 `
-  --bc_min_weight 0.25 `
-  --bc_decay_episodes 600 `
-  --n_step 10 `
-  --action_repeat 2 `
-  --pretrain_demo_episodes 40 `
-  --pretrain_updates 20000 `
-  --learning_rate 1e-4 `
-  --epsilon_decay_steps 300000 `
-  --seed 1 `
-  --eval_interval 25
-```
-
-结果验收时必须确认：
-
-```text
-state_dim = 7
-a2g_blind = true
-state_schema 以 v4-max-contiguous-blind 开头
-DRL-SA 的 sequence_selector = sa_service
-SA-D3QN 的 sequence_selector = sa_distance
-```
-
-注意：3000 回合只用于层面 1 的 D3QN，以和 TD3 的 3000 回合正式预算对齐。
-层面 3 的 DRL-SA/SA-D3QN 保留 5000 回合的修复版 D3QN 配方，不把两类
-实验的 episode 预算混为同一控制变量。
+DRL-SA 与 SA-D3QN 为独立 D3QN 实验族，整体转移到 Mac，命令见 §3.6。
+这样不拆分同一比较族，同时减少 Win 的 GPU 队列。
 
 ### 2.6 A2G 可见性消融
 
@@ -318,9 +237,9 @@ preflight/
 
 如字段缺失，Mac 拒收该结果。
 
-## 3. Mac：确定性算法、审计和图表
+## 3. Mac：确定性算法、两个 D3QN 基线与审计
 
-Mac 不继续跑大规模神经网络训练，负责：
+Mac 负责确定性方法、两个 D3QN 盲基线，以及最终结果审计和图表：
 
 ### 3.1 A*
 
@@ -401,6 +320,87 @@ Win 回传后由 Mac：
 - 对比 v4 结果与 legacy，只做版本审计，不混入同一数值图；
 - 更新论文写作手册中的最终数字。
 
+### 3.6 DRL-SA 与 SA-D3QN（Mac / MPS）
+
+这两个 D3QN 基线形成独立实验族，整体由 Mac 在 MPS 上执行，不拆分到
+Win。两者均为低负载、6 s、5000 episodes、7 维 A2G-blind、MapGuide
+G2A-only 教师、n-step 10、动作重复 2、DQfD 40 回合/20000 updates。
+
+DRL-SA：
+
+```bash
+python3 Train_D3QN.py \
+  --data_level low \
+  --episodes 5000 \
+  --output_root journal_results/v4-baselines/drl-sa \
+  --sequence_method sa_service \
+  --a2g_blind \
+  --outage_max_s 6 \
+  --teacher mapguide \
+  --guide_prob 0.5 \
+  --guide_min_prob 0.5 \
+  --guided_warmup_episodes 400 \
+  --demo_fraction 0.25 \
+  --demo_weight 1.0 \
+  --demo_margin 0.8 \
+  --bc_weight 1.0 \
+  --bc_min_weight 0.25 \
+  --bc_decay_episodes 600 \
+  --n_step 10 \
+  --action_repeat 2 \
+  --pretrain_demo_episodes 40 \
+  --pretrain_updates 20000 \
+  --learning_rate 1e-4 \
+  --epsilon_decay_steps 300000 \
+  --seed 1 \
+  --eval_interval 25 \
+  --device mps
+```
+
+SA-D3QN：
+
+```bash
+python3 Train_D3QN.py \
+  --data_level low \
+  --episodes 5000 \
+  --output_root journal_results/v4-baselines/sa-d3qn \
+  --sequence_method sa_distance \
+  --a2g_blind \
+  --outage_max_s 6 \
+  --teacher mapguide \
+  --guide_prob 0.5 \
+  --guide_min_prob 0.5 \
+  --guided_warmup_episodes 400 \
+  --demo_fraction 0.25 \
+  --demo_weight 1.0 \
+  --demo_margin 0.8 \
+  --bc_weight 1.0 \
+  --bc_min_weight 0.25 \
+  --bc_decay_episodes 600 \
+  --n_step 10 \
+  --action_repeat 2 \
+  --pretrain_demo_episodes 40 \
+  --pretrain_updates 20000 \
+  --learning_rate 1e-4 \
+  --epsilon_decay_steps 300000 \
+  --seed 1 \
+  --eval_interval 25 \
+  --device mps
+```
+
+验收字段：
+
+```text
+state_dim = 7
+a2g_blind = true
+state_schema starts with v4-max-contiguous-blind
+DRL-SA sequence_selector = sa_service
+SA-D3QN sequence_selector = sa_distance
+```
+
+Mac 本地按顺序启动两项的脚本为 `run_mac_d3qn_baselines.sh`；先完成 DRL-SA，
+再启动 SA-D3QN，避免两个 MPS 进程争用同一设备。
+
 ## 4. 推荐执行顺序
 
 1. Mac 发布 v4 代码、测试、A* 标定和两份计划；
@@ -408,8 +408,8 @@ Win 回传后由 Mac：
 3. Win 先跑 3 s 冒烟预检和少量 episodes，确认 schema 与终止规则；
 4. Mac 并行跑 A*、MapGuide、PSO 和顺序审计；
 5. Win 跑 15 组 QoS；其中 6 s 三组同时供主方法和权重实验使用；
-6. Win 跑 medium/high、D3QN、层面 3 基线和 A2G 消融；
-7. Mac 汇总、核验和重画全部图表。
+6. Win 跑 medium/high、层面 1 D3QN、三个 TD3 基线和 A2G 消融；
+7. Mac 跑 DRL-SA/SA-D3QN，并汇总、核验和重画全部图表。
 
 在 Win 完成 v4 冒烟验证前，不应启动长时间正式队列。
 
@@ -421,6 +421,8 @@ Win 回传后由 Mac：
 - [x] 三档 IGA 顺序复核
 - [x] 低负载顺序质量 A* 审计
 - [x] PSO 6 s 正式重跑并记录失败
+- [~] Mac 正在跑 DRL-SA D3QN（2026-11-05 启动）
+- [ ] Mac 等 DRL-SA 完成后跑 SA-D3QN D3QN
 - [ ] Win 神经网络结果回传后的汇总、审计和图表
 
 ## 5. 验收原则

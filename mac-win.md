@@ -126,9 +126,9 @@
 
 **连续 DRL baseline 变更（2026-11-05）**：DDPG 旧结果的两种 MapGuide 配方均为 0/120 成功，保留为内部负例；新版层面 1 增加 PPO 连续动作基线，训练入口为 `Train_PPO.py`，完整命令见 `RERUN_ASSIGNMENT.md`。PPO 与 TD3 使用相同状态、动作界、IGA 顺序、奖励和连续中断约束。
 
-**2026-11-05 全量重跑分工**：所有神经网络训练、周期性评估和 `eval_best` 产生由 Win 执行；A*、MapGuide、PSO、顺序核验、结果审计和最终图表由 Mac 执行。6 s 是主方法和 baseline 的统一比较预算；6 s 三权重结果同时复用为 Proposed 低档和权重实验。具体矩阵和复用关系见 `RERUN_ASSIGNMENT.md`。Win 今天用累计中断口径跑出的 QoS 结果全部作废留档。
+**2026-11-05 全量重跑分工**：Win 负责 QoS、PPO、Proposed 中高档、层面 1 D3QN、三个 TD3 基线和 A2G 消融；Mac 负责 A*、MapGuide、PSO、顺序核验，以及 DRL-SA/SA-D3QN 两个 D3QN 盲基线。6 s 是主方法和 baseline 的统一比较预算；6 s 三权重结果同时复用为 Proposed 低档和权重实验。具体矩阵和复用关系见 `RERUN_ASSIGNMENT.md`。Win 今天用累计中断口径跑出的 QoS 结果全部作废留档。
 
-**组 3（他文基线，全 A2G-free）**：分工（2026-11-01 定）——**Win 做两个 D3QN 系（DRL-SA=SA(服务时间)+盲D3QN、SA-D3QN=SA(距离)+盲D3QN），Mac 做两个 TD3 系**。吞吐量代理统一用 **G2A 互易估计**（层面 3 不读 A2G 图；原文用各自信道模型，互易估计最贴近该设定，报告注明适配）。
+**组 3（他文基线，全 A2G-free）**：新版分工——**Mac 做两个 D3QN 系（DRL-SA=SA(服务时间)+盲D3QN、SA-D3QN=SA(距离)+盲D3QN），Win 做三个 TD3 系**。吞吐量代理统一用 **G2A 互易估计**（层面 3 不读 A2G 图；原文用各自信道模型，互易估计最贴近该设定，报告注明适配）。
 
 `Train_D3QN.py` 的 v4 入口现支持 `--sequence_method {iga,distance_tsp,sa,sa_service,sa_distance}` 和 `--a2g_blind`。正式命令：DRL-SA 用 `sa_service + a2g_blind`，SA-D3QN 用 `sa_distance + a2g_blind`；两者均为 7 维 G2A-only 状态，完整命令见 `RERUN_ASSIGNMENT.md`。
 
