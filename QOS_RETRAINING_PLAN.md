@@ -7,15 +7,20 @@
 
 ## 1. 实验目的
 
-旧 QoS 扫描使用 `30/40/60/80/100 s`。由于实际 `T_out` 通常只有 15–28 s，40 s 以上的预算基本不再束缚可行解，不能形成有效的五点敏感性曲线。
+正式 QoS 硬约束已经由整任务累计中断改为最长连续中断：
 
-本实验重新扫描 `20/25/30/35/40 s`，并对每个预算重新训练，回答：
+```text
+T_out^cont = max duration of one uninterrupted G2A outage segment
+constraint: T_out^cont <= T_out^cont,max
+```
+
+现有策略轨迹的最大连续中断约为 `2.5–4.5 s`，因此本实验扫描 `3/4/5/6/8 s`，并对每个预算重新训练，回答：
 
 1. QoS 预算从不可行边缘收紧到非束缚区时，三个目标权重下的策略目标值如何变化；
 2. 更紧的 QoS 约束是否以更长任务时间和更高上传时延为代价；
 3. 任务时间优先与传输时延优先两类策略对 QoS 收紧的鲁棒性是否不同。
 
-本实验取代当前 `journal_results/qos-sweep-reweighted/` 的免重训后评估图。后者保留为中间对照，不能与逐预算重训结果混在同一正式曲线中。
+`journal_results/qos-sweep/` 与 `journal_results/qos-sweep-reweighted/` 都是累计中断口径的历史产物，只能留档，不能进入新论文主结果。
 
 ## 2. 实验矩阵
 
@@ -25,13 +30,15 @@
 3 个目标权重 × 5 个 QoS 预算 = 15 个完整 TD3 运行
 ```
 
-| 配置名 | `w1`（T） | `w2`（τ） | QoS 预算 |
+| 配置名 | `w1`（T） | `w2`（τ） | 最长连续中断预算 |
 |---|---:|---:|---|
-| `w80-20` | 0.8 | 0.2 | 20, 25, 30, 35, 40 s |
-| `w50-50` | 0.5 | 0.5 | 20, 25, 30, 35, 40 s |
-| `w20-80` | 0.2 | 0.8 | 20, 25, 30, 35, 40 s |
+| `w80-20` | 0.8 | 0.2 | 3, 4, 5, 6, 8 s |
+| `w50-50` | 0.5 | 0.5 | 3, 4, 5, 6, 8 s |
+| `w20-80` | 0.2 | 0.8 | 3, 4, 5, 6, 8 s |
 
 不要把五个预算合并训练，也不要用 100 s 模型替代。每个预算必须从头训练。
+
+其中 6 s 同时是主方法、权重实验和全部 baseline 的统一比较预算；8 s 只用于 QoS 轴的非束缚端点，避免重复训练。
 
 ## 3. 固定实验条件
 
@@ -63,46 +70,49 @@
 | 回合长度 | 1000 slots / 500 s |
 | 地图 | 固定 G2A + A2G 地图 |
 
-每个预算的状态归一化、训练终止和正式评估都使用该预算自己的 `outage_max_s`。不要传 `state_outage_max_s` 覆盖值。
+每个预算的状态归一化、训练终止和正式评估都使用该预算自己的 `outage_max_s`。该参数现在表示**最长连续中断上限**，不是累计中断上限。不要传 `state_outage_max_s` 覆盖值。
 
 ## 4. 预算选择依据
 
 2026-11-05 已用 MapGuide 在低负载、IGA 顺序下完成预检：
 
-| 预算 | 预检 | MapGuide T | MapGuide T_out |
+| 预算 | 预检 | MapGuide T | MapGuide `T_out^cont` |
 |---:|---|---:|---:|
-| 20 s | 成功 | 196.5 s | 14.5 s |
-| 25 s | 成功 | 196.5 s | 14.5 s |
-| 30 s | 成功 | 196.5 s | 14.5 s |
+| 3 s | 成功 | 196.5 s | 2.5 s |
+| 4 s | 成功 | 196.5 s | 2.5 s |
+| 6 s | 成功 | 196.5 s | 2.5 s |
 
-因此 20 s 预算下训练前预检可以通过，不会因 MapGuide 教师路径超限而无法启动。
+5 s 和 8 s 比已验证的 4 s 更宽松，同一 MapGuide 路径同样通过预检。
 
 A* 顺序分段参照已重跑：
 
-| 预算 | A* 状态 | T+τ | 实际 T_out |
+| 预算 | A* 状态 | T+τ | 实际 `T_out^cont` |
 |---:|---|---:|---:|
-| 20 s | 未找到可行路径 | 无 | — |
-| 25 s | 可行 | 235.0 s | 25.0 s |
-| 30 s | 可行 | 214.0 s | 27.5 s |
-| 35 s | 可行 | 214.0 s | 27.5 s |
-| 40 s | 可行 | 214.0 s | 27.5 s |
+| 1 s | 未找到可行路径 | 无 | — |
+| 2 s | 未找到可行路径 | 无 | — |
+| 3 s | 未找到可行路径 | 无 | — |
+| 4 s | 可行 | 219.0 s | 4.0 s |
+| 5 s | 可行 | 216.0 s | 5.0 s |
+| 6 s | 可行 | 216.0 s | 5.0 s |
+| 7 s | 可行 | 217.5 s | 7.0 s |
+| 8 s | 顺序分段搜索未找到路径 | 无 | — |
 
-A* 是顺序分段搜索，不证明全局最优；20 s 失败只表示当前 25 m 栅格和搜索模式下未找到路径。
+A* 是顺序分段搜索，不证明全局最优。7–8 s 的非单调结果是逐航段贪心选择造成的搜索边界现象，不应当解释为目标函数非单调；8 s 的 A* 参照可留空。
 
 ## 5. 输出目录
 
 每组输出统一放在：
 
 ```text
-journal_results/qos-retrain/<weight>/<budget>/A/low/td3_bc/
+journal_results/v4-qos/<weight>/qos<budget>/A/low/td3_bc/
 ```
 
 例如：
 
 ```text
-journal_results/qos-retrain/w80-20/qos20/A/low/td3_bc/
-journal_results/qos-retrain/w50-50/qos30/A/low/td3_bc/
-journal_results/qos-retrain/w20-80/qos40/A/low/td3_bc/
+journal_results/v4-qos/w80-20/qos3/A/low/td3_bc/
+journal_results/v4-qos/w50-50/qos5/A/low/td3_bc/
+journal_results/v4-qos/w20-80/qos8/A/low/td3_bc/
 ```
 
 不得覆盖现有：
@@ -123,11 +133,11 @@ $weights = @(
     [pscustomobject]@{ Name = "w50-50"; W1 = 0.5; W2 = 0.5 },
     [pscustomobject]@{ Name = "w20-80"; W1 = 0.2; W2 = 0.8 }
 )
-$budgets = 20, 25, 30, 35, 40
+$budgets = 3, 4, 5, 6, 8
 
 foreach ($weight in $weights) {
     foreach ($budget in $budgets) {
-        $RunRoot = "journal_results/qos-retrain/$($weight.Name)/qos$budget"
+        $RunRoot = "journal_results/v4-qos/$($weight.Name)/qos$budget"
 
         & $PY Train_SINR.py `
             --variant A `
@@ -159,7 +169,7 @@ foreach ($weight in $weights) {
 每个长期任务建议单独保存终端日志，例如：
 
 ```powershell
-$RunRoot = "journal_results/qos-retrain/w80-20/qos20"
+$RunRoot = "journal_results/v4-qos/w80-20/qos3"
 & $PY Train_SINR.py ... --output_root $RunRoot 2>&1 |
     Tee-Object -FilePath "$RunRoot.console.txt"
 ```
@@ -173,15 +183,16 @@ $RunRoot = "journal_results/qos-retrain/w80-20/qos20"
 
 & $PY Train_SINR.py `
   --variant A --data_level low --algorithm td3_bc --teacher mapguide `
-  --outage_max_s 20 --objective_w1 0.8 --objective_w2 0.2 `
-  --seed 1 --output_root journal_results/qos-retrain-smoke `
+  --outage_max_s 3 --objective_w1 0.8 --objective_w2 0.2 `
+  --seed 1 --output_root journal_results/v4-qos-smoke `
   --preflight_only
 ```
 
 通过标准：
 
 - 输出 `Mission preflight: ... 'success': True`；
-- `outage_s` 不高于 20 s；
+- `outage_s`（最长连续中断）不高于 3 s；
+- `total_outage_s` 可高于 3 s，它只是辅助诊断，不参与 QoS 判定；
 - `uploaded_mb = 450`；
 - `visited_points = 6`。
 
@@ -210,7 +221,8 @@ $RunRoot = "journal_results/qos-retrain/w80-20/qos20"
 | `objective_s` | `2(w1*T + w2*tau)` |
 | `task_time_s` | `T` |
 | `transmission_delay_s` | `tau_total` |
-| `outage_time_s` | 实际 `T_out` |
+| `outage_time_s` | 实际 `T_out^cont`，即最长连续中断 |
+| `total_outage_time_s` | 整任务累计中断，仅作辅助诊断 |
 | `success_rate` | 120 次周期评估中成功比例 |
 | `best_episode` | `eval_best` 对应 episode |
 | `termination_reason` | 应为 `success` |
@@ -221,7 +233,7 @@ $RunRoot = "journal_results/qos-retrain/w80-20/qos20"
 1. 三个权重各自的加权目标 vs QoS 预算；
 2. 三个权重的 `T` vs QoS 预算；
 3. 三个权重的 `τ_total` vs QoS 预算；
-4. 实际 `T_out` 与可行评估率。
+4. 实际 `T_out^cont` 与可行评估率；累计中断 `T_out^total` 单独放附录或补充图。
 
 三个权重使用不同目标，不能直接按 `J` 的绝对数值跨权重排名；应比较各自随预算的变化及 `T/τ` 分解。
 
@@ -230,19 +242,19 @@ $RunRoot = "journal_results/qos-retrain/w80-20/qos20"
 对每个固定权重，预算扩大时可行集只扩大，因此理论最优目标应满足：
 
 ```text
-J*(20s) >= J*(25s) >= J*(30s) >= J*(35s) >= J*(40s)
+J*(3s) >= J*(4s) >= J*(5s) >= J*(6s) >= J*(8s)
 ```
 
 有限训练和单 seed 允许小幅波动，但应观察到：
 
-- 20–25 s：约束明显生效，目标值下降较快，可行率上升；
-- 25–30 s：从强约束向弱约束过渡；
-- 35–40 s：目标值和可行率接近平台；
+- 3–4 s：约束明显生效，目标值下降较快，可行率上升；
+- 4–6 s：从强约束向弱约束过渡；
+- 6–8 s：目标值和可行率接近平台；
 - 偏 `T` 权重维持较短 `T`、较高 `τ`；
 - 偏 `τ` 权重维持较低 `τ`、较长 `T`；
-- 实际 `T_out` 始终不超过预算，且在平台区接近策略自然中断水平。
+- 实际 `T_out^cont` 始终不超过预算，且在平台区接近策略自然连续中断水平。
 
-若 25 s 的结果比 30 s 更好，或 35/40 s 仍有系统性大幅改善，应检查：
+若 4 s 的结果比 5–6 s 更好，或 6/8 s 仍有系统性大幅改善，应检查：
 
 - `run_config.json` 是否配置错位；
 - 三个权重是否使用了同一 IGA 顺序；
@@ -268,13 +280,13 @@ preflight/
 回传时创建一个汇总：
 
 ```text
-journal_results/qos-retrain-summary.json
+journal_results/v4-summary/qos-retrain-summary.json
 ```
 
-包含 15 组的 `budget/weight/T/tau/T_out/objective/success_rate/best_episode`，并注明：
+包含 15 组的 `budget/weight/T/tau/T_out^cont/T_out^total/objective/success_rate/best_episode`，并注明：
 
 ```text
-protocol = retrained independently at each QoS budget
+protocol = retrained independently at each maximum-continuous-outage budget
 seed = 1
 ```
 
@@ -284,8 +296,8 @@ seed = 1
 
 - 15 个正式 run 全部有 `run_config.json` 和 `eval_history.json`；
 - 所有完成运行通过 map hash、payload、order 和预算配置一致性检查；
-- 每个成功 run 的 `eval_best` 实际 `T_out` 不超过对应预算；
+- 每个成功 run 的 `eval_best` 实际 `T_out^cont` 不超过对应预算；
 - 三个权重各有五个有效预算点；
-- 生成目标、`T`、`τ`、`T_out`、可行率曲线；
+- 生成目标、`T`、`τ`、`T_out^cont`、可行率曲线；
 - 失败 run 有明确记录，未用其他配置替代；
 - 明确区分“逐预算重训曲线”和旧的“固定策略后评估曲线”。

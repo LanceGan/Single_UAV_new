@@ -1,9 +1,8 @@
-"""QoS-sensitivity figure: objective, success rate and used outage vs the budget.
+"""QoS-sensitivity figure for maximum continuous outage vs the budget.
 
 Each point is one full training run evaluated by its guide-free eval_best; the
-A* planner value is drawn as the offline reference. A flat curve with used
-outage far below every budget is itself the finding: the constraint is not
-binding for map-aware policies.
+A* planner values may be drawn as offline references where a feasible plan is
+available.
 """
 
 import argparse
@@ -60,7 +59,7 @@ def plot_sweep(points, astar_value, stem, title):
     axes[0].legend(loc="best")
 
     axes[1].plot(budgets, outages, marker="s", color="#D55E00", linewidth=1.8,
-                 label=r"Used outage $T_{\mathrm{out}}$ (eval\_best)")
+                 label=r"$T_{\mathrm{out}}^{\mathrm{cont}}$ (eval\_best)")
     axes[1].plot(budgets, budgets, color="0.4", linestyle=":", linewidth=1.2,
                  label="Budget (binding line)")
     axis2 = axes[1].twinx()
@@ -69,8 +68,8 @@ def plot_sweep(points, astar_value, stem, title):
     axis2.set_ylabel("Feasible evaluation rate (%)")
     axis2.set_ylim(0, 100)
     axes[1].set_xlabel(r"Outage budget $T_{\mathrm{out}}^{\max}$ (s)")
-    axes[1].set_ylabel(r"$T_{\mathrm{out}}$ (s)")
-    axes[1].set_title("Outage usage stays far below every budget")
+    axes[1].set_ylabel(r"$T_{\mathrm{out}}^{\mathrm{cont}}$ (s)")
+    axes[1].set_title("Longest continuous outage")
     axes[1].grid(alpha=0.25)
     handles1, labels1 = axes[1].get_legend_handles_labels()
     handles2, labels2 = axis2.get_legend_handles_labels()

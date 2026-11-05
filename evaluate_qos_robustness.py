@@ -1,6 +1,6 @@
 """Post-hoc QoS robustness evaluation for previously trained TD3 checkpoints.
 
-The actors are trained once with the budget recorded in each run's
+The actors are trained once with the maximum-contiguous-outage budget recorded in each run's
 ``run_config.json``.  This script changes only the evaluation budget, replays
 the saved periodic actor snapshots, and selects the best feasible snapshot for
 each weight setting.  It therefore measures the robustness of existing
@@ -25,7 +25,7 @@ from plot_formal_results import _save_pair, _style
 
 ROOT = Path(__file__).resolve().parent
 ACTOR_RE = re.compile(r".*_actor(?P<episode>\d+)\.pth$")
-DEFAULT_BUDGETS = (20.0, 25.0, 30.0, 35.0, 40.0)
+DEFAULT_BUDGETS = (3.0, 4.0, 5.0, 6.0, 8.0)
 DEFAULT_RUNS = (
     "w80/20=journal_results/weight-sweep/w80-20/A/low/td3_bc",
     "w50/50=journal_results/formal-v7/A/low/td3_bc",
@@ -79,6 +79,7 @@ def _point_from_reports(reports, budget, w1, w2):
         "transmission_delay_s": (float(report["transmission_delay_s"])
                                   if report else None),
         "outage_s": float(report["outage_time_s"]) if report else None,
+        "total_outage_s": float(report["total_outage_time_s"]) if report else None,
         "success": bool(report),
         "best_feasible_episode": int(best_feasible["episode"]) if best_feasible else None,
         "best_feasible_checkpoint": (str(best_feasible["checkpoint"])
@@ -181,8 +182,8 @@ def plot_robustness(runs, astar_points, stem, title):
     axes[0].set_title("Weighted objective")
     axes[1].plot(all_budgets, all_budgets, color="0.55", linestyle=":",
                  linewidth=1.1, label="QoS budget")
-    axes[1].set_ylabel(r"Realized $T_{\mathrm{out}}$ (s)")
-    axes[1].set_title("Outage usage")
+    axes[1].set_ylabel(r"Realized $T_{\mathrm{out}}^{\mathrm{cont}}$ (s)")
+    axes[1].set_title("Longest continuous outage")
     axes[2].set_ylabel("Feasible saved actors (%)")
     axes[2].set_title("Snapshot feasibility")
     axes[2].set_ylim(0, 105)
@@ -222,9 +223,10 @@ def main():
     summary = {
         "protocol": (
             "Post-hoc deterministic replay of existing periodic actor checkpoints. "
-            "Actor training used each run's recorded 100 s state scale and budget. "
-            "A trajectory is feasible under each tighter test budget when its realized "
-            "T_out does not exceed that budget; the policy input scale stays fixed. "
+            "Actor training used each run's recorded state scale and maximum-contiguous "
+            "outage budget. A trajectory is feasible under each tighter test budget when "
+            "its realized maximum continuous outage does not exceed that budget; the "
+            "policy input scale stays fixed. "
             "No retraining."
         ),
         "selection": "feasible first, then minimum 2*(objective_w1*T + objective_w2*tau)",

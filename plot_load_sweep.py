@@ -2,8 +2,8 @@
 
 TD3 points come from the paper's allocated runs (one directory per level); the
 A* and MapGuide planner values are per-level references. A second panel
-decomposes TD3's objective into T and tau and marks the outage usage against
-the fixed 100 s budget.
+decomposes TD3's objective into T and tau and marks the maximum continuous
+outage against its hard budget.
 """
 
 import argparse
@@ -53,7 +53,7 @@ def plot_load_sweep(levels, td3, astar, mapguide, outage_budget, stem, title):
     axes[1].bar(x, times, width=0.55, color="#0072B2", label=r"$T$")
     axes[1].bar(x, taus, width=0.55, bottom=times, color="#56B4E9", label=r"$\tau_{\mathrm{total}}$")
     for index, point in enumerate(td3):
-        axes[1].annotate(f"$T_{{out}}$={point['outage']:.1f}s",
+        axes[1].annotate(f"$T_{{out}}^{{cont}}$={point['outage']:.1f}s",
                          xy=(x[index], times[index] + taus[index]),
                          xytext=(0, 5), textcoords="offset points",
                          ha="center", fontsize=8, color="0.25")
@@ -61,7 +61,7 @@ def plot_load_sweep(levels, td3, astar, mapguide, outage_budget, stem, title):
     axes[1].set_xticks(x, levels)
     axes[1].set_xlabel("Payload level")
     axes[1].set_ylabel("Seconds")
-    axes[1].set_title(r"TD3 decomposition ($T_{out}$ budget 100 s, never binding)")
+    axes[1].set_title(r"TD3 decomposition (continuous-outage constraint)")
     axes[1].grid(axis="y", alpha=0.25)
     axes[1].legend(loc="upper left")
     figure.suptitle(title)
@@ -83,7 +83,7 @@ def main():
                         help="A* reference per level, same order as --point")
     parser.add_argument("--mapguide", type=float, nargs="+", required=True,
                         help="MapGuide planner reference per level")
-    parser.add_argument("--outage-budget", type=float, default=100.0)
+    parser.add_argument("--outage-budget", type=float, default=8.0)
     parser.add_argument("--output", default="journal_results/load-sweep")
     parser.add_argument("--title", default="Data-volume sensitivity (Variant A)")
     args = parser.parse_args()

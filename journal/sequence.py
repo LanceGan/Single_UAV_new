@@ -27,7 +27,14 @@ class EdgeEstimator:
         slots = max(1, math.ceil(distance / (self.scenario.speed_max * self.scenario.delta_t)))
         points = np.linspace(a, b, slots + 1)[1:]
         rates = [self.radio.a2g_rate_mb_s(point) for point in points]
-        outages = sum(bool(self.radio.g2a_outage(point)) for point in points) * self.scenario.delta_t
+        longest_outage, current_outage = 0.0, 0.0
+        for point in points:
+            if self.radio.g2a_outage(point):
+                current_outage += self.scenario.delta_t
+                longest_outage = max(longest_outage, current_outage)
+            else:
+                current_outage = 0.0
+        outages = longest_outage
         rate = float(np.mean(rates))
         service = sum(rates) * self.scenario.delta_t
         feasible = outages <= self.scenario.outage_max_s and service >= payload_mb and rate > 0

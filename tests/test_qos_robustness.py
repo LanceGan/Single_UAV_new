@@ -35,6 +35,7 @@ def _report(success, task=150.0, delay=80.0, outage=20.0):
         "task_time_s": task,
         "transmission_delay_s": delay,
         "outage_time_s": outage,
+        "total_outage_time_s": outage,
     }
 
 

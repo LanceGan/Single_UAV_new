@@ -38,6 +38,7 @@ def _config(**overrides):
         "payloads_mb": [90.0, 90.0, 60.0, 60.0, 90.0, 60.0],
         "state_dim": 8,
         "state_schema": D3QN_STATE_SCHEMA,
+        "qos_constraint": "max_contiguous_outage",
         "uav_h": 1.0,
         "variant": "A",
         "action_count": 33,

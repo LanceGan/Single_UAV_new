@@ -49,7 +49,7 @@ def test_arrival_heuristic_measures_remaining_distance_to_50m_disk():
 
 
 def test_transition_charges_delay_only_when_slot_starts_with_pending_payload():
-    state = PlannerState(node=0, leg=0, remaining_mb=1.0, outage_slots=0, elapsed_slots=0)
+    state = PlannerState(node=0, leg=0, remaining_mb=1.0, outage_streak_slots=0, elapsed_slots=0)
     result = transition_slot(
         state,
         destination=1,
@@ -68,7 +68,7 @@ def test_transition_charges_delay_only_when_slot_starts_with_pending_payload():
 
 
 def test_same_slot_final_upload_can_enter_target_but_new_payload_waits_until_next_slot():
-    state = PlannerState(node=0, leg=0, remaining_mb=0.25, outage_slots=0, elapsed_slots=4)
+    state = PlannerState(node=0, leg=0, remaining_mb=0.25, outage_streak_slots=0, elapsed_slots=4)
     result = transition_slot(
         state,
         destination=1,
@@ -87,7 +87,7 @@ def test_same_slot_final_upload_can_enter_target_but_new_payload_waits_until_nex
 
 
 def test_target_entry_with_post_upload_payload_is_pruned():
-    state = PlannerState(node=0, leg=0, remaining_mb=10.0, outage_slots=0, elapsed_slots=0)
+    state = PlannerState(node=0, leg=0, remaining_mb=10.0, outage_streak_slots=0, elapsed_slots=0)
     result = transition_slot(
         state,
         destination=1,
@@ -102,7 +102,7 @@ def test_target_entry_with_post_upload_payload_is_pruned():
 
 
 def test_qos_is_strict_but_success_on_slot_1000_is_allowed():
-    qos_edge = PlannerState(node=0, leg=0, remaining_mb=0.0, outage_slots=200, elapsed_slots=0)
+    qos_edge = PlannerState(node=0, leg=0, remaining_mb=0.0, outage_streak_slots=200, elapsed_slots=0)
     common = dict(
         destination=1,
         positions=np.array([[0.0, 0.0], [0.25, 0.0]]),
@@ -113,32 +113,47 @@ def test_qos_is_strict_but_success_on_slot_1000_is_allowed():
     )
     assert transition_slot(qos_edge, **common) is None
 
-    last_slot = PlannerState(node=0, leg=0, remaining_mb=0.0, outage_slots=0, elapsed_slots=999)
+    last_slot = PlannerState(node=0, leg=0, remaining_mb=0.0, outage_streak_slots=0, elapsed_slots=999)
     common["outage_by_node"] = np.array([False, False])
     result = transition_slot(last_slot, **common)
     assert result is not None and result.success
     assert result.state.elapsed_slots == 1000
 
-    already_at_horizon = PlannerState(node=0, leg=0, remaining_mb=0.0, outage_slots=0, elapsed_slots=1000)
+    already_at_horizon = PlannerState(node=0, leg=0, remaining_mb=0.0, outage_streak_slots=0, elapsed_slots=1000)
     assert transition_slot(already_at_horizon, **common) is None
+
+
+def test_clear_slot_resets_the_continuous_outage_streak():
+    state = PlannerState(node=0, leg=0, remaining_mb=0.0, outage_streak_slots=200, elapsed_slots=0)
+    common = dict(
+        destination=1,
+        positions=np.array([[0.0, 0.0], [0.25, 0.0]]),
+        targets=np.array([[1.0, 0.0]]),
+        payloads_mb=np.array([]),
+        snr_db_by_node=np.array([0.0, 0.0]),
+        outage_by_node=np.array([False, False]),
+    )
+    result = transition_slot(state, **common)
+    assert result is not None
+    assert result.state.outage_streak_slots == 0
 
 
 def test_dominance_requires_actual_payload_cost_qos_and_elapsed_all_not_worse():
     table = DominanceTable(bucket_mb=5.0)
     better = DominanceLabel(
-        PlannerState(node=3, leg=1, remaining_mb=6.0, outage_slots=8, elapsed_slots=20),
+        PlannerState(node=3, leg=1, remaining_mb=6.0, outage_streak_slots=8, elapsed_slots=20),
         cost_s=13.0,
     )
     assert table.accept(better)
 
     dominated = DominanceLabel(
-        PlannerState(node=3, leg=1, remaining_mb=7.0, outage_slots=9, elapsed_slots=21),
+        PlannerState(node=3, leg=1, remaining_mb=7.0, outage_streak_slots=9, elapsed_slots=21),
         cost_s=14.0,
     )
     assert not table.accept(dominated)
 
     less_payload_but_more_outage = DominanceLabel(
-        PlannerState(node=3, leg=1, remaining_mb=5.5, outage_slots=10, elapsed_slots=20),
+        PlannerState(node=3, leg=1, remaining_mb=5.5, outage_streak_slots=10, elapsed_slots=20),
         cost_s=13.0,
     )
     assert table.accept(less_payload_but_more_outage)
@@ -248,8 +263,8 @@ def test_heuristic_never_exceeds_optimal_cost_from_start():
 
 def test_dominance_compares_labels_across_payload_buckets():
     table = DominanceTable(bucket_mb=1.0)
-    better = DominanceLabel(PlannerState(node=3, leg=1, remaining_mb=2.2, outage_slots=4, elapsed_slots=10), 8.0)
-    worse = DominanceLabel(PlannerState(node=3, leg=1, remaining_mb=7.9, outage_slots=5, elapsed_slots=11), 9.0)
+    better = DominanceLabel(PlannerState(node=3, leg=1, remaining_mb=2.2, outage_streak_slots=4, elapsed_slots=10), 8.0)
+    worse = DominanceLabel(PlannerState(node=3, leg=1, remaining_mb=7.9, outage_streak_slots=5, elapsed_slots=11), 9.0)
     assert table.accept(better)
     assert not table.accept(worse)
 

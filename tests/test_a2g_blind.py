@@ -106,6 +106,7 @@ def test_run_context_round_trips_blind_configuration(tmp_path):
         "payloads_mb": [90.0, 90.0, 60.0, 60.0, 90.0, 60.0],
         "state_dim": 7, "uav_h": 1.0, "variant": "A",
         "a2g_blind": True, "state_schema": A2G_BLIND_STATE_SCHEMA,
+        "qos_constraint": "max_contiguous_outage",
     }
     (tmp_path / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
     context = load_run_context(tmp_path)

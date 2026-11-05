@@ -38,16 +38,23 @@ def run_preflight(level, output_dir=None, order=None, outage_max_s=100, total_st
         total_reward += reward
         uploaded += world.last_uploaded_data
         trace.append([world.UAVs[0].x, world.UAVs[0].y, t * world.delta_T,
-                      world.out_time, world.data_size, world.Traverse_order, *action])
+                      world.max_contiguous_outage_s, world.out_time,
+                      world.current_contiguous_outage_s, world.data_size,
+                      world.Traverse_order, *action])
         if world.Traverse_order != previous_visit or terminal:
             visits.append({"node": order[previous_visit] if previous_visit < len(order) else "end",
-                           "time_s": t * world.delta_T, "outage_s": world.out_time,
+                           "time_s": t * world.delta_T,
+                           "outage_s": world.max_contiguous_outage_s,
+                           "total_outage_s": world.out_time,
                            "pending_before_collection": max(0.0, old_pending - world.last_uploaded_data)})
         if not np.all(np.isfinite(state)):
             raise RuntimeError("Non-finite policy observation")
-    report = {"level": level, "success": bool(terminal and world.out_time <= world.outage_max_s and uploaded >= payloads.sum() - 1e-7),
+    report = {"level": level, "qos_constraint": "max_contiguous_outage",
+              "success": bool(terminal and world.max_contiguous_outage_s <= world.outage_max_s and uploaded >= payloads.sum() - 1e-7),
               "order": order, "payloads_mb": payloads.tolist(), "time_s": t * world.delta_T,
-              "outage_s": world.out_time, "uploaded_mb": float(round(uploaded, 8)),
+              "outage_s": world.max_contiguous_outage_s,
+              "total_outage_s": world.out_time,
+              "uploaded_mb": float(round(uploaded, 8)),
               "expected_upload_mb": float(payloads.sum()), "visited_points": world.Traverse_order,
               "return": float(total_reward), "reward_terms": world.reward_summary(), "visits": visits,
               "reward_accounting_error": float(abs(sum(world.reward_summary().values()) - total_reward)),
@@ -67,11 +74,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--level", choices=("all", "low", "medium", "high"), default="all")
     parser.add_argument("--output", default="journal_results/preflight")
+    parser.add_argument("--outage-max-s", type=float, default=8.0,
+                        help="maximum-continuous G2A outage budget")
     args = parser.parse_args()
     levels = ("low", "medium", "high") if args.level == "all" else (args.level,)
     passed = True
     for level in levels:
-        result = run_preflight(level, args.output)
+        result = run_preflight(level, args.output, outage_max_s=args.outage_max_s)
         passed = passed and result["success"]
         print(json.dumps({k: result[k] for k in ("level", "success", "order", "time_s", "outage_s", "uploaded_mb", "visited_points")}), flush=True)
     raise SystemExit(0 if passed else 1)

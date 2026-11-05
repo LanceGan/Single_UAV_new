@@ -17,13 +17,15 @@ from evaluate_policy import plot_trajectory, rollout
 
 ROOT = Path(__file__).resolve().parent
 D3QN_STATE_SCHEMA = (
-    "v3: uav xy, target-minus-uav xy, pending payload, outage usage, "
+    "v4-max-contiguous: uav xy, target-minus-uav xy, pending payload, "
+    "current contiguous outage usage, "
     "A2G SNR, G2A outage probability"
 )
 ACTION_SCHEMA = "hover + 16 relative headings at 0.125 + 16 relative headings at 0.25"
 REQUIRED_CONFIG_FIELDS = {
     "algorithm", "data_level", "episodes", "map_hashes", "net_width", "order",
-    "outage_max_s", "payloads_mb", "state_dim", "state_schema", "uav_h", "variant",
+    "outage_max_s", "payloads_mb", "state_dim", "state_schema", "qos_constraint",
+    "uav_h", "variant",
     "action_count", "action_schema",
 }
 
@@ -70,6 +72,8 @@ def load_d3qn_run_context(run_dir):
         raise ValueError("D3QN baseline requires Variant A and state_dim 8")
     if config["state_schema"] != D3QN_STATE_SCHEMA:
         raise ValueError("D3QN state schema is incompatible with the current World")
+    if config["qos_constraint"] != "max_contiguous_outage":
+        raise ValueError("D3QN run does not use max_contiguous_outage")
     if int(config["action_count"]) != 33 or config["action_schema"] != ACTION_SCHEMA:
         raise ValueError("D3QN action schema is incompatible with the 33-action codec")
     order = tuple(int(value) for value in config["order"])

@@ -185,6 +185,8 @@ def main():
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--swarm", type=int, default=40)
     parser.add_argument("--iterations", type=int, default=60)
+    parser.add_argument("--outage_max_s", type=float, default=6.0,
+                        help="hard maximum-continuous G2A outage budget")
     parser.add_argument("--output", default="journal_results/pso-trajectory")
     args = parser.parse_args()
     np.random.seed(args.seed)
@@ -192,7 +194,7 @@ def main():
     order = list(solve_ga_order(payloads))
     print("order:", order, flush=True)
     result = solve(payloads, order, seed=args.seed, swarm=args.swarm,
-                   iterations=args.iterations)
+                   iterations=args.iterations, outage_max_s=args.outage_max_s)
     output = Path(args.output) / args.data_level
     output.mkdir(parents=True, exist_ok=True)
     trace = result.pop("trace")
@@ -201,6 +203,8 @@ def main():
     (output / "metrics.json").write_text(json.dumps(
         {**{k: v for k, v in result.items() if k != "trace"},
          "order": order, "payloads_mb": [float(p) for p in payloads],
+         "qos_constraint": "max_contiguous_outage",
+         "outage_max_s": args.outage_max_s,
          "method": "PSO end-to-end trajectory (offline, full dual-map knowledge)"},
         indent=2, ensure_ascii=False), encoding="utf-8")
     if trace is not None:

@@ -80,6 +80,24 @@ def test_world_terminates_when_g2a_outage_budget_is_exceeded(monkeypatch):
     assert done and not terminal and world.out_time == 1.0
 
 
+def test_qos_budget_caps_continuous_outage_not_accumulated_outage(monkeypatch):
+    world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+                  outage_max_s=0.5, ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+                  users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+                  traverse_sequence=[1, 2, 3, 4, 5, 6])
+    monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_g2a_outage", lambda _location: False)
+    state, step = world.reset()
+    outage_values = iter((0.8, 0.0, 0.8))
+    monkeypatch.setattr(world, "get_g2a_outage_probability", lambda _location: next(outage_values))
+
+    for expected_total in (0.5, 0.5, 1.0):
+        state, _, done, step, terminal = world.step_inside(np.zeros(2), state, step)
+        assert not done and not terminal
+        assert world.out_time == pytest.approx(expected_total)
+        assert world.max_contiguous_outage_s == pytest.approx(0.5)
+
+
 def test_reward_summary_returns_a_copy_of_episode_totals():
     world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
                   ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
@@ -161,7 +179,7 @@ def test_qos_state_scale_can_remain_fixed_under_a_changed_evaluation_budget(monk
     next_state, _, _, _, _ = world.step_inside(np.array([0.1, 0.1]), state, 0)
     assert world.outage_max_s == 20.0
     assert world.state_outage_max_s == 100.0
-    assert next_state[5] == pytest.approx(world.out_time / 100.0)
+    assert next_state[5] == pytest.approx(world.current_contiguous_outage_s / 100.0)
 
 
 def test_final_payload_upload_allows_terminal_completion(monkeypatch):
@@ -189,7 +207,8 @@ def test_endpoint_cannot_report_success_after_exceeding_qos(monkeypatch):
     world.Traverse_order = 1
     world.target_loc = np.array(world.end_loc)
     world.UAVs[0].x, world.UAVs[0].y = world.end_loc
-    world.out_time = world.outage_max_s
+    world.current_contiguous_outage_s = world.outage_max_s
+    world.max_contiguous_outage_s = world.outage_max_s
     monkeypatch.setattr(world, "get_g2a_outage_probability", lambda _: 1.0)
     _, _, done, _, success = world.step_inside(np.zeros(2), state, 0)
     assert done and not success

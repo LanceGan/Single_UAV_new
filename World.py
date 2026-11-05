@@ -70,11 +70,15 @@ class World(object):
         self.reward_term_totals = self._empty_reward_terms()
         self.terminal = False
         self.total_engy = 0.0
+        # Cumulative outage is retained as a diagnostic.  The hard QoS
+        # constraint is the longest uninterrupted outage segment.
         self.out_time = 0.0
+        self.current_contiguous_outage_s = 0.0
+        self.max_contiguous_outage_s = 0.0
         self.outage_max_s = outage_max_s
         # Training and deployment normally share one budget.  A separate state
-        # scale lets an already-trained policy be replayed under a different
-        # feasibility cutoff without changing its observation distribution.
+        # scale can keep the current-contiguous-outage observation fixed during
+        # post-hoc evaluation under a different feasibility cutoff.
         self.state_outage_max_s = (
             outage_max_s if state_outage_max_s is None else float(state_outage_max_s)
         )
@@ -178,6 +182,8 @@ class World(object):
         self.t = 0
         self.fa = 0
         self.out_time = 0
+        self.current_contiguous_outage_s = 0.0
+        self.max_contiguous_outage_s = 0.0
         self.total_engy = 0.0
         self.reward_term_totals = self._empty_reward_terms()
         initial_location = np.array([[self.UAVs[0].x, self.UAVs[0].y]])
@@ -223,7 +229,7 @@ class World(object):
         s[2] = (target_loc[0] - uav.x) / self.length
         s[3] = (target_loc[1] - uav.y) / self.width
         s[4] = self.data_size / self.max_payload
-        s[5] = self.out_time / self.state_outage_max_s
+        s[5] = self.current_contiguous_outage_s / self.state_outage_max_s
         if self.a2g_blind:
             # Sequence baselines are denied uplink knowledge: no A2G SNR feature.
             s[6] = np.clip(self.current_g2a_outage_probability, 0.0, 1.0)
@@ -350,6 +356,12 @@ class World(object):
         g2a_outage = self.current_g2a_outage_probability >= 0.5
         if g2a_outage:
             self.out_time += self.delta_T
+            self.current_contiguous_outage_s += self.delta_T
+            self.max_contiguous_outage_s = max(
+                self.max_contiguous_outage_s, self.current_contiguous_outage_s
+            )
+        else:
+            self.current_contiguous_outage_s = 0.0
         self.data_rate = self.BandWidth * np.log2(1 + 10**(MaxSINR_A2G/10.0))
         self.last_uploaded_data = 0.0
         
@@ -368,8 +380,9 @@ class World(object):
         if self.last_uploaded_data > 0 and self.current_payload > 0:
             reward += self.add_scaled_term("upload", self.UPLOAD_LEG_REWARD * self.last_uploaded_data / self.current_payload)
 
-        # A QoS violation is failure even when it coincides with endpoint arrival.
-        if self.out_time > self.outage_max_s:
+        # The hard QoS constraint limits one continuous outage segment.  Its
+        # violation is failure even when it coincides with endpoint arrival.
+        if self.max_contiguous_outage_s > self.outage_max_s:
             reward += self.add_scaled_term("qos", -self.INFEASIBLE_PENALTY)
             self.terminal = False
             self.r = reward

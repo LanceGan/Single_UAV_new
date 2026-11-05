@@ -23,9 +23,10 @@ from td3_actor import Actor
 
 ROOT = Path(__file__).resolve().parent
 # Checkpoints trained on a different observation layout cannot be replayed in the current World.
-STATE_SCHEMA = ("v3: uav xy, target-minus-uav xy, pending payload, outage usage, A2G SNR, G2A outage probability"
+STATE_SCHEMA = ("v4-max-contiguous: uav xy, target-minus-uav xy, pending payload, current contiguous outage usage, A2G SNR, G2A outage probability"
                 "; AB adds 8 target-frame one-step A2G SNR then 8 G2A outage samples")
-A2G_BLIND_STATE_SCHEMA = ("v3-blind: uav xy, target-minus-uav xy, pending payload, outage usage, "
+A2G_BLIND_STATE_SCHEMA = ("v4-max-contiguous-blind: uav xy, target-minus-uav xy, pending payload, "
+                          "current contiguous outage usage, "
                           "G2A outage probability (A2G SNR feature denied to sequence baselines)")
 REQUIRED_CONFIG_FIELDS = {
     "algorithm",
@@ -37,6 +38,7 @@ REQUIRED_CONFIG_FIELDS = {
     "outage_max_s",
     "payloads_mb",
     "state_dim",
+    "qos_constraint",
     "uav_h",
     "variant",
 }
@@ -97,6 +99,11 @@ def load_run_context(run_dir):
     expected_schema = A2G_BLIND_STATE_SCHEMA if a2g_blind else STATE_SCHEMA
     if config.get("state_schema") != expected_schema:
         raise ValueError(f"run was trained with state schema {config.get('state_schema')!r}, current is {expected_schema!r}")
+    if config["qos_constraint"] != "max_contiguous_outage":
+        raise ValueError(
+            f"run uses unsupported QoS constraint {config['qos_constraint']!r}; "
+            "expected 'max_contiguous_outage'"
+        )
     order = tuple(int(value) for value in config["order"])
     payloads = np.asarray(config["payloads_mb"], dtype=float)
     if len(order) != len(payloads) or sorted(order) != list(range(1, len(payloads) + 1)):
@@ -167,14 +174,14 @@ def classify_termination(
     terminal,
     step,
     max_steps,
-    outage_s,
+    max_contiguous_outage_s,
     outage_max_s,
     visited_points,
     expected_points,
     uploaded_mb,
     expected_upload_mb,
 ):
-    if outage_s > outage_max_s:
+    if max_contiguous_outage_s > outage_max_s:
         return False, "qos_violation"
     if step >= max_steps and not terminal:
         return False, "timeout"
@@ -235,6 +242,8 @@ def rollout(context, world, act):
     positions = [[world.UAVs[0].x, world.UAVs[0].y]]
     times = [0.0]
     outage_times = [0.0]
+    total_outage_times = [0.0]
+    current_contiguous_outages = [0.0]
     pending = [float(world.data_size)]
     visited = [int(world.Traverse_order)]
     a2g_snr = [float(world.current_a2g_snr)]
@@ -259,7 +268,9 @@ def rollout(context, world, act):
         uploaded_mb += float(world.last_uploaded_data)
         positions.append(position.tolist())
         times.append(float(step * context.delta_t))
-        outage_times.append(float(world.out_time))
+        outage_times.append(float(world.max_contiguous_outage_s))
+        total_outage_times.append(float(world.out_time))
+        current_contiguous_outages.append(float(world.current_contiguous_outage_s))
         pending.append(float(world.data_size))
         visited.append(int(world.Traverse_order))
         a2g_snr.append(float(world.current_a2g_snr))
@@ -272,6 +283,7 @@ def rollout(context, world, act):
                     "node": node,
                     "time_s": float(step * context.delta_t),
                     "outage_s": float(world.out_time),
+                    "max_contiguous_outage_s": float(world.max_contiguous_outage_s),
                     "uploaded_total_mb": float(uploaded_mb),
                 }
             )
@@ -280,7 +292,7 @@ def rollout(context, world, act):
         terminal=terminal,
         step=step,
         max_steps=context.total_steps,
-        outage_s=world.out_time,
+        max_contiguous_outage_s=world.max_contiguous_outage_s,
         outage_max_s=context.outage_max_s,
         visited_points=world.Traverse_order,
         expected_points=len(context.order),
@@ -293,6 +305,8 @@ def rollout(context, world, act):
         "positions": np.asarray(positions, dtype=float),
         "time_s": np.asarray(times, dtype=float),
         "outage_s": np.asarray(outage_times, dtype=float),
+        "total_outage_s": np.asarray(total_outage_times, dtype=float),
+        "current_contiguous_outage_s": np.asarray(current_contiguous_outages, dtype=float),
         "pending_mb": np.asarray(pending, dtype=float),
         "visited_points": np.asarray(visited, dtype=int),
         "a2g_snr_db": np.asarray(a2g_snr, dtype=float),
@@ -303,6 +317,7 @@ def rollout(context, world, act):
         "checkpoint": None,
         "algorithm": context.algorithm,
         "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
+        "qos_constraint": "max_contiguous_outage",
         "success": success,
         "termination_reason": termination_reason,
         "visited_inspection_points": int(min(world.Traverse_order, len(context.order))),
@@ -313,9 +328,12 @@ def rollout(context, world, act):
         "trajectory_steps": int(step),
         "flight_distance_m": flight_distance_m,
         "average_speed_mps": flight_distance_m / time_s if time_s else 0.0,
-        "outage_time_s": float(world.out_time),
+        "outage_time_s": float(world.max_contiguous_outage_s),
+        "total_outage_time_s": float(world.out_time),
+        "current_contiguous_outage_s": float(world.current_contiguous_outage_s),
         "outage_limit_s": context.outage_max_s,
-        "outage_fraction": float(world.out_time / time_s) if time_s else 0.0,
+        "outage_fraction": float(world.max_contiguous_outage_s / time_s) if time_s else 0.0,
+        "total_outage_fraction": float(world.out_time / time_s) if time_s else 0.0,
         "transmission_delay_s": float(world.trans_delay * context.delta_t),
         "boundary_violations": int(world.fa),
         "stall_steps": int(world.stall_steps),

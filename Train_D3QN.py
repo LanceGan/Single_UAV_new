@@ -28,7 +28,8 @@ from training_config import load_fixed_payloads
 
 ROOT = Path(__file__).resolve().parent
 D3QN_STATE_SCHEMA = (
-    "v3: uav xy, target-minus-uav xy, pending payload, outage usage, "
+    "v4-max-contiguous: uav xy, target-minus-uav xy, pending payload, "
+    "current contiguous outage usage, "
     "A2G SNR, G2A outage probability"
 )
 ACTION_SCHEMA = "hover + 16 relative headings at 0.125 + 16 relative headings at 0.25"
@@ -43,7 +44,8 @@ def create_parser():
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--eval_interval", type=int, default=25)
     parser.add_argument("--uav_h", type=float, default=1.0)
-    parser.add_argument("--outage_max_s", type=float, default=100.0)
+    parser.add_argument("--outage_max_s", type=float, default=100.0,
+                        help="hard maximum-continuous G2A outage budget")
     parser.add_argument("--gamma", type=float, default=0.995)
     parser.add_argument("--buffer", type=int, default=200_000)
     parser.add_argument("--net_width", type=int, default=256)
@@ -236,6 +238,7 @@ def run_training(
         "variant": "A",
         "state_dim": 8,
         "state_schema": D3QN_STATE_SCHEMA,
+        "qos_constraint": "max_contiguous_outage",
         "action_count": 33,
         "action_schema": ACTION_SCHEMA,
         "order": order,

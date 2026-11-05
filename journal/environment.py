@@ -14,6 +14,8 @@ class Metrics:
     feasible: bool = True
     qos_violation: bool = False
     outage_s: float = 0.0
+    total_outage_s: float = 0.0
+    current_contiguous_outage_s: float = 0.0
     transmission_delay_s: float = 0.0
     flight_distance: float = 0.0
 
@@ -36,7 +38,11 @@ class InspectionEnv:
         return self._state(), {"metrics": self.metrics.__dict__.copy()}
 
     def _state(self) -> np.ndarray:
-        return np.array([*self.position, self.remaining_mb, self.metrics.outage_s], dtype=float)
+        return np.array([
+            *self.position,
+            self.remaining_mb,
+            self.metrics.current_contiguous_outage_s,
+        ], dtype=float)
 
     def mark_payload_collected(self, inspection_index: int) -> None:
         if self.current_payload_index is not None or self.remaining_mb > 0:
@@ -63,7 +69,13 @@ class InspectionEnv:
             self.remaining_mb = max(0.0, self.remaining_mb - self.radio.a2g_rate_mb_s(self.position) * self.scenario.delta_t)
             self.metrics.transmission_delay_s += self.scenario.delta_t
         if self.radio.g2a_outage(self.position):
-            self.metrics.outage_s += self.scenario.delta_t
+            self.metrics.total_outage_s += self.scenario.delta_t
+            self.metrics.current_contiguous_outage_s += self.scenario.delta_t
+            self.metrics.outage_s = max(
+                self.metrics.outage_s, self.metrics.current_contiguous_outage_s
+            )
+        else:
+            self.metrics.current_contiguous_outage_s = 0.0
         if self.metrics.outage_s > self.scenario.outage_max_s:
             self.metrics.feasible = False
             self.metrics.qos_violation = True

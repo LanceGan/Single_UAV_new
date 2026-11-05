@@ -80,6 +80,8 @@ def replay_node_path(world: World, graph: SpatialGraph, node_path: Sequence[int]
     positions = [initial.tolist()]
     times = [0.0]
     outages = [0.0]
+    total_outages = [0.0]
+    current_outages = [0.0]
     pending = [float(world.data_size)]
     visited = [int(world.Traverse_order)]
     actions = [[0.0, 0.0]]
@@ -104,7 +106,9 @@ def replay_node_path(world: World, graph: SpatialGraph, node_path: Sequence[int]
         total_uploaded += float(world.last_uploaded_data)
         positions.append(actual.tolist())
         times.append(float(step * world.delta_T))
-        outages.append(float(world.out_time))
+        outages.append(float(world.max_contiguous_outage_s))
+        total_outages.append(float(world.out_time))
+        current_outages.append(float(world.current_contiguous_outage_s))
         pending.append(float(world.data_size))
         visited.append(int(world.Traverse_order))
         actions.append(action.tolist())
@@ -112,10 +116,14 @@ def replay_node_path(world: World, graph: SpatialGraph, node_path: Sequence[int]
             break
 
     expected_upload = float(sum(world.payload_for_user(user) for user in world.Traverse))
-    success = bool(terminal and total_uploaded >= expected_upload - 1e-7 and world.out_time <= world.outage_max_s)
+    success = bool(
+        terminal
+        and total_uploaded >= expected_upload - 1e-7
+        and world.max_contiguous_outage_s <= world.outage_max_s
+    )
     if success:
         reason = "success"
-    elif world.out_time > world.outage_max_s:
+    elif world.max_contiguous_outage_s > world.outage_max_s:
         reason = "qos_violation"
     elif done and step >= world.T:
         reason = "timeout"
@@ -129,6 +137,8 @@ def replay_node_path(world: World, graph: SpatialGraph, node_path: Sequence[int]
         "positions": np.asarray(positions, dtype=float),
         "time_s": np.asarray(times, dtype=float),
         "outage_s": np.asarray(outages, dtype=float),
+        "total_outage_s": np.asarray(total_outages, dtype=float),
+        "current_contiguous_outage_s": np.asarray(current_outages, dtype=float),
         "pending_mb": np.asarray(pending, dtype=float),
         "visited_points": np.asarray(visited, dtype=int),
         "actions": np.asarray(actions, dtype=float),
@@ -139,7 +149,9 @@ def replay_node_path(world: World, graph: SpatialGraph, node_path: Sequence[int]
         "task_time_s": task_time,
         "transmission_delay_s": transmission_delay,
         "objective_s": task_time + transmission_delay,
-        "outage_time_s": float(world.out_time),
+        "outage_time_s": float(world.max_contiguous_outage_s),
+        "total_outage_time_s": float(world.out_time),
+        "current_contiguous_outage_s": float(world.current_contiguous_outage_s),
         "outage_limit_s": float(world.outage_max_s),
         "flight_distance_m": flight_distance_m,
         "uploaded_mb": total_uploaded,
@@ -210,6 +222,7 @@ def save_level_artifacts(
     }
     metrics = {
         "algorithm": "qos_constrained_astar_25m_4neighbor_hover",
+        "qos_constraint": "max_contiguous_outage",
         "search_mode": planner_mode,
         "data_level": level,
         "inspection_order": list(order),
@@ -302,7 +315,7 @@ def main() -> None:
                         help="sequential: optimal per leg given the previous arrival (fast, upper bound); "
                              "joint: whole-mission A* (optimal on this graph, may hit search limits)")
     parser.add_argument("--outage-max-s", type=float, default=100.0,
-                        help="hard G2A outage budget for both the planner and the World replay")
+                        help="hard maximum-continuous G2A outage budget for planner and replay")
     parser.add_argument("--bucket-mb", type=float, default=1.0)
     parser.add_argument("--max-expansions", type=int, default=500_000)
     parser.add_argument("--max-labels", type=int, default=1_000_000)

@@ -248,7 +248,7 @@ def build_framework_figure(output_dir: Path | str = DEFAULT_OUTPUT_DIR) -> dict[
     rows = [
         ("Geometric distance", "d_ij", COLORS["ink"]),
         ("Source payload", "D_i", COLORS["gold"]),
-        ("Expected outage duration", "tau_out,ij", COLORS["g2a"]),
+        ("Outage exposure", "tau_out,ij", COLORS["g2a"]),
         ("Expected uplink throughput", "R_ij", COLORS["a2g"]),
     ]
     for idx, (label, symbol, color) in enumerate(rows):

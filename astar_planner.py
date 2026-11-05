@@ -25,7 +25,7 @@ class PlannerState:
     node: int
     leg: int
     remaining_mb: float
-    outage_slots: int
+    outage_streak_slots: int
     elapsed_slots: int
 
 
@@ -191,7 +191,9 @@ def transition_slot(
     if elapsed > horizon_slots:
         return None
     outage_value = float(outage_by_node[destination])
-    outage_slots = state.outage_slots + int(outage_value >= 0.5)
+    outage_streak_slots = (
+        state.outage_streak_slots + 1 if outage_value >= 0.5 else 0
+    )
 
     pending = state.remaining_mb > EPSILON
     remaining = max(0.0, float(state.remaining_mb))
@@ -203,9 +205,9 @@ def transition_slot(
             remaining = 0.0
     cost = delta_t + (delta_t if pending else 0.0)
 
-    # World rejects outage strictly greater than 100 s, after uploading but
-    # before accepting an arrival in the same slot.
-    if outage_slots > qos_slots:
+    # The QoS constraint caps one uninterrupted outage segment.  A clear slot
+    # resets the streak; cumulative outage is reported only by World replay.
+    if outage_streak_slots > qos_slots:
         return None
 
     arrived = math.dist(positions[destination], targets[state.leg]) <= arrival_radius + 1e-12
@@ -229,7 +231,7 @@ def transition_slot(
         node=int(destination),
         leg=leg,
         remaining_mb=remaining,
-        outage_slots=outage_slots,
+        outage_streak_slots=outage_streak_slots,
         elapsed_slots=elapsed,
     )
     return SlotTransition(next_state, cost, uploaded, pending, arrived, success)
@@ -239,7 +241,7 @@ class DominanceTable:
     """Sparse Pareto sets of labels at the same (node, leg).
 
     A label is dropped only when another label at the same node and leg is no worse
-    in every resource: remaining payload, cost, QoS usage and elapsed slots. Payload
+    in every resource: remaining payload, cost, current outage streak and elapsed slots. Payload
     stays a real number; ``bucket_mb`` is kept for configuration compatibility.
     """
 
@@ -259,7 +261,7 @@ class DominanceTable:
         return (
             a.remaining_mb <= b.remaining_mb + EPSILON
             and left.cost_s <= right.cost_s + EPSILON
-            and a.outage_slots <= b.outage_slots
+            and a.outage_streak_slots <= b.outage_streak_slots
             and a.elapsed_slots <= b.elapsed_slots
         )
 
@@ -401,7 +403,7 @@ class AStarPlanner:
                     cost + self._heuristic(state),
                     cost,
                     state.elapsed_slots,
-                    state.outage_slots,
+                    state.outage_streak_slots,
                     state.leg,
                     state.node,
                     next(tie_breaker),

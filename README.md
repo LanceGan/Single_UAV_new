@@ -30,7 +30,7 @@ Where:
 ### Constraints:
 - Single sector association per time step
 - Complete data offloading between inspection points
-- Maximum outage duration limit
+- Maximum continuous outage duration limit
 - UAV kinematic constraints
 - Boundary conditions
 
@@ -77,7 +77,7 @@ The proposed DRL-IGA demonstrates significant improvements:
 - Bandwidth: 1 MHz
 - UAV transmit power: 0.1 W
 - GBS transmit power: 0.15 W
-- Maximum outage duration: 80s
+- Maximum continuous outage duration: experiment-dependent (legacy cumulative budget was 80s)
 
 ## 🚀 Getting Started
 

@@ -44,7 +44,8 @@ def create_parser():
     parser.add_argument("--ga_iterations", type=int, default=500)
     parser.add_argument("--algorithm", choices=sorted(ALGORITHMS), default="td3",
                         help="td3/ddpg are standard agents; td3_bc/ddpg_bc add MapGuide demonstrations and imitation")
-    parser.add_argument("--outage_max_s", type=float, default=100.0)
+    parser.add_argument("--outage_max_s", type=float, default=100.0,
+                        help="hard maximum-continuous G2A outage budget")
     parser.add_argument("--train_memory_size", type=int, default=2000)
     parser.add_argument("--teacher", choices=("astar", "mapguide"), default="astar",
                         help="demonstration source for *_bc agents (A* optimal plan, or MapGuide planner)")
@@ -278,7 +279,9 @@ s_dim = world.state_dim
 
 preflight = run_preflight(data_level, output_paths["root"] / "preflight", order=trave_order,
                           outage_max_s=outage_max_s, total_steps=T)
-print("Mission preflight:", {k: preflight[k] for k in ("success", "time_s", "outage_s", "uploaded_mb", "visited_points")}, flush=True)
+print("Mission preflight:", {k: preflight[k] for k in (
+    "success", "time_s", "outage_s", "total_outage_s", "uploaded_mb", "visited_points"
+)}, flush=True)
 writer.flush()
 if not preflight["success"]:
     writer.close()
@@ -292,6 +295,7 @@ if args.preflight_only:
     "map_hashes": preflight["map_hashes"], "sequence_method": sequence_meta["method"],
     "sequence_meta": sequence_meta,
     "state_schema": A2G_BLIND_STATE_SCHEMA if args.a2g_blind else STATE_SCHEMA,
+    "qos_constraint": "max_contiguous_outage",
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
     "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
     "base_agent": profile["base"],
@@ -504,7 +508,8 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
         report, _ = rollout(eval_context, eval_world, model.select_action)
         eval_history.append({"episode": episode, **{k: report[k] for k in (
             "success", "termination_reason", "visited_inspection_points", "uploaded_mb",
-            "task_time_s", "transmission_delay_s", "outage_time_s", "total_return",
+            "task_time_s", "transmission_delay_s", "outage_time_s",
+            "total_outage_time_s", "total_return",
             "boundary_violations", "stall_steps", "max_stall_run")}})
         writer.add_scalar('eval/success', float(report["success"]), episode)
         writer.add_scalar('eval/visited_inspection_points', report["visited_inspection_points"], episode)
@@ -520,7 +525,8 @@ for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
             {"eval_best": {k: v for k, v in eval_best_report.items() if k not in ("visits", "reward_terms", "map_hashes")},
              "history": eval_history}, indent=2, ensure_ascii=False), encoding="utf-8")
     writer.add_scalar('episode/min_target_distance', world.min_target_distance, episode)
-    writer.add_scalar('episode/outage_time', world.out_time, episode)
+    writer.add_scalar('episode/outage_time', world.max_contiguous_outage_s, episode)
+    writer.add_scalar('episode/total_outage_time', world.out_time, episode)
     writer.add_scalar('episode/visited_inspection_points', world.Traverse_order, episode)
     writer.add_scalar('episode/boundary_collisions', world.fa, episode)
     writer.add_scalar('episode/stall_steps', world.stall_steps, episode)
