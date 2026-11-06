@@ -1,0 +1,31 @@
+﻿START w20-80 qos3 @ 11/05/2026 20:19:31
+DONE  w80-20 qos3 exit=0 dur=114.8min
+START w80-20 qos4 @ 11/05/2026 22:14:21
+DONE  w50-50 qos3 exit=0 dur=119.1min
+START w50-50 qos4 @ 11/05/2026 22:18:38
+DONE  w20-80 qos3 exit=0 dur=128.5min
+START w20-80 qos4 @ 11/05/2026 22:28:00
+DONE  w50-50 qos4 exit=0 dur=186.1min
+START w50-50 qos5 @ 11/06/2026 01:24:42
+DONE  w80-20 qos4 exit=0 dur=215.2min
+START w80-20 qos5 @ 11/06/2026 01:49:31
+DONE  w20-80 qos4 exit=0 dur=204.3min
+START w20-80 qos5 @ 11/06/2026 01:52:21
+DONE  w50-50 qos5 exit=0 dur=164.8min
+START w50-50 qos6 @ 11/06/2026 04:09:33
+DONE  w80-20 qos5 exit=0 dur=154.1min
+START w80-20 qos6 @ 11/06/2026 04:23:37
+DONE  w20-80 qos5 exit=0 dur=153.4min
+START w20-80 qos6 @ 11/06/2026 04:25:47
+DONE  w50-50 qos6 exit=0 dur=121.2min
+START w50-50 qos8 @ 11/06/2026 06:10:46
+DONE  w80-20 qos6 exit=0 dur=121.6min
+START w80-20 qos8 @ 11/06/2026 06:25:16
+DONE  w20-80 qos6 exit=0 dur=132.4min
+START w20-80 qos8 @ 11/06/2026 06:38:12
+DONE  w50-50 qos8 exit=0 dur=123.1min
+WORKER w50-50 finished 11/06/2026 08:13:49
+DONE  w80-20 qos8 exit=0 dur=121.6min
+WORKER w80-20 finished 11/06/2026 08:26:52
+DONE  w20-80 qos8 exit=0 dur=120.4min
+WORKER w20-80 finished 11/06/2026 08:38:38
