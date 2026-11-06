@@ -109,6 +109,12 @@ class DDPG(object):
     def train(self, replay_buffer):
         # Sample
         s, a, r, s_prime, dead_mask, demo_mask = replay_buffer.sample(self.Q_batchsize, with_demo=True)
+        s = s.to(self.device)
+        a = a.to(self.device)
+        r = r.to(self.device)
+        s_prime = s_prime.to(self.device)
+        dead_mask = dead_mask.to(self.device)
+        demo_mask = demo_mask.to(self.device)
         # Compute target Q
         with torch.no_grad():
             next_a = self.actor_target(s_prime)

@@ -4,34 +4,39 @@ set -euo pipefail
 PYTHON="${PYTHON:-python3}"
 DEVICE="${DEVICE:-mps}"
 OUT_ROOT="journal_results/v4-baselines"
-mkdir -p "${OUT_ROOT}"
+LAYER1_DIR="journal_results/v4-models/layer1/d3qn/low/d3qn"
+mkdir -p "${OUT_ROOT}" journal_results/v4-models
 
-"${PYTHON}" Train_D3QN.py \
-  --data_level low \
-  --episodes 3000 \
-  --output_root journal_results/v4-models/layer1/d3qn \
-  --sequence_method iga \
-  --outage_max_s 6 \
-  --teacher mapguide \
-  --guide_prob 0.5 \
-  --guide_min_prob 0.5 \
-  --guided_warmup_episodes 400 \
-  --demo_fraction 0.25 \
-  --demo_weight 1.0 \
-  --demo_margin 0.8 \
-  --bc_weight 1.0 \
-  --bc_min_weight 0.25 \
-  --bc_decay_episodes 600 \
-  --n_step 10 \
-  --action_repeat 2 \
-  --pretrain_demo_episodes 40 \
-  --pretrain_updates 20000 \
-  --learning_rate 1e-4 \
-  --epsilon_decay_steps 300000 \
-  --seed 1 \
-  --eval_interval 25 \
-  --device "${DEVICE}" \
-  2>&1 | tee journal_results/v4-models/layer1-d3qn.console.log
+if [[ ! -f "${LAYER1_DIR}/eval_history.json" ]]; then
+  "${PYTHON}" Train_D3QN.py \
+    --data_level low \
+    --episodes 3000 \
+    --output_root journal_results/v4-models/layer1/d3qn \
+    --sequence_method iga \
+    --outage_max_s 6 \
+    --teacher mapguide \
+    --guide_prob 0.5 \
+    --guide_min_prob 0.5 \
+    --guided_warmup_episodes 400 \
+    --demo_fraction 0.25 \
+    --demo_weight 1.0 \
+    --demo_margin 0.8 \
+    --bc_weight 1.0 \
+    --bc_min_weight 0.25 \
+    --bc_decay_episodes 600 \
+    --n_step 10 \
+    --action_repeat 2 \
+    --pretrain_demo_episodes 40 \
+    --pretrain_updates 20000 \
+    --learning_rate 1e-4 \
+    --epsilon_decay_steps 300000 \
+    --seed 1 \
+    --eval_interval 25 \
+    --device "${DEVICE}" \
+    2>&1 | tee journal_results/v4-models/layer1-d3qn.console.log
+else
+  printf 'Skipping completed layer-1 D3QN: %s\n' "${LAYER1_DIR}"
+fi
 
 for method in distance-tsp eega yang; do
   "${PYTHON}" Train_SINR.py \
