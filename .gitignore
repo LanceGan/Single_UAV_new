@@ -7,3 +7,6 @@ __pycache__/
 events.out.tfevents.*
 code.zip
 tmp_*.png
+
+# keep sync_bundles actor checkpoints trackable despite global *.pth ignore
+!sync_bundles/v4_eval_best_actors/*.pth

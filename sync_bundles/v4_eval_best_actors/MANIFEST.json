@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-11-06",
+  "items": [
+    {
+      "label": "w80-20_qos6",
+      "source_run": "journal_results/v4-qos/w80-20/qos6/A/low/td3_bc",
+      "checkpoint_file": "journal_results/v4-qos/w80-20/qos6/A/low/td3_bc\\models\\td3_bc_td3_actoreval_best.pth",
+      "bundle_file": "sync_bundles/v4_eval_best_actors\\w80-20_qos6_actor.pth",
+      "eval_best_episode": 1275,
+      "eval_best_success": true,
+      "sha256": "e688e68ab06f80def59b4c192d1502faccc55eb29217a69c3989fd45b1fbf913"
+    },
+    {
+      "label": "w50-50_qos6",
+      "source_run": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
+      "checkpoint_file": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc\\models\\td3_bc_td3_actoreval_best.pth",
+      "bundle_file": "sync_bundles/v4_eval_best_actors\\w50-50_qos6_actor.pth",
+      "eval_best_episode": 1550,
+      "eval_best_success": true,
+      "sha256": "a927c060fdd373f4434b962a01b423137e60930ea04594f510534b0469f9d4b7"
+    },
+    {
+      "label": "w20-80_qos6",
+      "source_run": "journal_results/v4-qos/w20-80/qos6/A/low/td3_bc",
+      "checkpoint_file": "journal_results/v4-qos/w20-80/qos6/A/low/td3_bc\\models\\td3_bc_td3_actoreval_best.pth",
+      "bundle_file": "sync_bundles/v4_eval_best_actors\\w20-80_qos6_actor.pth",
+      "eval_best_episode": 1800,
+      "eval_best_success": true,
+      "sha256": "c48b0b8f70a2a72bcd18fbb32465a189f47195f43d0527abb3510161d9fc0df7"
+    },
+    {
+      "label": "medium_qos6",
+      "source_run": "journal_results/v4-models/load/medium/A/medium/td3_bc",
+      "checkpoint_file": "journal_results/v4-models/load/medium/A/medium/td3_bc\\models\\td3_bc_td3_actoreval_best.pth",
+      "bundle_file": "sync_bundles/v4_eval_best_actors\\medium_qos6_actor.pth",
+      "eval_best_episode": 2100,
+      "eval_best_success": true,
+      "sha256": "257a53174f2eb578285dabdba760f2945ff5db02c2ad6780be721e6d28b6730a"
+    },
+    {
+      "label": "high_qos6",
+      "source_run": "journal_results/v4-models/load/high/A/high/td3_bc",
+      "checkpoint_file": "journal_results/v4-models/load/high/A/high/td3_bc\\models\\td3_bc_td3_actoreval_best.pth",
+      "bundle_file": "sync_bundles/v4_eval_best_actors\\high_qos6_actor.pth",
+      "eval_best_episode": 1725,
+      "eval_best_success": true,
+      "sha256": "b7e9486b7cf3d7b1132abb65671877047cee1c36dbe9dc9ca2ee11ba5e590646"
+    },
+    {
+      "label": "ppo_low_qos6",
+      "source_run": "journal_results/v4-models/ppo/A/low/ppo",
+      "checkpoint_file": "journal_results/v4-models/ppo/A/low/ppo\\models\\ppo_ppo_actoreval_best.pth",
+      "bundle_file": "sync_bundles/v4_eval_best_actors\\ppo_low_qos6_actor.pth",
+      "eval_best_episode": 25,
+      "eval_best_success": false,
+      "sha256": "322fc9b7e343b6cabdf88e10503c269974ee13ce3ace62b677332d655e969b07"
+    }
+  ]
+}
