@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-11-06",
+  "runs": [
+    {
+      "tag": "ppo",
+      "algorithm": "ppo",
+      "data_level": "low",
+      "outage_max_s": 6.0,
+      "qos_constraint": "max_contiguous_outage",
+      "success": false,
+      "termination_reason": "qos_violation",
+      "task_time_s": 261.0,
+      "transmission_delay_s": 127.5,
+      "outage_time_s": 6.5,
+      "total_outage_time_s": 53.5,
+      "uploaded_mb": 450.0,
+      "success_rate": 0.0,
+      "best_episode": 25
+    },
+    {
+      "tag": "medium",
+      "algorithm": "td3_bc",
+      "data_level": "medium",
+      "outage_max_s": 6.0,
+      "qos_constraint": "max_contiguous_outage",
+      "success": true,
+      "termination_reason": "success",
+      "task_time_s": 219.0,
+      "transmission_delay_s": 133.0,
+      "outage_time_s": 3.0,
+      "total_outage_time_s": 22.0,
+      "uploaded_mb": 900.0,
+      "success_rate": 0.7667,
+      "best_episode": 2100
+    },
+    {
+      "tag": "high",
+      "algorithm": "td3_bc",
+      "data_level": "high",
+      "outage_max_s": 6.0,
+      "qos_constraint": "max_contiguous_outage",
+      "success": true,
+      "termination_reason": "success",
+      "task_time_s": 294.0,
+      "transmission_delay_s": 204.5,
+      "outage_time_s": 3.5,
+      "total_outage_time_s": 19.5,
+      "uploaded_mb": 1500.0,
+      "success_rate": 0.625,
+      "best_episode": 1725
+    }
+  ]
+}

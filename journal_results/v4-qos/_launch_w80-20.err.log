@@ -1,0 +1,8 @@
+Out-File : 文件“F:\Codes\Python\Single_UAV_mac\journal_results\v4-qos\_master.log”正由另一进程使用，因此该进程无法访
+问此文件。
+所在位置 F:\Codes\Python\Single_UAV_mac\run_v4qos_worker.ps1:17 字符: 31
++   "START $Name qos$b @ $t0" | Out-File -Append -Encoding utf8 $master
++                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OpenError: (:) [Out-File], IOException
+    + FullyQualifiedErrorId : FileOpenFailure,Microsoft.PowerShell.Commands.OutFileCommand
+ 
