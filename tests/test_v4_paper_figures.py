@@ -29,15 +29,6 @@ def test_v4_dataset_reports_expected_main_budget_results():
     assert all(row["best_feasible"]["outage_s"] <= 6.0 for row in weights.values())
 
 
-def test_v4_dataset_includes_complete_six_second_astar_reference():
-    dataset = figures.build_dataset()
-    astar = dataset["load"]["astar"]
-
-    assert [row["level"] for row in astar] == ["low", "medium", "high"]
-    assert [row["objective_s"] for row in astar] == pytest.approx([216.0, 316.5, 445.5])
-    assert all(row["outage_s"] <= 6.0 for row in astar)
-
-
 def test_load_schema_validation_rejects_legacy_cumulative_outage(tmp_path):
     run_dir = tmp_path / "run"
     run_dir.mkdir()

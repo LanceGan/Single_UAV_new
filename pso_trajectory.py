@@ -1,12 +1,11 @@
-"""PSO end-to-end trajectory baseline (offline metaheuristic planner).
+"""PSO end-to-end sequence-and-trajectory baseline.
 
-Decision vector: for each leg, three perpendicular control-point offsets plus a
-pre-arrival hover duration. Each candidate is executed slot-by-slot through the
-shared World via the standard evaluation ledger, so its metrics are produced by
-exactly the same accounting as every other method. Feasible candidates score
-their T + tau; infeasible ones a progress-shaped penalty that always ranks
-below any feasible one. Like A* and MapGuide this is a single-instance offline
-planner: full dual-map knowledge, no generalisation, re-solve per instance.
+Each particle jointly encodes a continuous priority for every inspection point
+and, for every resulting leg, three perpendicular control-point offsets plus a
+pre-arrival hover duration. The priorities decode to a permutation with
+``argsort``; controls are interpreted against the decoded order. Every candidate
+is executed slot-by-slot through the shared World, so sequence and trajectory are
+both selected by the same PSO objective.
 """
 
 from __future__ import annotations
@@ -22,7 +21,6 @@ import numpy as np
 
 from World import World
 from evaluate_policy import rollout as ledger_rollout
-from sequence_runner import solve_ga_order
 from training_config import load_fixed_payloads
 
 ROOT = Path(__file__).resolve().parent
@@ -34,6 +32,8 @@ CONTROL_FRACTIONS = (0.25, 0.5, 0.75)
 OFFSET_BOUND = 4.0        # world units (one unit = 100 m)
 HOVER_BOUND = 150.0       # slots (75 s) of pre-arrival dwell
 GENES_PER_LEG = len(CONTROL_FRACTIONS) + 1
+POINT_COUNT = 6
+ORDER_KEY_BOUND = 2.0
 FAIL_BASE = 5000.0
 
 
@@ -60,6 +60,27 @@ def leg_endpoints(order):
     points = [START] + [users[node - 1] for node in order] + [END]
     return [(np.asarray(a, dtype=float), np.asarray(b, dtype=float))
             for a, b in zip(points, points[1:])]
+
+
+def decode_order(order_keys, point_count=POINT_COUNT):
+    """Decode continuous PSO priorities into a complete one-based permutation."""
+    keys = np.asarray(order_keys, dtype=float)
+    if keys.shape != (int(point_count),):
+        raise ValueError(f"order keys must have shape ({point_count},)")
+    order = tuple(int(index) + 1 for index in np.argsort(keys, kind="stable"))
+    if sorted(order) != list(range(1, int(point_count) + 1)):
+        raise ValueError("decoded PSO order is not a permutation")
+    return order
+
+
+def split_particle(particle, point_count=POINT_COUNT):
+    """Split one particle into its inspection-order and trajectory components."""
+    particle = np.asarray(particle, dtype=float)
+    control_dim = (int(point_count) + 1) * GENES_PER_LEG
+    expected = int(point_count) + control_dim
+    if particle.shape != (expected,):
+        raise ValueError(f"particle must have shape ({expected},)")
+    return decode_order(particle[:point_count], point_count), particle[point_count:]
 
 
 def build_leg_plans(order, genes):
@@ -126,6 +147,12 @@ def evaluate_vector(payloads, order, genes, outage_max_s=100.0):
     return report, trace
 
 
+def evaluate_particle(payloads, particle, point_count=POINT_COUNT, outage_max_s=100.0):
+    order, trajectory_genes = split_particle(particle, point_count)
+    report, trace = evaluate_vector(payloads, order, trajectory_genes, outage_max_s)
+    return order, report, trace
+
+
 def fitness_from_report(report):
     if report["success"]:
         return report["task_time_s"] + report["transmission_delay_s"]
@@ -133,46 +160,61 @@ def fitness_from_report(report):
             - report["uploaded_mb"])
 
 
-def solve(payloads, order, seed=1, swarm=40, iterations=60, inertia=0.72,
+def solve(payloads, seed=1, swarm=40, iterations=60, inertia=0.72,
           cognitive=1.49, social=1.49, patience=15, outage_max_s=100.0, log=print):
     rng = np.random.default_rng(seed)
-    legs = len(order) + 1
-    dims = legs * GENES_PER_LEG
-    low = np.tile([-OFFSET_BOUND] * 3 + [0.0], legs)
-    high = np.tile([OFFSET_BOUND] * 3 + [HOVER_BOUND], legs)
-    pos = np.clip(rng.normal(0.0, 1.0, size=(swarm, dims)) * (high - low) * 0.1
-                  + (low + high) / 2.0 * np.tile([0.0, 0.0, 0.0, 1.0], legs),
-                  low, high)
-    vel = np.zeros_like(pos)
-    personal_best = pos.copy()
+    point_count = int(len(payloads))
+    legs = point_count + 1
+    control_dims = legs * GENES_PER_LEG
+    particle_dim = point_count + control_dims
+    control_low = np.tile([-OFFSET_BOUND] * 3 + [0.0], legs)
+    control_high = np.tile([OFFSET_BOUND] * 3 + [HOVER_BOUND], legs)
+    low = np.concatenate((-np.full(point_count, ORDER_KEY_BOUND), control_low))
+    high = np.concatenate((np.full(point_count, ORDER_KEY_BOUND), control_high))
+    position = np.empty((swarm, particle_dim), dtype=float)
+    position[:, :point_count] = rng.uniform(-ORDER_KEY_BOUND, ORDER_KEY_BOUND, size=(swarm, point_count))
+    position[:, point_count:] = np.clip(
+        rng.normal(0.0, 1.0, size=(swarm, control_dims))
+        * (control_high - control_low) * 0.1
+        + (control_low + control_high) / 2.0 * np.tile([0.0, 0.0, 0.0, 1.0], legs),
+        control_low,
+        control_high,
+    )
+    vel = np.zeros_like(position)
+    personal_best = position.copy()
     personal_cost = np.full(swarm, np.inf)
-    best_cost, best_vector, best_report, best_trace = np.inf, None, None, None
+    best_cost, best_vector, best_report, best_trace, best_order = (
+        np.inf, None, None, None, None
+    )
     stale = 0
     for iteration in range(int(iterations)):
         for index in range(swarm):
-            report, trace = evaluate_vector(payloads, order, pos[index], outage_max_s)
+            order, report, trace = evaluate_particle(
+                payloads, position[index], point_count, outage_max_s
+            )
             cost = fitness_from_report(report)
             if cost < personal_cost[index]:
-                personal_cost[index], personal_best[index] = cost, pos[index].copy()
+                personal_cost[index], personal_best[index] = cost, position[index].copy()
             if cost < best_cost:
-                best_cost, best_vector = cost, pos[index].copy()
+                best_cost, best_vector, best_order = cost, position[index].copy(), order
                 best_report, best_trace = report, trace
                 stale = -1
         stale += 1
         if stale >= patience:
             log(f"early stop at iteration {iteration + 1} (no improvement for {patience})")
             break
-        r1 = rng.random((swarm, dims))
-        r2 = rng.random((swarm, dims))
-        vel = (inertia * vel + cognitive * r1 * (personal_best - pos)
-               + social * r2 * (best_vector - pos))
+        r1 = rng.random((swarm, particle_dim))
+        r2 = rng.random((swarm, particle_dim))
+        vel = (inertia * vel + cognitive * r1 * (personal_best - position)
+               + social * r2 * (best_vector - position))
         vel = np.clip(vel, -(high - low) * 0.2, (high - low) * 0.2)
-        pos = np.clip(pos + vel, low, high)
+        position = np.clip(position + vel, low, high)
         log(f"iter {iteration + 1}/{iterations}: best={best_cost:.1f} "
             f"success={bool(best_report and best_report['success'])}", flush=True)
     return {
         "best_cost": float(best_cost),
         "best_vector": best_vector.tolist() if best_vector is not None else None,
+        "order": list(best_order) if best_order is not None else None,
         "report": best_report,
         "trace": best_trace,
         "seed": int(seed), "swarm": int(swarm), "iterations": int(iterations),
@@ -187,13 +229,11 @@ def main():
     parser.add_argument("--iterations", type=int, default=60)
     parser.add_argument("--outage_max_s", type=float, default=6.0,
                         help="hard maximum-continuous G2A outage budget")
-    parser.add_argument("--output", default="journal_results/pso-trajectory")
+    parser.add_argument("--output", default="journal_results/v4-deterministic/pso-joint")
     args = parser.parse_args()
     np.random.seed(args.seed)
     payloads = load_fixed_payloads(args.data_level)
-    order = list(solve_ga_order(payloads))
-    print("order:", order, flush=True)
-    result = solve(payloads, order, seed=args.seed, swarm=args.swarm,
+    result = solve(payloads, seed=args.seed, swarm=args.swarm,
                    iterations=args.iterations, outage_max_s=args.outage_max_s)
     output = Path(args.output) / args.data_level
     output.mkdir(parents=True, exist_ok=True)
@@ -202,16 +242,19 @@ def main():
         np.savez(output / "trajectory.npz", **trace)
     (output / "metrics.json").write_text(json.dumps(
         {**{k: v for k, v in result.items() if k != "trace"},
-         "order": order, "payloads_mb": [float(p) for p in payloads],
+         "order": result["order"], "payloads_mb": [float(p) for p in payloads],
          "qos_constraint": "max_contiguous_outage",
          "outage_max_s": args.outage_max_s,
-         "method": "PSO end-to-end trajectory (offline, full dual-map knowledge)"},
+         "method": "PSO joint sequence and trajectory (offline, full dual-map knowledge)",
+         "sequence_decision": "decoded from PSO continuous order keys",
+         "trajectory_decision": "PSO per-leg control-point offsets and hover durations",
+         "uses_iga_order": False},
         indent=2, ensure_ascii=False), encoding="utf-8")
     if trace is not None:
         from evaluate_policy import plot_trajectory
         from plot_formal_results import _style
         _style()
-        context = SimpleNamespace(order=tuple(order), algorithm="PSO")
+        context = SimpleNamespace(order=tuple(result["order"]), algorithm="PSO")
         title = (f"PSO-trajectory, {args.data_level.capitalize()} load: "
                  f"{'success' if result['report']['success'] else 'infeasible'}, "
                  f"objective={result['best_cost']:.1f}s")

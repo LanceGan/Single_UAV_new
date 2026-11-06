@@ -1,7 +1,7 @@
 # Mac–Win 双机同步备忘
 
 > 维护：Mac 侧（每次 Mac 有新结果/新约定时更新本文件并推送 `feat/mac`）
-> 最后更新：2026-11-01
+> 最后更新：2026-11-07
 > 目的：两台机器并行做实验，用此文件对齐"谁在跑什么、哪份结果算数、代码在哪个分支"，避免重复劳动和口径混乱。
 
 > **2026-11-05 约束变更**：正式 QoS 硬约束已改为“最长一次连续中断”`T_out^cont`。本文中未特别说明的旧 `T_out` 数字均为整任务累计中断口径，只作追溯；新版正式实验按 `QOS_RETRAINING_PLAN.md` 重做。
@@ -313,7 +313,7 @@ journal_results/v4-models/ppo/A/low/ppo/models/ppo_ppo_actoreval_best.pth
 
 当前七张定量图不依赖该 PPO checkpoint。
 
-### 13.3 Mac 侧 A* 数据状态（已核实，无需补跑）
+### 13.3 固定 IGA 顺序 A*（legacy，仅作轨迹消融）
 
 `astar-main-6` 的低、中、高三档 artifacts 均存在，且真实 World 重放均成功：
 
@@ -323,9 +323,9 @@ journal_results/v4-models/ppo/A/low/ppo/models/ppo_ppo_actoreval_best.pth
 | Medium | 189.5 | 127.0 | 316.5 | 4.0 |
 | High | 254.5 | 191.0 | 445.5 | 4.0 |
 
-注意：`journal_results/v4-deterministic/astar-main-6/summary.json` 只保留了 High，
-这是因为后续单档运行覆盖了汇总文件；逐档 `metrics.json` 才是完整结果。
-`astar-main-8` 的低档不是成功重放，不能用于 6 s 对照。
+这些数值使用 Proposed 的 IGA 顺序，只优化逐段飞行轨迹，**不是正式联合
+A\* 基线，不能用于主对比或“最优 A*”表述**。根 `summary.json` 只保留 High
+是汇总文件覆盖问题；逐档 `metrics.json` 完整，但性质仍为 legacy。
 
 ### 13.4 收到模型后的验收
 
@@ -337,3 +337,67 @@ Mac 收到 actor bundle 后将：
    `eval_history.json` 最佳记录一致；
 4. 重画 Proposed 三档、三权重和 A2G 基线的双地图轨迹图；
 5. 运行字号、对齐和 PDF 碰撞审计后再同步到论文仓库。
+
+## 14. 正式 Joint A*/PSO 结果与 Win 写作交接（2026-11-07）
+
+### 14.1 实验定义
+
+- Proposed：IGA 选择巡检顺序，**标准 TD3 执行轨迹；TD3 没有算法改进**。
+- Joint A*：在 25 m 离散图上同时搜索巡检顺序、飞行轨迹、上传过程与 QoS 可行域。
+- Joint PSO：每个粒子同时编码巡检顺序优先级、每段控制点偏移和悬停时长。
+- 两种基线均不得调用 IGA 生成顺序。
+
+### 14.2 正式结果
+
+汇总文件：
+
+```text
+journal_results/v4-summary/global-baselines-summary.json
+journal_results/v4-summary/global-baselines-summary.csv
+```
+
+Joint PSO：
+
+| 负载 | 有效性 | 顺序 | T (s) | tau (s) | T+tau (s) | T_out (s) | 访问/上传 |
+|---|---|---|---:|---:|---:|---:|---|
+| Low | 可行 | `[1,6,3,5,4,2]` | 157.0 | 109.5 | **266.5** | 6.0 | 6/6, 450/450 MB |
+| Medium | 不可行 | `[1,4,3,2,5,6]` | - | - | - | 6.5 | 5/6, 690/900 MB |
+| High | 不可行 | `[1,5,4,3,2,6]` | - | - | - | 6.0 | 3/6, 710/1500 MB |
+
+Medium 的失败原因是 QoS violation；High 的失败原因是 500 s timeout。
+失败轨迹的 T 和 tau 不是可行目标值，不能和 Proposed 的 244.5 s 排名。
+
+Joint A*：
+
+| 负载 | planner status | 最优性证明 | World replay | 处理 |
+|---|---|---|---|---|
+| Low | memory_limit | false | false | 无正式结果 |
+| Medium | memory_limit | false | false | 无正式结果 |
+| High | memory_limit | false | false | 无正式结果 |
+
+三档均达到 20,000,000 labels 上限。部分搜索路径不是完整任务，不能作为
+A* 目标值或“A* 最好”的证据。
+
+### 14.3 Win 可以立即写的部分
+
+- Introduction、Related Work；
+- 系统模型、信道模型、双无线电地图与问题建模；
+- Proposed 方法：数据感知 IGA 顺序 + 标准 TD3 轨迹执行；
+- 实验协议、负载档位、QoS 定义、`eval_best` 与真实 World 重放；
+- 已完成的 QoS、权重、负载、层面 1、层面 3、A2G 消融和训练曲线；
+- Joint PSO 仅 Low 档的可行结果可作为阶段性结果写入，但必须注明 Medium/High 失败。
+
+### 14.4 暂不能定稿的部分
+
+- 不得引用固定 IGA 顺序 A* 的 `216.0/316.5/445.5 s` 作为正式 A*；
+- 不得写“A* 是全局最优”或“Proposed 接近/优于 A*”；
+- 不得写 Proposed 在三档上均优于 Joint PSO；
+- Abstract、Conclusion 和最终 baseline 排名必须等待 A* 重新求解；
+- 当前每档只有一个 PSO seed，不能写 seed-level 置信区间或显著性。
+
+### 14.5 对 A* 的技术表述
+
+本轮是单状态全联合 A*：状态包含节点、已访问集合、待传数据、连续中断、
+时间槽和当前目标选择。它在低/中/高三档分别在约 1595/3057/3810 秒达到
+2000 万 label 上限，因此只能报告“当前离散状态图上未在资源上限内完成”，
+不能报告任务不可行，也不能报告最优性。

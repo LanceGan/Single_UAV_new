@@ -1,0 +1,122 @@
+[A* joint low] {"expansions": 0, "generated_labels": 1, "visited_points": 0, "best_partial_cost_s": 0.0, "partial_order": [], "runtime_s": 2.9375078156590462e-05}
+[A* joint low] {"expansions": 100000, "generated_labels": 171183, "visited_points": 2, "best_partial_cost_s": 66.5, "partial_order": [1, 6], "runtime_s": 3.4908735000062734}
+[A* joint low] {"expansions": 200000, "generated_labels": 334790, "visited_points": 3, "best_partial_cost_s": 91.5, "partial_order": [1, 6, 5], "runtime_s": 7.222162084188312}
+[A* joint low] {"expansions": 300000, "generated_labels": 498674, "visited_points": 3, "best_partial_cost_s": 92.0, "partial_order": [1, 2, 3], "runtime_s": 11.40448308410123}
+[A* joint low] {"expansions": 400000, "generated_labels": 663833, "visited_points": 3, "best_partial_cost_s": 99.5, "partial_order": [1, 6, 4], "runtime_s": 15.905806000111625}
+[A* joint low] {"expansions": 500000, "generated_labels": 828500, "visited_points": 3, "best_partial_cost_s": 104.0, "partial_order": [1, 6, 4], "runtime_s": 20.825987334130332}
+[A* joint low] {"expansions": 600000, "generated_labels": 993324, "visited_points": 3, "best_partial_cost_s": 105.0, "partial_order": [1, 6, 4], "runtime_s": 26.19388645910658}
+[A* joint low] {"expansions": 700000, "generated_labels": 1158720, "visited_points": 4, "best_partial_cost_s": 109.0, "partial_order": [1, 6, 5, 4], "runtime_s": 31.584407250164077}
+[A* joint low] {"expansions": 800000, "generated_labels": 1323287, "visited_points": 4, "best_partial_cost_s": 109.0, "partial_order": [1, 6, 5, 4], "runtime_s": 36.795478667132556}
+[A* joint low] {"expansions": 900000, "generated_labels": 1491674, "visited_points": 4, "best_partial_cost_s": 113.5, "partial_order": [1, 6, 5, 4], "runtime_s": 42.73946662503295}
+[A* joint low] {"expansions": 1000000, "generated_labels": 1659994, "visited_points": 4, "best_partial_cost_s": 118.5, "partial_order": [1, 6, 5, 4], "runtime_s": 48.85027808416635}
+[A* joint low] {"expansions": 1100000, "generated_labels": 1824070, "visited_points": 4, "best_partial_cost_s": 122.0, "partial_order": [1, 6, 5, 4], "runtime_s": 54.802514917217195}
+[A* joint low] {"expansions": 1200000, "generated_labels": 1993176, "visited_points": 4, "best_partial_cost_s": 132.0, "partial_order": [1, 2, 3, 4], "runtime_s": 60.71389466710389}
+[A* joint low] {"expansions": 1300000, "generated_labels": 2164965, "visited_points": 5, "best_partial_cost_s": 141.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 67.54789370903745}
+[A* joint low] {"expansions": 1400000, "generated_labels": 2330759, "visited_points": 5, "best_partial_cost_s": 143.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 73.58791262516752}
+[A* joint low] {"expansions": 1500000, "generated_labels": 2500077, "visited_points": 5, "best_partial_cost_s": 145.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 79.86214750004001}
+[A* joint low] {"expansions": 1600000, "generated_labels": 2671035, "visited_points": 5, "best_partial_cost_s": 147.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 87.24976287502795}
+[A* joint low] {"expansions": 1700000, "generated_labels": 2841202, "visited_points": 5, "best_partial_cost_s": 133.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 94.2844315841794}
+[A* joint low] {"expansions": 1800000, "generated_labels": 3013557, "visited_points": 5, "best_partial_cost_s": 133.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 101.56796645908616}
+[A* joint low] {"expansions": 1900000, "generated_labels": 3190153, "visited_points": 5, "best_partial_cost_s": 134.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 110.38746058405377}
+[A* joint low] {"expansions": 2000000, "generated_labels": 3363495, "visited_points": 5, "best_partial_cost_s": 134.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 118.33359216712415}
+[A* joint low] {"expansions": 2100000, "generated_labels": 3535134, "visited_points": 5, "best_partial_cost_s": 135.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 126.04936825018376}
+[A* joint low] {"expansions": 2200000, "generated_labels": 3709470, "visited_points": 5, "best_partial_cost_s": 152.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 133.37231241702102}
+[A* joint low] {"expansions": 2300000, "generated_labels": 3884563, "visited_points": 5, "best_partial_cost_s": 153.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 142.41251504211687}
+[A* joint low] {"expansions": 2400000, "generated_labels": 4057540, "visited_points": 5, "best_partial_cost_s": 153.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 152.56194050004706}
+[A* joint low] {"expansions": 2500000, "generated_labels": 4232259, "visited_points": 5, "best_partial_cost_s": 154.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 160.49725145916454}
+[A* joint low] {"expansions": 2600000, "generated_labels": 4408492, "visited_points": 5, "best_partial_cost_s": 154.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 170.32167925010435}
+[A* joint low] {"expansions": 2700000, "generated_labels": 4578346, "visited_points": 5, "best_partial_cost_s": 154.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 179.86253920919262}
+[A* joint low] {"expansions": 2800000, "generated_labels": 4749296, "visited_points": 5, "best_partial_cost_s": 155.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 187.7113492921926}
+[A* joint low] {"expansions": 2900000, "generated_labels": 4924246, "visited_points": 5, "best_partial_cost_s": 155.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 200.44522083410993}
+[A* joint low] {"expansions": 3000000, "generated_labels": 5097000, "visited_points": 5, "best_partial_cost_s": 156.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 208.68062033411115}
+[A* joint low] {"expansions": 3100000, "generated_labels": 5271779, "visited_points": 5, "best_partial_cost_s": 156.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 220.80754808406346}
+[A* joint low] {"expansions": 3200000, "generated_labels": 5444188, "visited_points": 5, "best_partial_cost_s": 157.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 229.00103245908394}
+[A* joint low] {"expansions": 3300000, "generated_labels": 5617026, "visited_points": 5, "best_partial_cost_s": 157.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 241.53364058420993}
+[A* joint low] {"expansions": 3400000, "generated_labels": 5788652, "visited_points": 5, "best_partial_cost_s": 158.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 249.79033354204148}
+[A* joint low] {"expansions": 3500000, "generated_labels": 5960478, "visited_points": 5, "best_partial_cost_s": 158.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 262.96120454207994}
+[A* joint low] {"expansions": 3600000, "generated_labels": 6130492, "visited_points": 5, "best_partial_cost_s": 159.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 272.95803262502886}
+[A* joint low] {"expansions": 3700000, "generated_labels": 6303045, "visited_points": 5, "best_partial_cost_s": 159.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 286.43401637510397}
+[A* joint low] {"expansions": 3800000, "generated_labels": 6473425, "visited_points": 5, "best_partial_cost_s": 159.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 295.42823195899837}
+[A* joint low] {"expansions": 3900000, "generated_labels": 6643631, "visited_points": 5, "best_partial_cost_s": 159.5, "partial_order": [1, 2, 3, 4, 5], "runtime_s": 309.96053579216823}
+[A* joint low] {"expansions": 4000000, "generated_labels": 6819413, "visited_points": 5, "best_partial_cost_s": 158.0, "partial_order": [1, 2, 3, 5, 4], "runtime_s": 320.1641785840038}
+[A* joint low] {"expansions": 4100000, "generated_labels": 6986164, "visited_points": 5, "best_partial_cost_s": 158.0, "partial_order": [1, 2, 3, 5, 4], "runtime_s": 331.75240062503144}
+[A* joint low] {"expansions": 4200000, "generated_labels": 7153886, "visited_points": 5, "best_partial_cost_s": 158.0, "partial_order": [1, 2, 3, 5, 4], "runtime_s": 345.1973727091681}
+[A* joint low] {"expansions": 4300000, "generated_labels": 7324005, "visited_points": 5, "best_partial_cost_s": 159.0, "partial_order": [1, 2, 3, 5, 4], "runtime_s": 353.4606147091836}
+[A* joint low] {"expansions": 4400000, "generated_labels": 7492110, "visited_points": 5, "best_partial_cost_s": 159.0, "partial_order": [1, 2, 3, 5, 4], "runtime_s": 371.5982886250131}
+[A* joint low] {"expansions": 4500000, "generated_labels": 7665567, "visited_points": 5, "best_partial_cost_s": 159.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 382.3128844590392}
+[A* joint low] {"expansions": 4600000, "generated_labels": 7831483, "visited_points": 5, "best_partial_cost_s": 159.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 394.35452320915647}
+[A* joint low] {"expansions": 4700000, "generated_labels": 7997112, "visited_points": 5, "best_partial_cost_s": 159.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 408.8671092921868}
+[A* joint low] {"expansions": 4800000, "generated_labels": 8165583, "visited_points": 5, "best_partial_cost_s": 162.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 417.6854138751514}
+[A* joint low] {"expansions": 4900000, "generated_labels": 8332818, "visited_points": 5, "best_partial_cost_s": 162.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 434.7316934170667}
+[A* joint low] {"expansions": 5000000, "generated_labels": 8499303, "visited_points": 5, "best_partial_cost_s": 162.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 447.4147751252167}
+[A* joint low] {"expansions": 5100000, "generated_labels": 8668788, "visited_points": 5, "best_partial_cost_s": 162.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 455.6482202501502}
+[A* joint low] {"expansions": 5200000, "generated_labels": 8831521, "visited_points": 5, "best_partial_cost_s": 162.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 473.9595660842024}
+[A* joint low] {"expansions": 5300000, "generated_labels": 8999598, "visited_points": 5, "best_partial_cost_s": 162.5, "partial_order": [1, 6, 5, 4, 3], "runtime_s": 486.45753266708925}
+[A* joint low] {"expansions": 5400000, "generated_labels": 9167847, "visited_points": 6, "best_partial_cost_s": 165.0, "partial_order": [1, 6, 5, 4, 3, 2], "runtime_s": 497.7674576670397}
+[A* joint low] {"expansions": 5500000, "generated_labels": 9330119, "visited_points": 6, "best_partial_cost_s": 165.0, "partial_order": [1, 6, 5, 4, 3, 2], "runtime_s": 516.7893286251929}
+[A* joint low] {"expansions": 5600000, "generated_labels": 9497266, "visited_points": 6, "best_partial_cost_s": 165.0, "partial_order": [1, 6, 5, 4, 3, 2], "runtime_s": 529.7079077090602}
+[A* joint low] {"expansions": 5700000, "generated_labels": 9666086, "visited_points": 6, "best_partial_cost_s": 178.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 538.2299349170644}
+[A* joint low] {"expansions": 5800000, "generated_labels": 9827720, "visited_points": 6, "best_partial_cost_s": 178.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 557.8172869170085}
+[A* joint low] {"expansions": 5900000, "generated_labels": 9991713, "visited_points": 6, "best_partial_cost_s": 178.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 571.0472597500775}
+[A* joint low] {"expansions": 6000000, "generated_labels": 10159196, "visited_points": 6, "best_partial_cost_s": 179.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 579.7248865421861}
+[A* joint low] {"expansions": 6100000, "generated_labels": 10325264, "visited_points": 6, "best_partial_cost_s": 179.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 597.3907270000782}
+[A* joint low] {"expansions": 6200000, "generated_labels": 10488259, "visited_points": 6, "best_partial_cost_s": 179.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 612.1921835001558}
+[A* joint low] {"expansions": 6300000, "generated_labels": 10658382, "visited_points": 6, "best_partial_cost_s": 180.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 623.9063707920723}
+[A* joint low] {"expansions": 6400000, "generated_labels": 10822015, "visited_points": 6, "best_partial_cost_s": 180.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 635.5487632090226}
+[A* joint low] {"expansions": 6500000, "generated_labels": 10981896, "visited_points": 6, "best_partial_cost_s": 180.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 655.1724975840189}
+[A* joint low] {"expansions": 6600000, "generated_labels": 11147813, "visited_points": 6, "best_partial_cost_s": 180.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 672.4791793341283}
+[A* joint low] {"expansions": 6700000, "generated_labels": 11314580, "visited_points": 6, "best_partial_cost_s": 182.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 681.2112450841814}
+[A* joint low] {"expansions": 6800000, "generated_labels": 11476312, "visited_points": 6, "best_partial_cost_s": 182.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 701.0318390000612}
+[A* joint low] {"expansions": 6900000, "generated_labels": 11639502, "visited_points": 6, "best_partial_cost_s": 182.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 715.76070287521}
+[A* joint low] {"expansions": 7000000, "generated_labels": 11809039, "visited_points": 6, "best_partial_cost_s": 182.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 729.0548427922186}
+[A* joint low] {"expansions": 7100000, "generated_labels": 11973121, "visited_points": 6, "best_partial_cost_s": 181.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 739.3047739171889}
+[A* joint low] {"expansions": 7200000, "generated_labels": 12129448, "visited_points": 6, "best_partial_cost_s": 181.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 761.3145831250586}
+[A* joint low] {"expansions": 7300000, "generated_labels": 12294864, "visited_points": 6, "best_partial_cost_s": 181.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 775.4871727922}
+[A* joint low] {"expansions": 7400000, "generated_labels": 12464194, "visited_points": 6, "best_partial_cost_s": 182.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 787.5981924170628}
+[A* joint low] {"expansions": 7500000, "generated_labels": 12626994, "visited_points": 6, "best_partial_cost_s": 182.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 799.7144362921827}
+[A* joint low] {"expansions": 7600000, "generated_labels": 12782779, "visited_points": 6, "best_partial_cost_s": 182.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 821.618486000225}
+[A* joint low] {"expansions": 7700000, "generated_labels": 12948207, "visited_points": 6, "best_partial_cost_s": 182.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 836.5215972501319}
+[A* joint low] {"expansions": 7800000, "generated_labels": 13117459, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 849.0772733751219}
+[A* joint low] {"expansions": 7900000, "generated_labels": 13279133, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 861.5720354171935}
+[A* joint low] {"expansions": 8000000, "generated_labels": 13433551, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 884.2980940840207}
+[A* joint low] {"expansions": 8100000, "generated_labels": 13599000, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 899.3495939171407}
+[A* joint low] {"expansions": 8200000, "generated_labels": 13768785, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 5, 4, 6], "runtime_s": 920.4935726670083}
+[A* joint low] {"expansions": 8300000, "generated_labels": 13930721, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 931.2339245001785}
+[A* joint low] {"expansions": 8400000, "generated_labels": 14085238, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 955.0911697091069}
+[A* joint low] {"expansions": 8500000, "generated_labels": 14248940, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 969.8179006671999}
+[A* joint low] {"expansions": 8600000, "generated_labels": 14416316, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 985.5139561251272}
+[A* joint low] {"expansions": 8700000, "generated_labels": 14577709, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 995.562734000152}
+[A* joint low] {"expansions": 8800000, "generated_labels": 14737619, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1015.6414920841344}
+[A* joint low] {"expansions": 8900000, "generated_labels": 14895626, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1034.8395467500668}
+[A* joint low] {"expansions": 9000000, "generated_labels": 15059591, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1050.94104766706}
+[A* joint low] {"expansions": 9100000, "generated_labels": 15230734, "visited_points": 6, "best_partial_cost_s": 185.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1065.2802677091677}
+[A* joint low] {"expansions": 9200000, "generated_labels": 15388495, "visited_points": 6, "best_partial_cost_s": 185.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1077.7843497921713}
+[A* joint low] {"expansions": 9300000, "generated_labels": 15540757, "visited_points": 6, "best_partial_cost_s": 185.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1102.2040202091448}
+[A* joint low] {"expansions": 9400000, "generated_labels": 15704587, "visited_points": 6, "best_partial_cost_s": 185.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1117.1140262922272}
+[A* joint low] {"expansions": 9500000, "generated_labels": 15869728, "visited_points": 6, "best_partial_cost_s": 185.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1133.2531447091606}
+[A* joint low] {"expansions": 9600000, "generated_labels": 16033805, "visited_points": 6, "best_partial_cost_s": 181.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1145.3875006670132}
+[A* joint low] {"expansions": 9700000, "generated_labels": 16192610, "visited_points": 6, "best_partial_cost_s": 181.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1162.5320034171455}
+[A* joint low] {"expansions": 9800000, "generated_labels": 16344007, "visited_points": 6, "best_partial_cost_s": 181.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1185.1669082501903}
+[A* joint low] {"expansions": 9900000, "generated_labels": 16510190, "visited_points": 6, "best_partial_cost_s": 181.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1201.377653334057}
+[A* joint low] {"expansions": 10000000, "generated_labels": 16676707, "visited_points": 6, "best_partial_cost_s": 181.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1217.9898170421366}
+[A* joint low] {"expansions": 10100000, "generated_labels": 16838193, "visited_points": 6, "best_partial_cost_s": 182.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1240.9053999171592}
+[A* joint low] {"expansions": 10200000, "generated_labels": 16995249, "visited_points": 6, "best_partial_cost_s": 182.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1260.5669444592204}
+[A* joint low] {"expansions": 10300000, "generated_labels": 17146925, "visited_points": 6, "best_partial_cost_s": 182.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1281.9794910841156}
+[A* joint low] {"expansions": 10400000, "generated_labels": 17313953, "visited_points": 6, "best_partial_cost_s": 182.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1299.1370505841915}
+[A* joint low] {"expansions": 10500000, "generated_labels": 17479909, "visited_points": 6, "best_partial_cost_s": 182.5, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1316.228466000175}
+[A* joint low] {"expansions": 10600000, "generated_labels": 17640599, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1327.1904597091489}
+[A* joint low] {"expansions": 10700000, "generated_labels": 17796230, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1346.4885743341874}
+[A* joint low] {"expansions": 10800000, "generated_labels": 17946986, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1368.9181503751315}
+[A* joint low] {"expansions": 10900000, "generated_labels": 18113517, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1385.7871536251623}
+[A* joint low] {"expansions": 11000000, "generated_labels": 18277607, "visited_points": 6, "best_partial_cost_s": 183.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1402.8768412501086}
+[A* joint low] {"expansions": 11100000, "generated_labels": 18442300, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1416.3094299170189}
+[A* joint low] {"expansions": 11200000, "generated_labels": 18597303, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1432.625163334189}
+[A* joint low] {"expansions": 11300000, "generated_labels": 18748015, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1457.2550840000622}
+[A* joint low] {"expansions": 11400000, "generated_labels": 18911254, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1473.4428186251316}
+[A* joint low] {"expansions": 11500000, "generated_labels": 19073981, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1491.653984334087}
+[A* joint low] {"expansions": 11600000, "generated_labels": 19243572, "visited_points": 6, "best_partial_cost_s": 184.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1508.966692209011}
+[A* joint low] {"expansions": 11700000, "generated_labels": 19397911, "visited_points": 6, "best_partial_cost_s": 185.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1520.3512429171242}
+[A* joint low] {"expansions": 11800000, "generated_labels": 19547602, "visited_points": 6, "best_partial_cost_s": 185.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1544.6423648342025}
+[A* joint low] {"expansions": 11900000, "generated_labels": 19703336, "visited_points": 6, "best_partial_cost_s": 185.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1562.0291561251506}
+[A* joint low] {"expansions": 12000000, "generated_labels": 19869942, "visited_points": 6, "best_partial_cost_s": 185.0, "partial_order": [1, 2, 3, 4, 5, 6], "runtime_s": 1581.2142900000326}
+{"low": {"planner_status": "memory_limit", "planner_optimality_proven": false, "replay_success": false, "objective_s": 0.0}}

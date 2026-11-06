@@ -19,6 +19,7 @@ import numpy as np
 
 from astar_planner import AStarPlanner, PlannerResult, SpatialGraph, sample_radio_maps
 from fixed_radio_maps import FixedRadioMaps
+from joint_astar import JointAStarPlanner
 from sequence_runner import solve_ga_order
 from training_config import load_fixed_payloads
 from World import World
@@ -194,6 +195,41 @@ def _plot_trace(trace: dict[str, np.ndarray], output_stem: Path, title: str, dra
     plt.close(figure)
 
 
+def _planner_failure_replay(order: Sequence[int], payloads_mb: np.ndarray, result, outage_max_s: float):
+    """Create a traceable failure artifact without pretending an incomplete order is replayable."""
+    trace = {
+        "positions": np.asarray([START], dtype=float),
+        "time_s": np.asarray([0.0]),
+        "outage_s": np.asarray([0.0]),
+        "total_outage_s": np.asarray([0.0]),
+        "current_contiguous_outage_s": np.asarray([0.0]),
+        "pending_mb": np.asarray([0.0]),
+        "visited_points": np.asarray([0]),
+        "actions": np.asarray([[0.0, 0.0]]),
+    }
+    report = {
+        "success": False,
+        "termination_reason": f"planner_{result.status}:no_complete_inspection_order",
+        "task_time_s": 0.0,
+        "transmission_delay_s": 0.0,
+        "objective_s": 0.0,
+        "outage_time_s": 0.0,
+        "total_outage_time_s": 0.0,
+        "current_contiguous_outage_s": 0.0,
+        "outage_limit_s": float(outage_max_s),
+        "flight_distance_m": 0.0,
+        "uploaded_mb": 0.0,
+        "expected_upload_mb": float(np.sum(payloads_mb)),
+        "trajectory_steps": 0,
+        "visited_inspection_points": 0,
+        "expected_inspection_points": len(payloads_mb),
+        "variant": "A",
+        "metrics_source": "planner failure before complete-order replay",
+        "partial_inspection_order": list(order),
+    }
+    return report, trace
+
+
 def save_level_artifacts(
     *,
     output_dir: Path,
@@ -263,36 +299,64 @@ def _fair_order(payloads_mb: np.ndarray) -> tuple[int, ...]:
 
 def run_level(level: str, args) -> dict:
     payloads = load_fixed_payloads(level)
-    order = tuple(args.order) if args.order else _fair_order(payloads)
     users = load_users()
     specials = {"start": START, "end": END}
     specials.update({f"inspection_{index}": point for index, point in enumerate(users, start=1)})
     graph = SpatialGraph.build(length=20.0, width=20.0, spacing=0.25, special_points=specials)
-    targets = np.vstack([users[user - 1] for user in order] + [END])
-    leg_payloads = np.asarray([payloads[user - 1] for user in order], dtype=float)
     maps = FixedRadioMaps(ROOT / "results" / "datas")
     snr, outage = sample_radio_maps(graph, maps)
-    planner = AStarPlanner(
-        graph=graph,
-        start_node=graph.special_nodes["start"],
-        targets=targets,
-        payloads_mb=leg_payloads,
-        snr_db_by_node=snr,
-        outage_by_node=outage,
-        bucket_mb=args.bucket_mb,
-        qos_slots=int(round(args.outage_max_s / 0.5)),
-        max_expansions=args.max_expansions,
-        max_labels=args.max_labels,
-        max_runtime_s=args.max_runtime_s,
-    )
-    result = planner.plan_sequential() if args.mode == "sequential" else planner.plan()
-    world = build_world(order, payloads, outage_max_s=args.outage_max_s)
-    replay_report, trace = replay_node_path(world, graph, result.node_path)
-    replay_report["termination_reason"] = (
-        replay_report["termination_reason"]
-        if result.success
-        else f"planner_{result.status}:{replay_report['termination_reason']}"
-    )
+    if args.mode == "global":
+        if args.order:
+            raise ValueError("--order is not allowed in global mode")
+        planner = JointAStarPlanner(
+            graph=graph,
+            start_node=graph.special_nodes["start"],
+            inspection_points=users,
+            payloads_mb=payloads,
+            end_position=END,
+            snr_db_by_node=snr,
+            outage_by_node=outage,
+            qos_slots=int(round(args.outage_max_s / 0.5)),
+            max_expansions=args.max_expansions,
+            max_labels=args.max_labels,
+            max_runtime_s=args.max_runtime_s,
+            progress_every=args.progress_every,
+            progress_callback=lambda progress: print(
+                f"[A* joint {level}] {json.dumps(progress, ensure_ascii=False)}",
+                flush=True,
+            ),
+        )
+        result = planner.plan()
+        order = result.inspection_order
+    else:
+        order = tuple(args.order) if args.order else _fair_order(payloads)
+        targets = np.vstack([users[user - 1] for user in order] + [END])
+        leg_payloads = np.asarray([payloads[user - 1] for user in order], dtype=float)
+        planner = AStarPlanner(
+            graph=graph,
+            start_node=graph.special_nodes["start"],
+            targets=targets,
+            payloads_mb=leg_payloads,
+            snr_db_by_node=snr,
+            outage_by_node=outage,
+            bucket_mb=args.bucket_mb,
+            qos_slots=int(round(args.outage_max_s / 0.5)),
+            max_expansions=args.max_expansions,
+            max_labels=args.max_labels,
+            max_runtime_s=args.max_runtime_s,
+        )
+        result = planner.plan_sequential() if args.mode == "sequential" else planner.plan()
+    if result.success and len(order) == len(payloads):
+        world = build_world(order, payloads, outage_max_s=args.outage_max_s)
+        replay_report, trace = replay_node_path(world, graph, result.node_path)
+    else:
+        replay_report, trace = _planner_failure_replay(
+            order, payloads, result, args.outage_max_s
+        )
+    if result.success:
+        replay_report["termination_reason"] = replay_report["termination_reason"]
+    elif "termination_reason" in replay_report and not replay_report["termination_reason"].startswith("planner_"):
+        replay_report["termination_reason"] = f"planner_{result.status}:{replay_report['termination_reason']}"
     return save_level_artifacts(
         output_dir=args.output_dir,
         level=level,
@@ -311,21 +375,37 @@ def main() -> None:
     parser.add_argument("--levels", nargs="+", choices=("low", "medium", "high"), default=("low", "medium", "high"))
     parser.add_argument("--output-dir", type=Path, default=ROOT / "journal_results" / "astar-baseline")
     parser.add_argument("--order", nargs="+", type=int, help="explicit inspection order, mainly for reproducible smoke runs")
-    parser.add_argument("--mode", choices=("sequential", "joint"), default="sequential",
-                        help="sequential: optimal per leg given the previous arrival (fast, upper bound); "
-                             "joint: whole-mission A* (optimal on this graph, may hit search limits)")
+    parser.add_argument(
+        "--mode",
+        choices=("global", "joint", "sequential"),
+        default="global",
+        help=(
+            "global: jointly choose visit order and trajectory; "
+            "joint: fixed-order whole-mission A*; "
+            "sequential: fixed-order leg-by-leg A*"
+        ),
+    )
     parser.add_argument("--outage-max-s", type=float, default=100.0,
                         help="hard maximum-continuous G2A outage budget for planner and replay")
     parser.add_argument("--bucket-mb", type=float, default=1.0)
     parser.add_argument("--max-expansions", type=int, default=500_000)
     parser.add_argument("--max-labels", type=int, default=1_000_000)
     parser.add_argument("--max-runtime-s", type=float, default=600.0)
+    parser.add_argument("--progress-every", type=int, default=100_000)
     args = parser.parse_args()
     args.output_dir = args.output_dir.resolve()
     if args.order and sorted(args.order) != [1, 2, 3, 4, 5, 6]:
         parser.error("--order must be a permutation of inspection users 1..6")
 
+    summary_path = args.output_dir / "summary.json"
     summary = {}
+    if summary_path.is_file():
+        try:
+            existing = json.loads(summary_path.read_text(encoding="utf-8"))
+            if isinstance(existing, dict):
+                summary.update(existing)
+        except (OSError, json.JSONDecodeError):
+            pass
     for level in args.levels:
         metrics = run_level(level, args)
         summary[level] = {
@@ -336,7 +416,7 @@ def main() -> None:
         }
         print(json.dumps({level: summary[level]}, ensure_ascii=False))
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    (args.output_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

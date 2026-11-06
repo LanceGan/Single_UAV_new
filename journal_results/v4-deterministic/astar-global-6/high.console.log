@@ -1,0 +1,144 @@
+[A* joint high] {"expansions": 0, "generated_labels": 1, "visited_points": 0, "best_partial_cost_s": 0.0, "partial_order": [], "runtime_s": 3.179116174578667e-05}
+[A* joint high] {"expansions": 100000, "generated_labels": 181802, "visited_points": 1, "best_partial_cost_s": 63.0, "partial_order": [1], "runtime_s": 3.9435543750878423}
+[A* joint high] {"expansions": 200000, "generated_labels": 322940, "visited_points": 1, "best_partial_cost_s": 63.0, "partial_order": [1], "runtime_s": 8.462188291130587}
+[A* joint high] {"expansions": 300000, "generated_labels": 457396, "visited_points": 1, "best_partial_cost_s": 63.0, "partial_order": [1], "runtime_s": 13.35965491598472}
+[A* joint high] {"expansions": 400000, "generated_labels": 603718, "visited_points": 1, "best_partial_cost_s": 63.0, "partial_order": [1], "runtime_s": 18.59821429103613}
+[A* joint high] {"expansions": 500000, "generated_labels": 747765, "visited_points": 1, "best_partial_cost_s": 63.0, "partial_order": [1], "runtime_s": 23.854984041070566}
+[A* joint high] {"expansions": 600000, "generated_labels": 903181, "visited_points": 1, "best_partial_cost_s": 63.0, "partial_order": [1], "runtime_s": 29.13813804113306}
+[A* joint high] {"expansions": 700000, "generated_labels": 1053248, "visited_points": 1, "best_partial_cost_s": 63.0, "partial_order": [1], "runtime_s": 35.68228833307512}
+[A* joint high] {"expansions": 800000, "generated_labels": 1190779, "visited_points": 1, "best_partial_cost_s": 63.0, "partial_order": [1], "runtime_s": 41.83878000010736}
+[A* joint high] {"expansions": 900000, "generated_labels": 1327297, "visited_points": 2, "best_partial_cost_s": 78.0, "partial_order": [1, 6], "runtime_s": 49.3416058330331}
+[A* joint high] {"expansions": 1000000, "generated_labels": 1463396, "visited_points": 2, "best_partial_cost_s": 80.5, "partial_order": [1, 6], "runtime_s": 57.08298791619018}
+[A* joint high] {"expansions": 1100000, "generated_labels": 1597009, "visited_points": 2, "best_partial_cost_s": 80.5, "partial_order": [1, 6], "runtime_s": 64.06123150000349}
+[A* joint high] {"expansions": 1200000, "generated_labels": 1731104, "visited_points": 2, "best_partial_cost_s": 85.5, "partial_order": [1, 6], "runtime_s": 72.64083620812744}
+[A* joint high] {"expansions": 1300000, "generated_labels": 1866570, "visited_points": 2, "best_partial_cost_s": 85.5, "partial_order": [1, 6], "runtime_s": 80.99524291604757}
+[A* joint high] {"expansions": 1400000, "generated_labels": 1998324, "visited_points": 2, "best_partial_cost_s": 91.5, "partial_order": [1, 6], "runtime_s": 90.51585366600193}
+[A* joint high] {"expansions": 1500000, "generated_labels": 2130238, "visited_points": 2, "best_partial_cost_s": 91.5, "partial_order": [1, 6], "runtime_s": 98.63819962507114}
+[A* joint high] {"expansions": 1600000, "generated_labels": 2266006, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 108.40555933304131}
+[A* joint high] {"expansions": 1700000, "generated_labels": 2395150, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 117.72539245802909}
+[A* joint high] {"expansions": 1800000, "generated_labels": 2534683, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 127.77334325015545}
+[A* joint high] {"expansions": 1900000, "generated_labels": 2667513, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 136.27429550001398}
+[A* joint high] {"expansions": 2000000, "generated_labels": 2799744, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 147.4166490409989}
+[A* joint high] {"expansions": 2100000, "generated_labels": 2931163, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 155.97194120800123}
+[A* joint high] {"expansions": 2200000, "generated_labels": 3062236, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 166.92383112502284}
+[A* joint high] {"expansions": 2300000, "generated_labels": 3193765, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 176.4747645831667}
+[A* joint high] {"expansions": 2400000, "generated_labels": 3322946, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 189.4177757911384}
+[A* joint high] {"expansions": 2500000, "generated_labels": 3453446, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 199.75856329104863}
+[A* joint high] {"expansions": 2600000, "generated_labels": 3584212, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 208.34551408304833}
+[A* joint high] {"expansions": 2700000, "generated_labels": 3715876, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 219.87072554114275}
+[A* joint high] {"expansions": 2800000, "generated_labels": 3846675, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 230.39697762508877}
+[A* joint high] {"expansions": 2900000, "generated_labels": 3974658, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 240.85816645808518}
+[A* joint high] {"expansions": 3000000, "generated_labels": 4121524, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 253.32182475016452}
+[A* joint high] {"expansions": 3100000, "generated_labels": 4262465, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 263.5610880001914}
+[A* joint high] {"expansions": 3200000, "generated_labels": 4391656, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 274.39797837496735}
+[A* joint high] {"expansions": 3300000, "generated_labels": 4543256, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 285.3403185000643}
+[A* joint high] {"expansions": 3400000, "generated_labels": 4692707, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 296.77672420814633}
+[A* joint high] {"expansions": 3500000, "generated_labels": 4832822, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 304.93190204096027}
+[A* joint high] {"expansions": 3600000, "generated_labels": 4968866, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 317.7751277079806}
+[A* joint high] {"expansions": 3700000, "generated_labels": 5119408, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 329.6482627079822}
+[A* joint high] {"expansions": 3800000, "generated_labels": 5264039, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 341.6904504161794}
+[A* joint high] {"expansions": 3900000, "generated_labels": 5407855, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 351.5011806660332}
+[A* joint high] {"expansions": 4000000, "generated_labels": 5539196, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 362.487832083134}
+[A* joint high] {"expansions": 4100000, "generated_labels": 5692963, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 378.91227466613054}
+[A* joint high] {"expansions": 4200000, "generated_labels": 5835940, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 389.57158587500453}
+[A* joint high] {"expansions": 4300000, "generated_labels": 5975896, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 403.83670520805754}
+[A* joint high] {"expansions": 4400000, "generated_labels": 6129100, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 418.6774255409837}
+[A* joint high] {"expansions": 4500000, "generated_labels": 6264362, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 432.0056042501237}
+[A* joint high] {"expansions": 4600000, "generated_labels": 6399849, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 448.5970543329604}
+[A* joint high] {"expansions": 4700000, "generated_labels": 6559158, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 473.7311393751297}
+[A* joint high] {"expansions": 4800000, "generated_labels": 6693329, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 484.3162405411713}
+[A* joint high] {"expansions": 4900000, "generated_labels": 6842255, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 507.5389844579622}
+[A* joint high] {"expansions": 5000000, "generated_labels": 6986969, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 531.2710651659872}
+[A* joint high] {"expansions": 5100000, "generated_labels": 7124741, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 543.4435665411875}
+[A* joint high] {"expansions": 5200000, "generated_labels": 7265974, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 560.3802241659723}
+[A* joint high] {"expansions": 5300000, "generated_labels": 7419051, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 592.6452634159941}
+[A* joint high] {"expansions": 5400000, "generated_labels": 7559302, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 617.8514533750713}
+[A* joint high] {"expansions": 5500000, "generated_labels": 7691399, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 632.0544958750252}
+[A* joint high] {"expansions": 5600000, "generated_labels": 7844378, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 670.4544336250983}
+[A* joint high] {"expansions": 5700000, "generated_labels": 7985442, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 699.7699355829973}
+[A* joint high] {"expansions": 5800000, "generated_labels": 8113937, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 713.8004292079713}
+[A* joint high] {"expansions": 5900000, "generated_labels": 8250115, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 731.9785159160383}
+[A* joint high] {"expansions": 6000000, "generated_labels": 8396516, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 764.9091403330676}
+[A* joint high] {"expansions": 6100000, "generated_labels": 8547982, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 811.0331280000973}
+[A* joint high] {"expansions": 6200000, "generated_labels": 8672857, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 822.6952257081866}
+[A* joint high] {"expansions": 6300000, "generated_labels": 8815419, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 846.2112203331199}
+[A* joint high] {"expansions": 6400000, "generated_labels": 8980888, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 902.1764672501013}
+[A* joint high] {"expansions": 6500000, "generated_labels": 9113600, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 926.0960277500562}
+[A* joint high] {"expansions": 6600000, "generated_labels": 9234102, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 943.4716555001214}
+[A* joint high] {"expansions": 6700000, "generated_labels": 9367788, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 962.4491159161553}
+[A* joint high] {"expansions": 6800000, "generated_labels": 9511574, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 994.8003882500343}
+[A* joint high] {"expansions": 6900000, "generated_labels": 9666787, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1058.2516177911311}
+[A* joint high] {"expansions": 7000000, "generated_labels": 9790988, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1068.625369166024}
+[A* joint high] {"expansions": 7100000, "generated_labels": 9922975, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1086.624092708109}
+[A* joint high] {"expansions": 7200000, "generated_labels": 10076728, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1122.1444285411853}
+[A* joint high] {"expansions": 7300000, "generated_labels": 10244067, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1181.5496831659693}
+[A* joint high] {"expansions": 7400000, "generated_labels": 10376900, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1201.8535977080464}
+[A* joint high] {"expansions": 7500000, "generated_labels": 10494372, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1217.1459418330342}
+[A* joint high] {"expansions": 7600000, "generated_labels": 10626660, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1239.0507514160126}
+[A* joint high] {"expansions": 7700000, "generated_labels": 10771199, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1271.6149621249642}
+[A* joint high] {"expansions": 7800000, "generated_labels": 10923552, "visited_points": 2, "best_partial_cost_s": 125.5, "partial_order": [1, 6], "runtime_s": 1329.052921375027}
+[A* joint high] {"expansions": 7900000, "generated_labels": 11063691, "visited_points": 3, "best_partial_cost_s": 156.0, "partial_order": [2, 5, 4], "runtime_s": 1358.5042267499957}
+[A* joint high] {"expansions": 8000000, "generated_labels": 11191580, "visited_points": 3, "best_partial_cost_s": 156.0, "partial_order": [2, 5, 4], "runtime_s": 1374.2538929581642}
+[A* joint high] {"expansions": 8100000, "generated_labels": 11333517, "visited_points": 3, "best_partial_cost_s": 156.0, "partial_order": [2, 5, 4], "runtime_s": 1406.758397208061}
+[A* joint high] {"expansions": 8200000, "generated_labels": 11493890, "visited_points": 3, "best_partial_cost_s": 156.0, "partial_order": [2, 5, 4], "runtime_s": 1453.1365199161228}
+[A* joint high] {"expansions": 8300000, "generated_labels": 11651894, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1516.5136135001667}
+[A* joint high] {"expansions": 8400000, "generated_labels": 11784583, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1526.9258180831093}
+[A* joint high] {"expansions": 8500000, "generated_labels": 11906377, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1543.2076355831232}
+[A* joint high] {"expansions": 8600000, "generated_labels": 12037121, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1569.1093140409794}
+[A* joint high] {"expansions": 8700000, "generated_labels": 12183239, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1603.2558082910255}
+[A* joint high] {"expansions": 8800000, "generated_labels": 12334072, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1654.9633797081187}
+[A* joint high] {"expansions": 8900000, "generated_labels": 12482188, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1706.6931527501438}
+[A* joint high] {"expansions": 9000000, "generated_labels": 12612633, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1718.6108372500166}
+[A* joint high] {"expansions": 9100000, "generated_labels": 12750921, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1743.5424921661615}
+[A* joint high] {"expansions": 9200000, "generated_labels": 12899981, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1780.7281688330695}
+[A* joint high] {"expansions": 9300000, "generated_labels": 13056471, "visited_points": 3, "best_partial_cost_s": 159.0, "partial_order": [2, 5, 4], "runtime_s": 1830.7065387910698}
+[A* joint high] {"expansions": 9400000, "generated_labels": 13206413, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 1899.0314874160103}
+[A* joint high] {"expansions": 9500000, "generated_labels": 13343624, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 1908.8198306660634}
+[A* joint high] {"expansions": 9600000, "generated_labels": 13474004, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 1923.686374166049}
+[A* joint high] {"expansions": 9700000, "generated_labels": 13609112, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 1948.2689897911623}
+[A* joint high] {"expansions": 9800000, "generated_labels": 13750661, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 1987.0996399580035}
+[A* joint high] {"expansions": 9900000, "generated_labels": 13897933, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 2036.7393566251267}
+[A* joint high] {"expansions": 10000000, "generated_labels": 14039621, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 2108.168494291138}
+[A* joint high] {"expansions": 10100000, "generated_labels": 14179885, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 2135.7403652910143}
+[A* joint high] {"expansions": 10200000, "generated_labels": 14313016, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 2149.5500873751007}
+[A* joint high] {"expansions": 10300000, "generated_labels": 14449558, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 2181.591713125119}
+[A* joint high] {"expansions": 10400000, "generated_labels": 14598595, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 2224.164664708078}
+[A* joint high] {"expansions": 10500000, "generated_labels": 14744902, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 2281.0072289581876}
+[A* joint high] {"expansions": 10600000, "generated_labels": 14885379, "visited_points": 3, "best_partial_cost_s": 164.0, "partial_order": [2, 5, 4], "runtime_s": 2365.7613055000547}
+[A* joint high] {"expansions": 10700000, "generated_labels": 15029873, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2377.0396879580803}
+[A* joint high] {"expansions": 10800000, "generated_labels": 15170716, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2391.753538249992}
+[A* joint high] {"expansions": 10900000, "generated_labels": 15306400, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2412.699245208176}
+[A* joint high] {"expansions": 11000000, "generated_labels": 15443999, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2445.8963712081313}
+[A* joint high] {"expansions": 11100000, "generated_labels": 15590940, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2486.674311208073}
+[A* joint high] {"expansions": 11200000, "generated_labels": 15736021, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2541.571494541131}
+[A* joint high] {"expansions": 11300000, "generated_labels": 15871766, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2625.289378625108}
+[A* joint high] {"expansions": 11400000, "generated_labels": 16015615, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2647.140022583073}
+[A* joint high] {"expansions": 11500000, "generated_labels": 16149905, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2660.2268168751616}
+[A* joint high] {"expansions": 11600000, "generated_labels": 16290262, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2689.2582325411495}
+[A* joint high] {"expansions": 11700000, "generated_labels": 16437867, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2733.11947183311}
+[A* joint high] {"expansions": 11800000, "generated_labels": 16582701, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2792.54228679114}
+[A* joint high] {"expansions": 11900000, "generated_labels": 16721015, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2878.2536377501674}
+[A* joint high] {"expansions": 12000000, "generated_labels": 16863751, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2940.5108356659766}
+[A* joint high] {"expansions": 12100000, "generated_labels": 16996814, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2951.3211693749763}
+[A* joint high] {"expansions": 12200000, "generated_labels": 17129096, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2963.7758585831616}
+[A* joint high] {"expansions": 12300000, "generated_labels": 17270529, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 2985.914170666132}
+[A* joint high] {"expansions": 12400000, "generated_labels": 17410137, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3018.082073416095}
+[A* joint high] {"expansions": 12500000, "generated_labels": 17559914, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3060.392608999973}
+[A* joint high] {"expansions": 12600000, "generated_labels": 17705886, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3119.119708416052}
+[A* joint high] {"expansions": 12700000, "generated_labels": 17842638, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3195.291174125159}
+[A* joint high] {"expansions": 12800000, "generated_labels": 17990615, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3253.4565270000603}
+[A* joint high] {"expansions": 12900000, "generated_labels": 18125922, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3263.843610208016}
+[A* joint high] {"expansions": 13000000, "generated_labels": 18267630, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3279.699265416013}
+[A* joint high] {"expansions": 13100000, "generated_labels": 18408878, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3315.1472687500063}
+[A* joint high] {"expansions": 13200000, "generated_labels": 18559343, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3359.3742770829704}
+[A* joint high] {"expansions": 13300000, "generated_labels": 18702278, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3420.915427958127}
+[A* joint high] {"expansions": 13400000, "generated_labels": 18839667, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3497.534290250158}
+[A* joint high] {"expansions": 13500000, "generated_labels": 18981714, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3577.4005477500614}
+[A* joint high] {"expansions": 13600000, "generated_labels": 19115062, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3586.6302589580882}
+[A* joint high] {"expansions": 13700000, "generated_labels": 19249452, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3598.358869916061}
+[A* joint high] {"expansions": 13800000, "generated_labels": 19389716, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3618.0235236249864}
+[A* joint high] {"expansions": 13900000, "generated_labels": 19528687, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3645.895240916172}
+[A* joint high] {"expansions": 14000000, "generated_labels": 19678592, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3683.550615500193}
+[A* joint high] {"expansions": 14100000, "generated_labels": 19827509, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3733.3636412080377}
+[A* joint high] {"expansions": 14200000, "generated_labels": 19974255, "visited_points": 3, "best_partial_cost_s": 220.0, "partial_order": [2, 5, 4], "runtime_s": 3796.097770625027}
+{"high": {"planner_status": "memory_limit", "planner_optimality_proven": false, "replay_success": false, "objective_s": 0.0}}

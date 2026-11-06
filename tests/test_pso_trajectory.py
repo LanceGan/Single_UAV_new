@@ -4,8 +4,10 @@ import pytest
 from pso_trajectory import (
     GENES_PER_LEG,
     build_leg_plans,
+    decode_order,
     fitness_from_report,
     leg_endpoints,
+    split_particle,
 )
 
 
@@ -45,3 +47,17 @@ def test_fitness_ranks_every_failure_below_every_success():
     worse_fail = {"success": False, "task_time_s": 50.0, "transmission_delay_s": 0.0,
                   "visited_inspection_points": 1, "uploaded_mb": 50.0}
     assert fitness_from_report(near_miss) < fitness_from_report(worse_fail)
+
+
+def test_particle_jointly_decodes_a_complete_order_and_trajectory_controls():
+    point_count = 6
+    control_dim = (point_count + 1) * GENES_PER_LEG
+    particle = np.zeros(point_count + control_dim)
+    particle[:point_count] = [0.4, -0.8, 0.0, 1.2, -0.2, 0.7]
+    particle[point_count:] = np.arange(control_dim)
+
+    order, controls = split_particle(particle, point_count)
+
+    assert order == decode_order(particle[:point_count], point_count)
+    assert sorted(order) == [1, 2, 3, 4, 5, 6]
+    np.testing.assert_array_equal(controls, np.arange(control_dim))

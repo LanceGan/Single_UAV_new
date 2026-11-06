@@ -653,35 +653,6 @@
         "outage_s": 2.5,
         "source": "journal_results/v4-deterministic/mapguide-preflight-6/high/preflight.json"
       }
-    ],
-    "astar": [
-      {
-        "level": "low",
-        "task_time_s": 138.0,
-        "transmission_delay_s": 78.0,
-        "objective_s": 216.0,
-        "outage_s": 5.0,
-        "planner_optimality_proven": false,
-        "source": "journal_results/v4-deterministic/astar-main-6/low/metrics.json"
-      },
-      {
-        "level": "medium",
-        "task_time_s": 189.5,
-        "transmission_delay_s": 127.0,
-        "objective_s": 316.5,
-        "outage_s": 4.0,
-        "planner_optimality_proven": false,
-        "source": "journal_results/v4-deterministic/astar-main-6/medium/metrics.json"
-      },
-      {
-        "level": "high",
-        "task_time_s": 254.5,
-        "transmission_delay_s": 191.0,
-        "objective_s": 445.5,
-        "outage_s": 4.0,
-        "planner_optimality_proven": false,
-        "source": "journal_results/v4-deterministic/astar-main-6/high/metrics.json"
-      }
     ]
   },
   "layer1": [

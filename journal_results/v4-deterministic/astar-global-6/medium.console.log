@@ -1,0 +1,135 @@
+[A* joint medium] {"expansions": 0, "generated_labels": 1, "visited_points": 0, "best_partial_cost_s": 0.0, "partial_order": [], "runtime_s": 3.3125048503279686e-05}
+[A* joint medium] {"expansions": 100000, "generated_labels": 162170, "visited_points": 1, "best_partial_cost_s": 57.0, "partial_order": [1], "runtime_s": 3.6834836669731885}
+[A* joint medium] {"expansions": 200000, "generated_labels": 316271, "visited_points": 1, "best_partial_cost_s": 57.0, "partial_order": [1], "runtime_s": 8.361126250121742}
+[A* joint medium] {"expansions": 300000, "generated_labels": 466216, "visited_points": 2, "best_partial_cost_s": 80.5, "partial_order": [1, 6], "runtime_s": 13.62500225007534}
+[A* joint medium] {"expansions": 400000, "generated_labels": 614685, "visited_points": 2, "best_partial_cost_s": 88.5, "partial_order": [1, 6], "runtime_s": 19.327571792062372}
+[A* joint medium] {"expansions": 500000, "generated_labels": 762449, "visited_points": 2, "best_partial_cost_s": 91.0, "partial_order": [1, 6], "runtime_s": 25.58666866691783}
+[A* joint medium] {"expansions": 600000, "generated_labels": 911262, "visited_points": 2, "best_partial_cost_s": 93.0, "partial_order": [1, 6], "runtime_s": 32.11038916697726}
+[A* joint medium] {"expansions": 700000, "generated_labels": 1063093, "visited_points": 2, "best_partial_cost_s": 95.5, "partial_order": [1, 6], "runtime_s": 38.34317812509835}
+[A* joint medium] {"expansions": 800000, "generated_labels": 1216396, "visited_points": 2, "best_partial_cost_s": 97.0, "partial_order": [1, 6], "runtime_s": 45.42954804212786}
+[A* joint medium] {"expansions": 900000, "generated_labels": 1370349, "visited_points": 2, "best_partial_cost_s": 99.0, "partial_order": [1, 6], "runtime_s": 52.79512708308175}
+[A* joint medium] {"expansions": 1000000, "generated_labels": 1525114, "visited_points": 2, "best_partial_cost_s": 101.0, "partial_order": [1, 6], "runtime_s": 60.291694917017594}
+[A* joint medium] {"expansions": 1100000, "generated_labels": 1673287, "visited_points": 2, "best_partial_cost_s": 102.0, "partial_order": [1, 6], "runtime_s": 68.27163149998523}
+[A* joint medium] {"expansions": 1200000, "generated_labels": 1826775, "visited_points": 2, "best_partial_cost_s": 103.0, "partial_order": [1, 6], "runtime_s": 77.27902716700919}
+[A* joint medium] {"expansions": 1300000, "generated_labels": 1976143, "visited_points": 2, "best_partial_cost_s": 103.0, "partial_order": [1, 6], "runtime_s": 85.40393341705203}
+[A* joint medium] {"expansions": 1400000, "generated_labels": 2124961, "visited_points": 2, "best_partial_cost_s": 103.0, "partial_order": [1, 6], "runtime_s": 95.19954570801929}
+[A* joint medium] {"expansions": 1500000, "generated_labels": 2274985, "visited_points": 2, "best_partial_cost_s": 101.0, "partial_order": [1, 6], "runtime_s": 104.13796483306214}
+[A* joint medium] {"expansions": 1600000, "generated_labels": 2425922, "visited_points": 2, "best_partial_cost_s": 100.0, "partial_order": [1, 6], "runtime_s": 114.19795133313164}
+[A* joint medium] {"expansions": 1700000, "generated_labels": 2575754, "visited_points": 2, "best_partial_cost_s": 100.0, "partial_order": [1, 6], "runtime_s": 125.35783887491561}
+[A* joint medium] {"expansions": 1800000, "generated_labels": 2726914, "visited_points": 2, "best_partial_cost_s": 100.0, "partial_order": [1, 6], "runtime_s": 136.02729308302514}
+[A* joint medium] {"expansions": 1900000, "generated_labels": 2876405, "visited_points": 2, "best_partial_cost_s": 100.0, "partial_order": [1, 6], "runtime_s": 146.09677458298393}
+[A* joint medium] {"expansions": 2000000, "generated_labels": 3027738, "visited_points": 2, "best_partial_cost_s": 100.0, "partial_order": [1, 6], "runtime_s": 156.73687812499702}
+[A* joint medium] {"expansions": 2100000, "generated_labels": 3176275, "visited_points": 2, "best_partial_cost_s": 100.0, "partial_order": [1, 6], "runtime_s": 168.94828866701573}
+[A* joint medium] {"expansions": 2200000, "generated_labels": 3326924, "visited_points": 2, "best_partial_cost_s": 100.0, "partial_order": [1, 6], "runtime_s": 182.65399970812723}
+[A* joint medium] {"expansions": 2300000, "generated_labels": 3482809, "visited_points": 2, "best_partial_cost_s": 100.0, "partial_order": [1, 6], "runtime_s": 196.10754820797592}
+[A* joint medium] {"expansions": 2400000, "generated_labels": 3635447, "visited_points": 3, "best_partial_cost_s": 112.5, "partial_order": [2, 5, 4], "runtime_s": 212.47810170799494}
+[A* joint medium] {"expansions": 2500000, "generated_labels": 3787901, "visited_points": 3, "best_partial_cost_s": 112.5, "partial_order": [2, 5, 4], "runtime_s": 221.93845483311452}
+[A* joint medium] {"expansions": 2600000, "generated_labels": 3937044, "visited_points": 3, "best_partial_cost_s": 112.5, "partial_order": [2, 5, 4], "runtime_s": 238.9041410831269}
+[A* joint medium] {"expansions": 2700000, "generated_labels": 4092839, "visited_points": 3, "best_partial_cost_s": 113.5, "partial_order": [2, 5, 4], "runtime_s": 257.22375608305447}
+[A* joint medium] {"expansions": 2800000, "generated_labels": 4244546, "visited_points": 3, "best_partial_cost_s": 113.5, "partial_order": [2, 5, 4], "runtime_s": 267.17214283300564}
+[A* joint medium] {"expansions": 2900000, "generated_labels": 4393343, "visited_points": 3, "best_partial_cost_s": 115.5, "partial_order": [2, 5, 4], "runtime_s": 284.9952274579555}
+[A* joint medium] {"expansions": 3000000, "generated_labels": 4549079, "visited_points": 3, "best_partial_cost_s": 115.5, "partial_order": [2, 5, 4], "runtime_s": 301.87388833309524}
+[A* joint medium] {"expansions": 3100000, "generated_labels": 4695562, "visited_points": 3, "best_partial_cost_s": 118.5, "partial_order": [2, 5, 4], "runtime_s": 315.7847209579777}
+[A* joint medium] {"expansions": 3200000, "generated_labels": 4852962, "visited_points": 3, "best_partial_cost_s": 122.5, "partial_order": [2, 5, 4], "runtime_s": 339.3517329581082}
+[A* joint medium] {"expansions": 3300000, "generated_labels": 5002277, "visited_points": 3, "best_partial_cost_s": 122.5, "partial_order": [2, 5, 4], "runtime_s": 348.76020254194736}
+[A* joint medium] {"expansions": 3400000, "generated_labels": 5156712, "visited_points": 3, "best_partial_cost_s": 125.5, "partial_order": [2, 5, 4], "runtime_s": 372.7241679581348}
+[A* joint medium] {"expansions": 3500000, "generated_labels": 5305454, "visited_points": 3, "best_partial_cost_s": 125.5, "partial_order": [2, 5, 4], "runtime_s": 382.6666652080603}
+[A* joint medium] {"expansions": 3600000, "generated_labels": 5458185, "visited_points": 3, "best_partial_cost_s": 126.5, "partial_order": [2, 5, 4], "runtime_s": 407.67930237506516}
+[A* joint medium] {"expansions": 3700000, "generated_labels": 5605623, "visited_points": 3, "best_partial_cost_s": 126.5, "partial_order": [2, 5, 4], "runtime_s": 417.48016125010327}
+[A* joint medium] {"expansions": 3800000, "generated_labels": 5759117, "visited_points": 3, "best_partial_cost_s": 126.5, "partial_order": [2, 5, 4], "runtime_s": 445.9343465829734}
+[A* joint medium] {"expansions": 3900000, "generated_labels": 5903398, "visited_points": 3, "best_partial_cost_s": 126.5, "partial_order": [2, 5, 4], "runtime_s": 455.2292011671234}
+[A* joint medium] {"expansions": 4000000, "generated_labels": 6058885, "visited_points": 3, "best_partial_cost_s": 126.5, "partial_order": [2, 5, 4], "runtime_s": 479.5168818749953}
+[A* joint medium] {"expansions": 4100000, "generated_labels": 6201615, "visited_points": 3, "best_partial_cost_s": 128.5, "partial_order": [2, 5, 4], "runtime_s": 496.05305162491277}
+[A* joint medium] {"expansions": 4200000, "generated_labels": 6356659, "visited_points": 3, "best_partial_cost_s": 128.5, "partial_order": [2, 5, 4], "runtime_s": 513.5020706669893}
+[A* joint medium] {"expansions": 4300000, "generated_labels": 6500528, "visited_points": 3, "best_partial_cost_s": 128.5, "partial_order": [2, 5, 4], "runtime_s": 538.4511011671275}
+[A* joint medium] {"expansions": 4400000, "generated_labels": 6652614, "visited_points": 3, "best_partial_cost_s": 128.5, "partial_order": [2, 5, 4], "runtime_s": 551.1830469169654}
+[A* joint medium] {"expansions": 4500000, "generated_labels": 6799549, "visited_points": 3, "best_partial_cost_s": 134.0, "partial_order": [1, 6, 5], "runtime_s": 583.0722910419572}
+[A* joint medium] {"expansions": 4600000, "generated_labels": 6944578, "visited_points": 3, "best_partial_cost_s": 134.0, "partial_order": [1, 6, 5], "runtime_s": 592.5603472499643}
+[A* joint medium] {"expansions": 4700000, "generated_labels": 7096884, "visited_points": 3, "best_partial_cost_s": 134.0, "partial_order": [1, 6, 5], "runtime_s": 616.1753656670917}
+[A* joint medium] {"expansions": 4800000, "generated_labels": 7239368, "visited_points": 3, "best_partial_cost_s": 137.5, "partial_order": [1, 6, 5], "runtime_s": 640.1196122919209}
+[A* joint medium] {"expansions": 4900000, "generated_labels": 7393283, "visited_points": 3, "best_partial_cost_s": 137.5, "partial_order": [1, 6, 5], "runtime_s": 656.1638196250424}
+[A* joint medium] {"expansions": 5000000, "generated_labels": 7539730, "visited_points": 3, "best_partial_cost_s": 143.0, "partial_order": [1, 6, 5], "runtime_s": 695.2459625420161}
+[A* joint medium] {"expansions": 5100000, "generated_labels": 7683176, "visited_points": 3, "best_partial_cost_s": 143.0, "partial_order": [1, 6, 5], "runtime_s": 704.3668779169675}
+[A* joint medium] {"expansions": 5200000, "generated_labels": 7837489, "visited_points": 3, "best_partial_cost_s": 143.0, "partial_order": [1, 6, 5], "runtime_s": 725.3712091250345}
+[A* joint medium] {"expansions": 5300000, "generated_labels": 7983072, "visited_points": 3, "best_partial_cost_s": 144.0, "partial_order": [1, 6, 5], "runtime_s": 759.4304176250007}
+[A* joint medium] {"expansions": 5400000, "generated_labels": 8130049, "visited_points": 3, "best_partial_cost_s": 144.0, "partial_order": [1, 6, 5], "runtime_s": 770.2086162921041}
+[A* joint medium] {"expansions": 5500000, "generated_labels": 8279287, "visited_points": 3, "best_partial_cost_s": 144.0, "partial_order": [1, 6, 5], "runtime_s": 797.483838000102}
+[A* joint medium] {"expansions": 5600000, "generated_labels": 8424713, "visited_points": 3, "best_partial_cost_s": 145.0, "partial_order": [1, 6, 5], "runtime_s": 825.731049957918}
+[A* joint medium] {"expansions": 5700000, "generated_labels": 8576005, "visited_points": 3, "best_partial_cost_s": 145.0, "partial_order": [1, 6, 5], "runtime_s": 837.3603845420294}
+[A* joint medium] {"expansions": 5800000, "generated_labels": 8724106, "visited_points": 3, "best_partial_cost_s": 145.0, "partial_order": [1, 6, 5], "runtime_s": 868.380570749985}
+[A* joint medium] {"expansions": 5900000, "generated_labels": 8870335, "visited_points": 3, "best_partial_cost_s": 146.0, "partial_order": [1, 6, 5], "runtime_s": 897.3338897919748}
+[A* joint medium] {"expansions": 6000000, "generated_labels": 9022227, "visited_points": 3, "best_partial_cost_s": 146.0, "partial_order": [1, 6, 5], "runtime_s": 912.5751912919804}
+[A* joint medium] {"expansions": 6100000, "generated_labels": 9169622, "visited_points": 3, "best_partial_cost_s": 146.0, "partial_order": [1, 6, 5], "runtime_s": 943.9072676671203}
+[A* joint medium] {"expansions": 6200000, "generated_labels": 9317004, "visited_points": 3, "best_partial_cost_s": 147.0, "partial_order": [1, 6, 5], "runtime_s": 974.6639550831169}
+[A* joint medium] {"expansions": 6300000, "generated_labels": 9467175, "visited_points": 3, "best_partial_cost_s": 147.0, "partial_order": [1, 6, 5], "runtime_s": 985.6684010829777}
+[A* joint medium] {"expansions": 6400000, "generated_labels": 9619051, "visited_points": 3, "best_partial_cost_s": 147.0, "partial_order": [1, 6, 5], "runtime_s": 1013.6337086251006}
+[A* joint medium] {"expansions": 6500000, "generated_labels": 9767661, "visited_points": 3, "best_partial_cost_s": 148.0, "partial_order": [1, 6, 5], "runtime_s": 1053.8332589999773}
+[A* joint medium] {"expansions": 6600000, "generated_labels": 9913387, "visited_points": 3, "best_partial_cost_s": 148.0, "partial_order": [1, 6, 5], "runtime_s": 1063.7960268331226}
+[A* joint medium] {"expansions": 6700000, "generated_labels": 10069191, "visited_points": 3, "best_partial_cost_s": 148.0, "partial_order": [1, 6, 5], "runtime_s": 1085.5149246670771}
+[A* joint medium] {"expansions": 6800000, "generated_labels": 10213953, "visited_points": 3, "best_partial_cost_s": 148.0, "partial_order": [1, 6, 5], "runtime_s": 1135.4497334579937}
+[A* joint medium] {"expansions": 6900000, "generated_labels": 10356914, "visited_points": 4, "best_partial_cost_s": 149.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1145.6140004580375}
+[A* joint medium] {"expansions": 7000000, "generated_labels": 10517570, "visited_points": 4, "best_partial_cost_s": 149.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1160.750294458121}
+[A* joint medium] {"expansions": 7100000, "generated_labels": 10663122, "visited_points": 4, "best_partial_cost_s": 149.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1197.0407479170244}
+[A* joint medium] {"expansions": 7200000, "generated_labels": 10812377, "visited_points": 4, "best_partial_cost_s": 149.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1232.676660249941}
+[A* joint medium] {"expansions": 7300000, "generated_labels": 10959619, "visited_points": 4, "best_partial_cost_s": 149.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1246.8687263329048}
+[A* joint medium] {"expansions": 7400000, "generated_labels": 11117377, "visited_points": 4, "best_partial_cost_s": 149.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1270.7363499579951}
+[A* joint medium] {"expansions": 7500000, "generated_labels": 11259614, "visited_points": 4, "best_partial_cost_s": 149.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1319.6462420830503}
+[A* joint medium] {"expansions": 7600000, "generated_labels": 11404986, "visited_points": 4, "best_partial_cost_s": 151.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1336.0473906670231}
+[A* joint medium] {"expansions": 7700000, "generated_labels": 11560743, "visited_points": 4, "best_partial_cost_s": 151.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1349.1088213329203}
+[A* joint medium] {"expansions": 7800000, "generated_labels": 11713426, "visited_points": 4, "best_partial_cost_s": 151.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1379.8736226251349}
+[A* joint medium] {"expansions": 7900000, "generated_labels": 11860367, "visited_points": 4, "best_partial_cost_s": 151.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1433.1631140829995}
+[A* joint medium] {"expansions": 8000000, "generated_labels": 12002613, "visited_points": 4, "best_partial_cost_s": 153.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1442.696081875125}
+[A* joint medium] {"expansions": 8100000, "generated_labels": 12161806, "visited_points": 4, "best_partial_cost_s": 153.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1459.1620895001106}
+[A* joint medium] {"expansions": 8200000, "generated_labels": 12310607, "visited_points": 4, "best_partial_cost_s": 153.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1494.4985616249032}
+[A* joint medium] {"expansions": 8300000, "generated_labels": 12458649, "visited_points": 4, "best_partial_cost_s": 156.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1541.7101441670675}
+[A* joint medium] {"expansions": 8400000, "generated_labels": 12599623, "visited_points": 4, "best_partial_cost_s": 156.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1551.7683641249314}
+[A* joint medium] {"expansions": 8500000, "generated_labels": 12759181, "visited_points": 4, "best_partial_cost_s": 156.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1568.873953250004}
+[A* joint medium] {"expansions": 8600000, "generated_labels": 12908315, "visited_points": 4, "best_partial_cost_s": 156.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1605.4325273330323}
+[A* joint medium] {"expansions": 8700000, "generated_labels": 13056875, "visited_points": 4, "best_partial_cost_s": 160.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1657.384900291916}
+[A* joint medium] {"expansions": 8800000, "generated_labels": 13197358, "visited_points": 4, "best_partial_cost_s": 160.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1667.1354938750155}
+[A* joint medium] {"expansions": 8900000, "generated_labels": 13354941, "visited_points": 4, "best_partial_cost_s": 160.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1684.2764316250104}
+[A* joint medium] {"expansions": 9000000, "generated_labels": 13504745, "visited_points": 4, "best_partial_cost_s": 160.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1725.5812844170723}
+[A* joint medium] {"expansions": 9100000, "generated_labels": 13649088, "visited_points": 4, "best_partial_cost_s": 160.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1781.9605018331204}
+[A* joint medium] {"expansions": 9200000, "generated_labels": 13792792, "visited_points": 4, "best_partial_cost_s": 161.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1791.8063404171262}
+[A* joint medium] {"expansions": 9300000, "generated_labels": 13947899, "visited_points": 4, "best_partial_cost_s": 161.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1806.1444444579538}
+[A* joint medium] {"expansions": 9400000, "generated_labels": 14103549, "visited_points": 4, "best_partial_cost_s": 161.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1838.5714660829399}
+[A* joint medium] {"expansions": 9500000, "generated_labels": 14245225, "visited_points": 4, "best_partial_cost_s": 161.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1891.292622457957}
+[A* joint medium] {"expansions": 9600000, "generated_labels": 14393860, "visited_points": 4, "best_partial_cost_s": 163.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1916.0191652919166}
+[A* joint medium] {"expansions": 9700000, "generated_labels": 14542997, "visited_points": 4, "best_partial_cost_s": 163.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1927.9116817920003}
+[A* joint medium] {"expansions": 9800000, "generated_labels": 14701127, "visited_points": 4, "best_partial_cost_s": 163.5, "partial_order": [1, 6, 5, 4], "runtime_s": 1954.3551427500788}
+[A* joint medium] {"expansions": 9900000, "generated_labels": 14845166, "visited_points": 4, "best_partial_cost_s": 163.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2000.1168310421053}
+[A* joint medium] {"expansions": 10000000, "generated_labels": 14996292, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2043.708851082949}
+[A* joint medium] {"expansions": 10100000, "generated_labels": 15137204, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2054.195249957964}
+[A* joint medium] {"expansions": 10200000, "generated_labels": 15293776, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2072.420319708064}
+[A* joint medium] {"expansions": 10300000, "generated_labels": 15445800, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2109.4026792079676}
+[A* joint medium] {"expansions": 10400000, "generated_labels": 15587334, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2163.888253167039}
+[A* joint medium] {"expansions": 10500000, "generated_labels": 15737592, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2185.5507061250973}
+[A* joint medium] {"expansions": 10600000, "generated_labels": 15886332, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2197.343435832998}
+[A* joint medium] {"expansions": 10700000, "generated_labels": 16043430, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2222.6026449170895}
+[A* joint medium] {"expansions": 10800000, "generated_labels": 16188534, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2265.9584912920836}
+[A* joint medium] {"expansions": 10900000, "generated_labels": 16336971, "visited_points": 4, "best_partial_cost_s": 164.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2318.552359333029}
+[A* joint medium] {"expansions": 11000000, "generated_labels": 16480781, "visited_points": 4, "best_partial_cost_s": 165.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2339.6146697921213}
+[A* joint medium] {"expansions": 11100000, "generated_labels": 16634302, "visited_points": 4, "best_partial_cost_s": 165.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2353.60863254196}
+[A* joint medium] {"expansions": 11200000, "generated_labels": 16791606, "visited_points": 4, "best_partial_cost_s": 165.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2384.208862333093}
+[A* joint medium] {"expansions": 11300000, "generated_labels": 16934457, "visited_points": 4, "best_partial_cost_s": 165.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2433.2439608750865}
+[A* joint medium] {"expansions": 11400000, "generated_labels": 17089495, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2480.52698516706}
+[A* joint medium] {"expansions": 11500000, "generated_labels": 17227753, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2491.1055738329887}
+[A* joint medium] {"expansions": 11600000, "generated_labels": 17383749, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2507.666033375077}
+[A* joint medium] {"expansions": 11700000, "generated_labels": 17539664, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2541.907237583073}
+[A* joint medium] {"expansions": 11800000, "generated_labels": 17681687, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2594.708391000051}
+[A* joint medium] {"expansions": 11900000, "generated_labels": 17838556, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2637.312902332982}
+[A* joint medium] {"expansions": 12000000, "generated_labels": 17977497, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2647.815590708051}
+[A* joint medium] {"expansions": 12100000, "generated_labels": 18133001, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2664.300332291983}
+[A* joint medium] {"expansions": 12200000, "generated_labels": 18288356, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2698.050020332914}
+[A* joint medium] {"expansions": 12300000, "generated_labels": 18430910, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2749.8939723749645}
+[A* joint medium] {"expansions": 12400000, "generated_labels": 18585047, "visited_points": 4, "best_partial_cost_s": 167.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2797.6459156670608}
+[A* joint medium] {"expansions": 12500000, "generated_labels": 18727285, "visited_points": 4, "best_partial_cost_s": 168.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2807.6613374999724}
+[A* joint medium] {"expansions": 12600000, "generated_labels": 18882410, "visited_points": 4, "best_partial_cost_s": 168.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2822.9541418750305}
+[A* joint medium] {"expansions": 12700000, "generated_labels": 19039248, "visited_points": 4, "best_partial_cost_s": 168.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2855.0508785420097}
+[A* joint medium] {"expansions": 12800000, "generated_labels": 19182818, "visited_points": 4, "best_partial_cost_s": 168.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2904.507316417061}
+[A* joint medium] {"expansions": 12900000, "generated_labels": 19327844, "visited_points": 4, "best_partial_cost_s": 168.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2961.3442097080406}
+[A* joint medium] {"expansions": 13000000, "generated_labels": 19481762, "visited_points": 4, "best_partial_cost_s": 169.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2972.45274216705}
+[A* joint medium] {"expansions": 13100000, "generated_labels": 19634583, "visited_points": 4, "best_partial_cost_s": 169.5, "partial_order": [1, 6, 5, 4], "runtime_s": 2985.538157083094}
+[A* joint medium] {"expansions": 13200000, "generated_labels": 19789739, "visited_points": 4, "best_partial_cost_s": 169.5, "partial_order": [1, 6, 5, 4], "runtime_s": 3011.8733629579656}
+[A* joint medium] {"expansions": 13300000, "generated_labels": 19938084, "visited_points": 4, "best_partial_cost_s": 169.5, "partial_order": [1, 6, 5, 4], "runtime_s": 3057.068333042087}
+{"medium": {"planner_status": "memory_limit", "planner_optimality_proven": false, "replay_success": false, "objective_s": 0.0}}

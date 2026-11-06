@@ -1,0 +1,7 @@
+method,level,valid,status,termination_reason,inspection_order,task_time_s,transmission_delay_s,objective_s,outage_s,visited_inspection_points,uploaded_mb,expected_upload_mb,planner_runtime_s,expansions,generated_labels,optimality_proven,source
+A*,low,False,memory_limit,planner_memory_limit:no_complete_inspection_order,"[1, 2, 3, 4, 5, 6]",,,,0.0,0,0.0,450.0,1595.2949916250072,12080360,20000000,False,journal_results/v4-deterministic/astar-global-6/low/metrics.json
+A*,medium,False,memory_limit,planner_memory_limit:no_complete_inspection_order,"[1, 6, 5, 4]",,,,0.0,0,0.0,900.0,3081.347668542061,13344229,20000000,False,journal_results/v4-deterministic/astar-global-6/medium/metrics.json
+A*,high,False,memory_limit,planner_memory_limit:no_complete_inspection_order,"[2, 5, 4]",,,,0.0,0,0.0,1500.0,3809.58983633318,14218110,20000000,False,journal_results/v4-deterministic/astar-global-6/high/metrics.json
+PSO,low,True,success,success,"[1, 6, 3, 5, 4, 2]",157.0,109.5,266.5,6.0,6,450.0,450.0,,,,False,journal_results/v4-deterministic/pso-joint/low/metrics.json
+PSO,medium,False,invalid,qos_violation,"[1, 4, 3, 2, 5, 6]",,,,6.5,5,689.93944716,900.0,,,,False,journal_results/v4-deterministic/pso-joint/medium/metrics.json
+PSO,high,False,invalid,timeout,"[1, 5, 4, 3, 2, 6]",,,,6.0,3,710.0,1500.0,,,,False,journal_results/v4-deterministic/pso-joint/high/metrics.json
