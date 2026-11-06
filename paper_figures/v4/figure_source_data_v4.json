@@ -1,0 +1,949 @@
+{
+  "protocol": {
+    "qos_constraint": "max_contiguous_outage",
+    "state_schema_prefix": "v4-max-contiguous",
+    "qos_budgets_s": [
+      3,
+      4,
+      5,
+      6,
+      8
+    ],
+    "main_budget_s": 6,
+    "seed": 1,
+    "feasible_rate_definition": "successful deterministic evaluations / periodic deterministic evaluations",
+    "objective_definition": "T + transmission_delay_s",
+    "uncertainty": "not estimated: one training seed per reported run"
+  },
+  "qos": [
+    {
+      "label": "TD3 (0.8, 0.2)",
+      "source": "journal_results/v4-qos/w80-20/qos3/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 3.0,
+      "evaluations": 120,
+      "feasible_evaluations": 67,
+      "feasible_rate": 0.5583333333333333,
+      "best_feasible": {
+        "episode": 2650,
+        "task_time_s": 169.5,
+        "transmission_delay_s": 89.0,
+        "objective_s": 258.5,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2650,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 169.5,
+        "transmission_delay_s": 89.0,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w80-20",
+      "w1": 0.8,
+      "w2": 0.2
+    },
+    {
+      "label": "TD3 (0.8, 0.2)",
+      "source": "journal_results/v4-qos/w80-20/qos4/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 4.0,
+      "evaluations": 120,
+      "feasible_evaluations": 102,
+      "feasible_rate": 0.85,
+      "best_feasible": {
+        "episode": 2375,
+        "task_time_s": 166.5,
+        "transmission_delay_s": 87.0,
+        "objective_s": 253.5,
+        "outage_s": 2.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2375,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 166.5,
+        "transmission_delay_s": 87.0,
+        "outage_time_s": 2.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w80-20",
+      "w1": 0.8,
+      "w2": 0.2
+    },
+    {
+      "label": "TD3 (0.8, 0.2)",
+      "source": "journal_results/v4-qos/w80-20/qos5/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 5.0,
+      "evaluations": 120,
+      "feasible_evaluations": 109,
+      "feasible_rate": 0.9083333333333333,
+      "best_feasible": {
+        "episode": 1150,
+        "task_time_s": 157.5,
+        "transmission_delay_s": 87.5,
+        "objective_s": 245.0,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1150,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 157.5,
+        "transmission_delay_s": 87.5,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w80-20",
+      "w1": 0.8,
+      "w2": 0.2
+    },
+    {
+      "label": "TD3 (0.8, 0.2)",
+      "source": "journal_results/v4-qos/w80-20/qos6/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 111,
+      "feasible_rate": 0.925,
+      "best_feasible": {
+        "episode": 1275,
+        "task_time_s": 156.5,
+        "transmission_delay_s": 88.0,
+        "objective_s": 244.5,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1275,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 156.5,
+        "transmission_delay_s": 88.0,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w80-20",
+      "w1": 0.8,
+      "w2": 0.2
+    },
+    {
+      "label": "TD3 (0.8, 0.2)",
+      "source": "journal_results/v4-qos/w80-20/qos8/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 8.0,
+      "evaluations": 120,
+      "feasible_evaluations": 108,
+      "feasible_rate": 0.9,
+      "best_feasible": {
+        "episode": 3000,
+        "task_time_s": 165.0,
+        "transmission_delay_s": 81.5,
+        "objective_s": 246.5,
+        "outage_s": 4.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 3000,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 165.0,
+        "transmission_delay_s": 81.5,
+        "outage_time_s": 4.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w80-20",
+      "w1": 0.8,
+      "w2": 0.2
+    },
+    {
+      "label": "TD3 (0.5, 0.5)",
+      "source": "journal_results/v4-qos/w50-50/qos3/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 3.0,
+      "evaluations": 120,
+      "feasible_evaluations": 84,
+      "feasible_rate": 0.7,
+      "best_feasible": {
+        "episode": 2850,
+        "task_time_s": 169.0,
+        "transmission_delay_s": 78.5,
+        "objective_s": 247.5,
+        "outage_s": 2.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2850,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 169.0,
+        "transmission_delay_s": 78.5,
+        "outage_time_s": 2.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w50-50",
+      "w1": 0.5,
+      "w2": 0.5
+    },
+    {
+      "label": "TD3 (0.5, 0.5)",
+      "source": "journal_results/v4-qos/w50-50/qos4/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 4.0,
+      "evaluations": 120,
+      "feasible_evaluations": 88,
+      "feasible_rate": 0.7333333333333333,
+      "best_feasible": {
+        "episode": 1625,
+        "task_time_s": 173.5,
+        "transmission_delay_s": 78.0,
+        "objective_s": 251.5,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1625,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 173.5,
+        "transmission_delay_s": 78.0,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w50-50",
+      "w1": 0.5,
+      "w2": 0.5
+    },
+    {
+      "label": "TD3 (0.5, 0.5)",
+      "source": "journal_results/v4-qos/w50-50/qos5/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 5.0,
+      "evaluations": 120,
+      "feasible_evaluations": 110,
+      "feasible_rate": 0.9166666666666666,
+      "best_feasible": {
+        "episode": 2925,
+        "task_time_s": 176.5,
+        "transmission_delay_s": 76.0,
+        "objective_s": 252.5,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2925,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 176.5,
+        "transmission_delay_s": 76.0,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w50-50",
+      "w1": 0.5,
+      "w2": 0.5
+    },
+    {
+      "label": "TD3 (0.5, 0.5)",
+      "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 108,
+      "feasible_rate": 0.9,
+      "best_feasible": {
+        "episode": 1550,
+        "task_time_s": 169.0,
+        "transmission_delay_s": 75.5,
+        "objective_s": 244.5,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1550,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 169.0,
+        "transmission_delay_s": 75.5,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w50-50",
+      "w1": 0.5,
+      "w2": 0.5
+    },
+    {
+      "label": "TD3 (0.5, 0.5)",
+      "source": "journal_results/v4-qos/w50-50/qos8/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 8.0,
+      "evaluations": 120,
+      "feasible_evaluations": 108,
+      "feasible_rate": 0.9,
+      "best_feasible": {
+        "episode": 2425,
+        "task_time_s": 164.0,
+        "transmission_delay_s": 80.0,
+        "objective_s": 244.0,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2425,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 164.0,
+        "transmission_delay_s": 80.0,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w50-50",
+      "w1": 0.5,
+      "w2": 0.5
+    },
+    {
+      "label": "TD3 (0.2, 0.8)",
+      "source": "journal_results/v4-qos/w20-80/qos3/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 3.0,
+      "evaluations": 120,
+      "feasible_evaluations": 51,
+      "feasible_rate": 0.425,
+      "best_feasible": {
+        "episode": 1875,
+        "task_time_s": 176.5,
+        "transmission_delay_s": 76.0,
+        "objective_s": 252.5,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1875,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 176.5,
+        "transmission_delay_s": 76.0,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w20-80",
+      "w1": 0.2,
+      "w2": 0.8
+    },
+    {
+      "label": "TD3 (0.2, 0.8)",
+      "source": "journal_results/v4-qos/w20-80/qos4/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 4.0,
+      "evaluations": 120,
+      "feasible_evaluations": 105,
+      "feasible_rate": 0.875,
+      "best_feasible": {
+        "episode": 1250,
+        "task_time_s": 176.0,
+        "transmission_delay_s": 75.0,
+        "objective_s": 251.0,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1250,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 176.0,
+        "transmission_delay_s": 75.0,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w20-80",
+      "w1": 0.2,
+      "w2": 0.8
+    },
+    {
+      "label": "TD3 (0.2, 0.8)",
+      "source": "journal_results/v4-qos/w20-80/qos5/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 5.0,
+      "evaluations": 120,
+      "feasible_evaluations": 89,
+      "feasible_rate": 0.7416666666666667,
+      "best_feasible": {
+        "episode": 2275,
+        "task_time_s": 177.0,
+        "transmission_delay_s": 76.0,
+        "objective_s": 253.0,
+        "outage_s": 4.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2275,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 177.0,
+        "transmission_delay_s": 76.0,
+        "outage_time_s": 4.0,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w20-80",
+      "w1": 0.2,
+      "w2": 0.8
+    },
+    {
+      "label": "TD3 (0.2, 0.8)",
+      "source": "journal_results/v4-qos/w20-80/qos6/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 101,
+      "feasible_rate": 0.8416666666666667,
+      "best_feasible": {
+        "episode": 1800,
+        "task_time_s": 174.0,
+        "transmission_delay_s": 76.0,
+        "objective_s": 250.0,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1800,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 174.0,
+        "transmission_delay_s": 76.0,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w20-80",
+      "w1": 0.2,
+      "w2": 0.8
+    },
+    {
+      "label": "TD3 (0.2, 0.8)",
+      "source": "journal_results/v4-qos/w20-80/qos8/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 8.0,
+      "evaluations": 120,
+      "feasible_evaluations": 109,
+      "feasible_rate": 0.9083333333333333,
+      "best_feasible": {
+        "episode": 2875,
+        "task_time_s": 172.5,
+        "transmission_delay_s": 75.0,
+        "objective_s": 247.5,
+        "outage_s": 2.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2875,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 172.5,
+        "transmission_delay_s": 75.0,
+        "outage_time_s": 2.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w20-80",
+      "w1": 0.2,
+      "w2": 0.8
+    }
+  ],
+  "weights_at_qos6": [
+    {
+      "label": "TD3 (0.8, 0.2)",
+      "source": "journal_results/v4-qos/w80-20/qos6/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 111,
+      "feasible_rate": 0.925,
+      "best_feasible": {
+        "episode": 1275,
+        "task_time_s": 156.5,
+        "transmission_delay_s": 88.0,
+        "objective_s": 244.5,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1275,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 156.5,
+        "transmission_delay_s": 88.0,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w80-20",
+      "w1": 0.8,
+      "w2": 0.2
+    },
+    {
+      "label": "TD3 (0.5, 0.5)",
+      "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 108,
+      "feasible_rate": 0.9,
+      "best_feasible": {
+        "episode": 1550,
+        "task_time_s": 169.0,
+        "transmission_delay_s": 75.5,
+        "objective_s": 244.5,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1550,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 169.0,
+        "transmission_delay_s": 75.5,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w50-50",
+      "w1": 0.5,
+      "w2": 0.5
+    },
+    {
+      "label": "TD3 (0.2, 0.8)",
+      "source": "journal_results/v4-qos/w20-80/qos6/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 101,
+      "feasible_rate": 0.8416666666666667,
+      "best_feasible": {
+        "episode": 1800,
+        "task_time_s": 174.0,
+        "transmission_delay_s": 76.0,
+        "objective_s": 250.0,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1800,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 174.0,
+        "transmission_delay_s": 76.0,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w20-80",
+      "w1": 0.2,
+      "w2": 0.8
+    }
+  ],
+  "load": {
+    "proposed": [
+      {
+        "level": "Low",
+        "label": "TD3 (0.5, 0.5)",
+        "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
+        "algorithm": "td3_bc",
+        "budget_s": 6.0,
+        "evaluations": 120,
+        "feasible_evaluations": 108,
+        "feasible_rate": 0.9,
+        "best_feasible": {
+          "episode": 1550,
+          "task_time_s": 169.0,
+          "transmission_delay_s": 75.5,
+          "objective_s": 244.5,
+          "outage_s": 3.0,
+          "visited_inspection_points": 6
+        },
+        "selected_evaluation": {
+          "episode": 1550,
+          "success": true,
+          "termination_reason": "success",
+          "task_time_s": 169.0,
+          "transmission_delay_s": 75.5,
+          "outage_time_s": 3.0,
+          "visited_inspection_points": 6
+        },
+        "weight_id": "w50-50",
+        "w1": 0.5,
+        "w2": 0.5
+      },
+      {
+        "level": "Medium",
+        "label": "Proposed (IGA+TD3)",
+        "source": "journal_results/v4-models/load/medium/A/medium/td3_bc",
+        "algorithm": "td3_bc",
+        "budget_s": 6.0,
+        "evaluations": 120,
+        "feasible_evaluations": 92,
+        "feasible_rate": 0.7666666666666667,
+        "best_feasible": {
+          "episode": 2100,
+          "task_time_s": 219.0,
+          "transmission_delay_s": 133.0,
+          "objective_s": 352.0,
+          "outage_s": 3.0,
+          "visited_inspection_points": 6
+        },
+        "selected_evaluation": {
+          "episode": 2100,
+          "success": true,
+          "termination_reason": "success",
+          "task_time_s": 219.0,
+          "transmission_delay_s": 133.0,
+          "outage_time_s": 3.0,
+          "visited_inspection_points": 6
+        }
+      },
+      {
+        "level": "High",
+        "label": "Proposed (IGA+TD3)",
+        "source": "journal_results/v4-models/load/high/A/high/td3_bc",
+        "algorithm": "td3_bc",
+        "budget_s": 6.0,
+        "evaluations": 120,
+        "feasible_evaluations": 75,
+        "feasible_rate": 0.625,
+        "best_feasible": {
+          "episode": 1725,
+          "task_time_s": 294.0,
+          "transmission_delay_s": 204.5,
+          "objective_s": 498.5,
+          "outage_s": 3.5,
+          "visited_inspection_points": 6
+        },
+        "selected_evaluation": {
+          "episode": 1725,
+          "success": true,
+          "termination_reason": "success",
+          "task_time_s": 294.0,
+          "transmission_delay_s": 204.5,
+          "outage_time_s": 3.5,
+          "visited_inspection_points": 6
+        }
+      }
+    ],
+    "mapguide": [
+      {
+        "level": "low",
+        "task_time_s": 196.5,
+        "transmission_delay_s": 76.50000000000006,
+        "objective_s": 273.00000000000006,
+        "outage_s": 2.5,
+        "source": "journal_results/v4-deterministic/mapguide-preflight-6/low/preflight.json"
+      },
+      {
+        "level": "medium",
+        "task_time_s": 242.0,
+        "transmission_delay_s": 126.99999999999949,
+        "objective_s": 368.9999999999995,
+        "outage_s": 2.5,
+        "source": "journal_results/v4-deterministic/mapguide-preflight-6/medium/preflight.json"
+      },
+      {
+        "level": "high",
+        "task_time_s": 305.0,
+        "transmission_delay_s": 186.9999999999982,
+        "objective_s": 491.9999999999982,
+        "outage_s": 2.5,
+        "source": "journal_results/v4-deterministic/mapguide-preflight-6/high/preflight.json"
+      }
+    ]
+  },
+  "layer1": [
+    {
+      "label": "TD3 (0.5, 0.5)",
+      "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 108,
+      "feasible_rate": 0.9,
+      "best_feasible": {
+        "episode": 1550,
+        "task_time_s": 169.0,
+        "transmission_delay_s": 75.5,
+        "objective_s": 244.5,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1550,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 169.0,
+        "transmission_delay_s": 75.5,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w50-50",
+      "w1": 0.5,
+      "w2": 0.5
+    },
+    {
+      "label": "D3QN",
+      "source": "journal_results/v4-models/layer1/d3qn/low/d3qn",
+      "algorithm": "d3qn",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 25,
+      "feasible_rate": 0.20833333333333334,
+      "best_feasible": {
+        "episode": 2125,
+        "task_time_s": 175.0,
+        "transmission_delay_s": 105.5,
+        "objective_s": 280.5,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2125,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 175.0,
+        "transmission_delay_s": 105.5,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      }
+    },
+    {
+      "label": "PPO",
+      "source": "journal_results/v4-models/ppo/A/low/ppo",
+      "algorithm": "ppo",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 0,
+      "feasible_rate": 0.0,
+      "best_feasible": null,
+      "selected_evaluation": {
+        "episode": 25,
+        "success": false,
+        "termination_reason": "qos_violation",
+        "task_time_s": 261.0,
+        "transmission_delay_s": 127.5,
+        "outage_time_s": 6.5,
+        "visited_inspection_points": 6
+      }
+    }
+  ],
+  "layer3": [
+    {
+      "label": "TD3 (0.5, 0.5)",
+      "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 108,
+      "feasible_rate": 0.9,
+      "best_feasible": {
+        "episode": 1550,
+        "task_time_s": 169.0,
+        "transmission_delay_s": 75.5,
+        "objective_s": 244.5,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1550,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 169.0,
+        "transmission_delay_s": 75.5,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "weight_id": "w50-50",
+      "w1": 0.5,
+      "w2": 0.5
+    },
+    {
+      "label": "Yang-style+TD3",
+      "source": "journal_results/v4-baselines/yang/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 107,
+      "feasible_rate": 0.8916666666666667,
+      "best_feasible": {
+        "episode": 1325,
+        "task_time_s": 190.5,
+        "transmission_delay_s": 104.5,
+        "objective_s": 295.0,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1325,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 190.5,
+        "transmission_delay_s": 104.5,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      }
+    },
+    {
+      "label": "EEGA-TD3",
+      "source": "journal_results/v4-baselines/eega/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 101,
+      "feasible_rate": 0.8416666666666667,
+      "best_feasible": {
+        "episode": 2500,
+        "task_time_s": 169.0,
+        "transmission_delay_s": 109.5,
+        "objective_s": 278.5,
+        "outage_s": 3.0,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2500,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 169.0,
+        "transmission_delay_s": 109.5,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6
+      }
+    },
+    {
+      "label": "Distance-TSP+TD3",
+      "source": "journal_results/v4-baselines/distance-tsp/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 88,
+      "feasible_rate": 0.7333333333333333,
+      "best_feasible": {
+        "episode": 1300,
+        "task_time_s": 167.0,
+        "transmission_delay_s": 124.5,
+        "objective_s": 291.5,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1300,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 167.0,
+        "transmission_delay_s": 124.5,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      }
+    },
+    {
+      "label": "SA-D3QN",
+      "source": "journal_results/v4-baselines/sa-d3qn/low/d3qn",
+      "algorithm": "d3qn",
+      "budget_s": 6.0,
+      "evaluations": 200,
+      "feasible_evaluations": 43,
+      "feasible_rate": 0.215,
+      "best_feasible": {
+        "episode": 2900,
+        "task_time_s": 200.0,
+        "transmission_delay_s": 146.5,
+        "objective_s": 346.5,
+        "outage_s": 4.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2900,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 200.0,
+        "transmission_delay_s": 146.5,
+        "outage_time_s": 4.5,
+        "visited_inspection_points": 6
+      }
+    },
+    {
+      "label": "DRL-SA",
+      "source": "journal_results/v4-baselines/drl-sa/low/d3qn",
+      "algorithm": "d3qn",
+      "budget_s": 6.0,
+      "evaluations": 200,
+      "feasible_evaluations": 47,
+      "feasible_rate": 0.235,
+      "best_feasible": {
+        "episode": 1825,
+        "task_time_s": 219.5,
+        "transmission_delay_s": 128.0,
+        "objective_s": 347.5,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1825,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 219.5,
+        "transmission_delay_s": 128.0,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      }
+    }
+  ],
+  "a2g_ablation": [
+    {
+      "label": "A2G-blind",
+      "source": "journal_results/v4-baselines/distance-tsp/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 88,
+      "feasible_rate": 0.7333333333333333,
+      "best_feasible": {
+        "episode": 1300,
+        "task_time_s": 167.0,
+        "transmission_delay_s": 124.5,
+        "objective_s": 291.5,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 1300,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 167.0,
+        "transmission_delay_s": 124.5,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      }
+    },
+    {
+      "label": "A2G-visible",
+      "source": "journal_results/v4-baselines/distance-tsp-a2g-visible/A/low/td3_bc",
+      "algorithm": "td3_bc",
+      "budget_s": 6.0,
+      "evaluations": 120,
+      "feasible_evaluations": 104,
+      "feasible_rate": 0.8666666666666667,
+      "best_feasible": {
+        "episode": 2525,
+        "task_time_s": 145.0,
+        "transmission_delay_s": 91.0,
+        "objective_s": 236.0,
+        "outage_s": 3.5,
+        "visited_inspection_points": 6
+      },
+      "selected_evaluation": {
+        "episode": 2525,
+        "success": true,
+        "termination_reason": "success",
+        "task_time_s": 145.0,
+        "transmission_delay_s": 91.0,
+        "outage_time_s": 3.5,
+        "visited_inspection_points": 6
+      }
+    }
+  ]
+}

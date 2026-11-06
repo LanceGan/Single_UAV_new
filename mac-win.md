@@ -234,3 +234,102 @@ Win 端写作时应以：
 Mac 端论文仓库已经成稿，不再把“待论文成稿”列为实验待办。当前收尾项只有目标期刊适配和终稿检查。注意 `P3.pdf` 的最后编译时间早于最近一次标题修改，正式审阅前需要重新编译。
 
 训练 checkpoint（`models/`）与原始 TensorBoard 日志（`logs/`）继续按既有约定保留在本机，不进入 GitHub；论文写作和结果核对所需的配置、评估历史、轨迹、训练曲线及图表均已同步。
+
+## 13. v4 图表同步与剩余轨迹模型（2026-11-06）
+
+### 13.1 已完成并同步的定量图
+
+论文仓库 `figs/v4/` 已生成并同步以下图：
+
+- `qos_sensitivity_v4`
+- `objective_weight_sensitivity_v4`
+- `load_sensitivity_v4`
+- `layer1_methods_v4`
+- `layer3_baselines_v4`
+- `a2g_ablation_v4`
+- `training_returns_v4`
+
+每张图提供 PDF、SVG、600 dpi PNG；源数据见
+`figs/v4/source_data/figure_source_data_v4.{csv,json}`。图注、数字口径和旧版
+正文中必须删除的表述见 `figs/v4/README_FOR_WIN.md`。
+
+所有定量图均通过：
+
+- 多面板最终几何对齐：PASS（两张单面板图按规范为 NOT APPLICABLE）
+- PDF 字形下限：最低 6.5 pt
+- PDF 渲染碰撞审计：7/7 PASS
+- 绘图源码严格预检：21/21 PASS
+
+### 13.2 Win 需要补传的轨迹模型
+
+Win 已经推送的 `eval_history.json`、`run_config.json`、
+`training_history.npz`/`UAV_TD3_improved.npz` 和预检轨迹足以重画全部二维
+定量图，但不足以重画论文中的 **eval-best 双地图轨迹**。预检轨迹来自
+MapGuide，不是最终学习策略，不能替代 `eval_best` 轨迹。
+
+请在 Win 的 v4 训练 checkout 中收集以下 5 个 Proposed actor 检查点：
+
+| 目标标签 | 源文件（相对实验仓库根目录） |
+|---|---|
+| 权重 `(0.8, 0.2)`，6 s | `journal_results/v4-qos/w80-20/qos6/A/low/td3_bc/models/td3_bc_td3_actoreval_best.pth` |
+| 权重 `(0.5, 0.5)`，6 s | `journal_results/v4-qos/w50-50/qos6/A/low/td3_bc/models/td3_bc_td3_actoreval_best.pth` |
+| 权重 `(0.2, 0.8)`，6 s | `journal_results/v4-qos/w20-80/qos6/A/low/td3_bc/models/td3_bc_td3_actoreval_best.pth` |
+| Medium，6 s | `journal_results/v4-models/load/medium/A/medium/td3_bc/models/td3_bc_td3_actoreval_best.pth` |
+| High，6 s | `journal_results/v4-models/load/high/A/high/td3_bc/models/td3_bc_td3_actoreval_best.pth` |
+
+`journal_results/**/models/` 被 `.gitignore` 排除，不能直接 `git add` 原路径。
+请在 Win 仓库中新建不受忽略的同步目录，并按以下稳定名称复制：
+
+```text
+sync_bundles/v4_eval_best_actors/
+  w80-20_qos6_actor.pth
+  w50-50_qos6_actor.pth
+  w20-80_qos6_actor.pth
+  medium_qos6_actor.pth
+  high_qos6_actor.pth
+  MANIFEST.json
+```
+
+`MANIFEST.json` 至少记录每项的：
+
+```json
+{
+  "label": "w50-50_qos6",
+  "source_run": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
+  "eval_best_episode": 1550,
+  "sha256": "..."
+}
+```
+
+不要传 critic、历史 period checkpoint 或 TensorBoard 日志；轨迹评估只需要
+actor。5 个文件预计合计约 3 MB。打包后提交并推送 `feat/win`，同时在
+`sync_bundles/v4_eval_best_actors/README.md` 写明训练 checkout 的 commit。
+
+可选的 PPO 失败轨迹需要额外同步：
+
+```text
+journal_results/v4-models/ppo/A/low/ppo/models/ppo_ppo_actoreval_best.pth
+```
+
+当前七张定量图不依赖该 PPO checkpoint。
+
+### 13.3 Mac 侧尚待补齐的数据
+
+为了在负载敏感性图中加入同预算的 A* 离线参照，Mac 还需要在 6 s 下补齐：
+
+- Low：`journal_results/v4-deterministic/astar-main-6/low/`
+- Medium：`journal_results/v4-deterministic/astar-main-6/medium/`
+
+现有 `astar-main-6` 只有 High 的成功重放结果。`astar-main-8` 的低档不是成功
+重放，不能拿来做 6 s 对照。
+
+### 13.4 收到模型后的验收
+
+Mac 收到 actor bundle 后将：
+
+1. 校验 SHA-256 与 `eval_best.episode` 和现有 `eval_history.json` 一致；
+2. 用 `evaluate_policy.py` 在 CPU 上无噪声、无 MapGuide 重放；
+3. 断言 `T`、`tau`、`T_out^cont`、巡检点和上传量与该 run 的
+   `eval_history.json` 最佳记录一致；
+4. 重画 Proposed 三档、三权重和 A2G 基线的双地图轨迹图；
+5. 运行字号、对齐和 PDF 碰撞审计后再同步到论文仓库。
