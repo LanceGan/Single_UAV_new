@@ -209,6 +209,28 @@ def load_mapguide_preflight(level: str) -> dict:
     }
 
 
+def load_astar_main6(level: str) -> dict:
+    source = ROOT / "journal_results" / "v4-deterministic" / "astar-main-6" / level / "metrics.json"
+    data = _read_json(source)
+    if data.get("qos_constraint") != "max_contiguous_outage":
+        raise ValueError(f"{source}: unexpected QoS constraint")
+    planner = data["planner"]
+    replay = data["world_replay"]
+    if not planner.get("success") or not replay.get("success"):
+        raise ValueError(f"{source}: A* result is not a successful replay")
+    if float(replay["outage_time_s"]) > 6.0:
+        raise ValueError(f"{source}: A* replay violates the 6 s constraint")
+    return {
+        "level": level,
+        "task_time_s": float(replay["task_time_s"]),
+        "transmission_delay_s": float(replay["transmission_delay_s"]),
+        "objective_s": float(replay["objective_s"]),
+        "outage_s": float(replay["outage_time_s"]),
+        "planner_optimality_proven": bool(planner["optimality_proven"]),
+        "source": str(source.relative_to(ROOT)),
+    }
+
+
 def build_dataset() -> dict:
     qos = []
     qos_lookup = {}
@@ -351,6 +373,7 @@ def build_dataset() -> dict:
         "load": {
             "proposed": [{"level": level, **record} for level, record in load_paths],
             "mapguide": [load_mapguide_preflight(level) for level in ("low", "medium", "high")],
+            "astar": [load_astar_main6(level) for level in ("low", "medium", "high")],
         },
         "layer1": layer1,
         "layer3": layer3,
@@ -515,10 +538,11 @@ def plot_weight_sensitivity(dataset: dict, output: Path) -> None:
 def plot_load_sensitivity(dataset: dict, output: Path) -> None:
     proposed = dataset["load"]["proposed"]
     mapguide = dataset["load"]["mapguide"]
+    astar = dataset["load"]["astar"]
     levels = [row["level"] for row in proposed]
     x = np.arange(len(levels))
     figure, axes = plt.subplots(1, 2, figsize=(WIDTH_DOUBLE_IN, 2.65))
-    figure.subplots_adjust(left=0.08, right=0.985, bottom=0.24, top=0.83, wspace=0.34)
+    figure.subplots_adjust(left=0.08, right=0.985, bottom=0.31, top=0.83, wspace=0.34)
 
     times = np.asarray([_task_time(row) for row in proposed])
     delays = np.asarray([_delay(row) for row in proposed])
@@ -532,6 +556,17 @@ def plot_load_sensitivity(dataset: dict, output: Path) -> None:
         linewidth=1.6,
         color=REFERENCE_COLOR,
         label="MapGuide",
+        zorder=4,
+    )
+    axes[0].scatter(
+        x,
+        [row["objective_s"] for row in astar],
+        marker="^",
+        s=34,
+        facecolors="white",
+        edgecolors=REFERENCE_COLOR,
+        linewidth=1.0,
+        label="A*",
         zorder=4,
     )
     for index, row in enumerate(proposed):
@@ -548,7 +583,8 @@ def plot_load_sensitivity(dataset: dict, output: Path) -> None:
     axes[0].set_ylabel("Mission objective (s)")
     axes[0].set_ylim(0, 570)
     axes[0].set_title("Objective decomposition")
-    axes[0].legend(loc="upper left", ncol=3)
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(handles, labels, loc="lower left", bbox_to_anchor=(0.08, 0.01), ncol=4)
 
     rates = [100.0 * row["feasible_rate"] for row in proposed]
     bars = axes[1].bar(x, rates, color=PROPOSED_COLOR, width=0.58)
@@ -781,6 +817,23 @@ def write_source_data(dataset: dict, output: Path) -> None:
                 "transmission_delay_s": best["transmission_delay_s"] if best else "",
                 "objective_s": best["objective_s"] if best else "",
                 "outage_s": best["outage_s"] if best else "",
+                "source": record["source"],
+            }
+        )
+    for record in dataset["load"]["astar"]:
+        rows.append(
+            {
+                "group": "astar",
+                "label": record["level"],
+                "budget_s": 6,
+                "evaluations": 1,
+                "feasible_evaluations": 1,
+                "feasible_rate": 1.0,
+                "best_episode": "",
+                "task_time_s": record["task_time_s"],
+                "transmission_delay_s": record["transmission_delay_s"],
+                "objective_s": record["objective_s"],
+                "outage_s": record["outage_s"],
                 "source": record["source"],
             }
         )

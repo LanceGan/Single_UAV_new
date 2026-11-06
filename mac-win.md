@@ -313,15 +313,19 @@ journal_results/v4-models/ppo/A/low/ppo/models/ppo_ppo_actoreval_best.pth
 
 当前七张定量图不依赖该 PPO checkpoint。
 
-### 13.3 Mac 侧尚待补齐的数据
+### 13.3 Mac 侧 A* 数据状态（已核实，无需补跑）
 
-为了在负载敏感性图中加入同预算的 A* 离线参照，Mac 还需要在 6 s 下补齐：
+`astar-main-6` 的低、中、高三档 artifacts 均存在，且真实 World 重放均成功：
 
-- Low：`journal_results/v4-deterministic/astar-main-6/low/`
-- Medium：`journal_results/v4-deterministic/astar-main-6/medium/`
+| 负载 | T (s) | tau (s) | T+tau (s) | T_out^cont (s) |
+|---|---:|---:|---:|---:|
+| Low | 138.0 | 78.0 | 216.0 | 5.0 |
+| Medium | 189.5 | 127.0 | 316.5 | 4.0 |
+| High | 254.5 | 191.0 | 445.5 | 4.0 |
 
-现有 `astar-main-6` 只有 High 的成功重放结果。`astar-main-8` 的低档不是成功
-重放，不能拿来做 6 s 对照。
+注意：`journal_results/v4-deterministic/astar-main-6/summary.json` 只保留了 High，
+这是因为后续单档运行覆盖了汇总文件；逐档 `metrics.json` 才是完整结果。
+`astar-main-8` 的低档不是成功重放，不能用于 6 s 对照。
 
 ### 13.4 收到模型后的验收
 
