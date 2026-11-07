@@ -575,7 +575,7 @@
       },
       {
         "level": "Medium",
-        "label": "Proposed (IGA+TD3)",
+        "label": "PRISM-TD3",
         "source": "journal_results/v4-models/load/medium/A/medium/td3_bc",
         "algorithm": "td3_bc",
         "budget_s": 6.0,
@@ -602,7 +602,7 @@
       },
       {
         "level": "High",
-        "label": "Proposed (IGA+TD3)",
+        "label": "PRISM-TD3",
         "source": "journal_results/v4-models/load/high/A/high/td3_bc",
         "algorithm": "td3_bc",
         "budget_s": 6.0,

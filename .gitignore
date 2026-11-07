@@ -5,4 +5,5 @@ journal_results/**/models/
 journal_results/**/logs/
 paper_figures/v4/*.tiff
 paper_figures/v4/qa/*.pdf
+paper_figures/algorithm_framework/*.tiff
 .superpowers/

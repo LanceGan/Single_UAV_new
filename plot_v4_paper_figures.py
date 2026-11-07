@@ -70,7 +70,7 @@ BLIND_COLOR = "#B07C2B"
 VISIBLE_COLOR = "#2A9D8F"
 REFERENCE_COLOR = "#5F6368"
 METHOD_COLORS = {
-    "Proposed (IGA+TD3)": PROPOSED_COLOR,
+    "PRISM-TD3": PROPOSED_COLOR,
     "Yang-style+TD3": "#8C6D31",
     "EEGA-TD3": "#6B8E23",
     "Distance-TSP+TD3": BLIND_COLOR,
@@ -289,7 +289,7 @@ def build_dataset() -> dict:
                 / "A"
                 / "medium"
                 / "td3_bc",
-                "Proposed (IGA+TD3)",
+                "PRISM-TD3",
                 6,
             ),
         ),
@@ -304,7 +304,7 @@ def build_dataset() -> dict:
                 / "A"
                 / "high"
                 / "td3_bc",
-                "Proposed (IGA+TD3)",
+                "PRISM-TD3",
                 6,
             ),
         ),
@@ -397,7 +397,7 @@ def _outage(record: dict) -> float:
 
 def _method_label(label: str) -> str:
     if label.startswith("TD3 (0.5, 0.5)"):
-        return "Proposed (IGA+TD3)"
+        return "PRISM-TD3"
     return label
 
 
@@ -416,8 +416,14 @@ def _save_figure(figure, stem: Path, multi_panel: bool) -> None:
         require_panel_labels=multi_panel,
         strict=True,
     )
+    svg_path = stem.with_suffix(".svg")
     figure.savefig(stem.with_suffix(".pdf"), bbox_inches=None, metadata={"Title": stem.name})
-    figure.savefig(stem.with_suffix(".svg"), bbox_inches=None, metadata={"Title": stem.name})
+    figure.savefig(svg_path, bbox_inches=None, metadata={"Title": stem.name})
+    svg_text = svg_path.read_text(encoding="utf-8")
+    svg_path.write_text(
+        "\n".join(line.rstrip() for line in svg_text.splitlines()) + "\n",
+        encoding="utf-8",
+    )
     figure.savefig(stem.with_suffix(".png"), dpi=600, bbox_inches=None)
     figure.savefig(stem.with_suffix(".tiff"), dpi=600, bbox_inches=None)
     plt.close(figure)

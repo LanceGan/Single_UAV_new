@@ -6,7 +6,7 @@ def test_build_framework_figure_exports_publication_artifacts(tmp_path: Path):
 
     artifacts = build_framework_figure(tmp_path)
 
-    assert set(artifacts) == {"svg", "pdf", "png"}
+    assert set(artifacts) == {"svg", "pdf", "png", "tiff"}
     assert artifacts["svg"].read_text(encoding="utf-8").startswith("<?xml")
     assert artifacts["pdf"].read_bytes().startswith(b"%PDF")
     assert artifacts["png"].read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
@@ -24,7 +24,7 @@ def test_framework_figure_contains_required_method_semantics(tmp_path: Path):
         "G2A outage",
         "A2G uplink-SNR",
         "Heterogeneous payloads",
-        "Dual-map-aware IGA",
+        "PRISM: payload + radio",
         "Optimized inspection order",
         "Twin critics",
         "Training only",

@@ -1,4 +1,4 @@
-"""Publication figure for the proposed dual-radio-map-aware IGA-TD3 method.
+"""Publication figure for the proposed dual-radio-map-aware PRISM-TD3 method.
 
 The drawing is deliberately self-contained: it does not read training results or
 radio-map files, so regenerating the framework cannot disturb running experiments.
@@ -53,9 +53,10 @@ def _rounded_box(ax, x, y, w, h, face, edge, *, radius=0.12, lw=0.9,
 def _text(ax, x, y, text, *, size=6.0, weight="normal", color=None,
           ha="center", va="center", zorder=8, linespacing=1.15, rotation=0):
     return ax.text(
-        x, y, text, fontsize=size, fontweight=weight,
+        x, y, text, fontsize=max(float(size), 5.0), fontweight=weight,
         color=color or COLORS["ink"], ha=ha, va=va,
-        family="DejaVu Sans", linespacing=linespacing, rotation=rotation, zorder=zorder,
+        family="DejaVu Sans", linespacing=linespacing, rotation=rotation,
+        rotation_mode="anchor", zorder=zorder,
     )
 
 
@@ -79,7 +80,7 @@ def _stage_panel(ax, x, y, w, h, number, title, color):
                  COLORS["white"], COLORS["white"], radius=0.18, lw=0)
     _text(ax, x + 0.32, y + h - 0.32, str(number), size=6.6,
           weight="bold", color=color)
-    _text(ax, x + 0.60, y + h - 0.31, title, size=7.2,
+    _text(ax, x + 0.66, y + h - 0.31, title, size=6.8,
           weight="bold", color=COLORS["white"], ha="left")
 
 
@@ -197,197 +198,181 @@ def _trajectory_icon(ax, x, y, w, h):
     _arrow(ax, tuple(dense[-5]), tuple(dense[-1]), color=COLORS["td3"], lw=1.2, mutation=6)
 
 
+def _card(ax, x, y, w, h, title, lines, *, edge, fill=COLORS["white"],
+          title_color=None, title_size=5.8, size=5.2, dashed=False):
+    _rounded_box(
+        ax, x, y, w, h, fill, edge, radius=0.10, lw=0.9,
+        linestyle="--" if dashed else "-",
+    )
+    _text(
+        ax, x + 0.16, y + h - 0.28, title, size=title_size, weight="bold",
+        color=title_color or COLORS["ink"], ha="left",
+    )
+    body = "\n".join(lines)
+    if body:
+        _text(
+            ax, x + w / 2, y + (h - 0.46) / 2 - 0.02, body,
+            size=size, color=COLORS["ink"], linespacing=1.18,
+        )
+
+
 def build_framework_figure(output_dir: Path | str = DEFAULT_OUTPUT_DIR) -> dict[str, Path]:
     """Build the framework and return paths for SVG, PDF, and PNG outputs."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     mpl.rcParams.update({
-        "font.family": "DejaVu Sans",
-        "font.size": 6.0,
+        "font.family": "sans-serif",
+        "font.sans-serif": ["DejaVu Sans"],
+        "font.size": 5.0,
         "svg.fonttype": "none",
         "pdf.fonttype": 42,
         "pdf.use14corefonts": False,
     })
-    fig = plt.figure(figsize=(7.15, 4.0), facecolor="white")
+    fig = plt.figure(figsize=(7.15, 4.15), facecolor="white")
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_xlim(0, 18)
-    ax.set_ylim(0, 10)
+    ax.set_ylim(0, 9)
     ax.axis("off")
 
-    _text(ax, 9.0, 9.67, "Proposed dual-radio-map-aware IGA-TD3 framework",
+    _text(ax, 9.0, 8.62, "Proposed dual-radio-map-aware PRISM-TD3 framework",
           size=9.0, weight="bold")
-    _text(ax, 9.0, 9.31,
+    _text(ax, 9.0, 8.22,
           "Heterogeneous inspection payloads  |  Joint sequence and continuous-trajectory optimization",
           size=5.8, color=COLORS["muted"])
 
-    panel_y, panel_h = 0.76, 8.22
-    _stage_panel(ax, 0.25, panel_y, 3.25, panel_h, 1, "System inputs", COLORS["ink"])
-    _stage_panel(ax, 3.72, panel_y, 4.15, panel_h, 2, "Dual-map-aware IGA", COLORS["iga"])
-    _stage_panel(ax, 8.10, panel_y, 6.48, panel_h, 3, "Map-aware TD3", COLORS["td3"])
-    _stage_panel(ax, 14.82, panel_y, 2.93, panel_h, 4, "Mission output", COLORS["gold"])
-
-    # Stage 1: scenario, payloads, and two distinct radio maps.
-    _scenario_card(ax, 0.43, 6.62, 2.89, 1.60)
-    _rounded_box(ax, 0.43, 5.72, 2.89, 0.64, COLORS["gold_light"], COLORS["gold"], radius=0.08, lw=0.8)
-    _text(ax, 1.875, 6.04, "Heterogeneous payloads\nD = [D1, ..., DK]", size=5.0,
+    panel_y, panel_h = 0.55, 7.25
+    _stage_panel(ax, 0.25, panel_y, 3.10, panel_h, 1, "System inputs", COLORS["ink"])
+    _stage_panel(ax, 3.62, panel_y, 4.18, panel_h, 2, "PRISM: payload + radio", COLORS["iga"])
+    _stage_panel(ax, 8.07, panel_y, 6.45, panel_h, 3, "Map-aware TD3", COLORS["td3"])
+    _rounded_box(
+        ax, 14.80, panel_y, 2.92, panel_h, COLORS["panel"], COLORS["line"],
+        radius=0.16, lw=0.8,
+    )
+    _text(ax, 16.26, panel_y + panel_h - 0.31, "Mission output", size=6.8,
           weight="bold", color="#9A6700")
-    _text(ax, 1.875, 5.35, "Fixed dual radio maps", size=6.2, weight="bold")
-    _mini_heatmap(ax, 0.43, 3.50, 1.36, 1.62, "G2A outage\nmap", COLORS["g2a"], COLORS["g2a_light"])
-    _mini_heatmap(ax, 1.96, 3.50, 1.36, 1.62, "A2G uplink-SNR\nmap", COLORS["a2g"], COLORS["a2g_light"], reverse=True)
-    _rounded_box(ax, 0.43, 1.42, 2.89, 1.68, COLORS["white"], COLORS["line"], radius=0.08, lw=0.8)
-    _text(ax, 0.60, 2.78, "Shared mission constraints", size=5.2, weight="bold", ha="left")
-    for idx, label in enumerate(("Fixed start/end and inspection points", "Motion and boundary limits", "QoS budget  T_out <= T_out^max")):
-        cy = 2.46 - 0.40 * idx
-        ax.add_patch(Circle((0.66, cy), 0.055, facecolor=COLORS["ink"], edgecolor="none", zorder=6))
-        _text(ax, 0.80, cy, label, size=3.85, ha="left")
 
-    # Stage 2: edge features, weighted graph, GA cycle, order output.
-    _rounded_box(ax, 3.96, 6.38, 3.67, 1.82, COLORS["white"], COLORS["iga"], radius=0.09, lw=0.9)
-    _text(ax, 4.13, 7.98, "Edge feature construction", size=6.1, weight="bold", ha="left", color=COLORS["iga"])
-    rows = [
-        ("Geometric distance", "d_ij", COLORS["ink"]),
-        ("Source payload", "D_i", COLORS["gold"]),
-        ("Outage exposure", "tau_out,ij", COLORS["g2a"]),
-        ("Expected uplink throughput", "R_ij", COLORS["a2g"]),
-    ]
-    for idx, (label, symbol, color) in enumerate(rows):
-        cy = 7.62 - 0.31 * idx
-        ax.add_patch(Rectangle((4.12, cy - 0.09), 0.10, 0.18, facecolor=color, edgecolor="none", zorder=5))
-        _text(ax, 4.30, cy, label, size=4.35, ha="left")
-        _text(ax, 7.43, cy, symbol, size=4.45, weight="bold", color=color, ha="right")
-    _weighted_graph(ax, 4.08, 4.62, 3.43, 1.46)
-    _rounded_box(ax, 4.08, 3.60, 3.43, 0.73, COLORS["iga_light"], COLORS["iga"], radius=0.07, lw=0.8)
-    _text(ax, 5.795, 3.965, "w_ij = f(d_ij, D_i, tau_out,ij, R_ij)\nFitness F(O) = sum w_ij",
-          size=5.4, weight="bold", color=COLORS["iga"])
-    _ga_cycle(ax, 4.00, 1.93, 3.59, 1.17)
-    _rounded_box(ax, 4.08, 1.13, 3.43, 0.53, COLORS["iga"], COLORS["iga"], radius=0.15, lw=0.8)
-    _text(ax, 5.795, 1.395, "Optimized inspection order  O*", size=5.0,
-          weight="bold", color=COLORS["white"])
+    # Stage 1: mission inputs.
+    _card(
+        ax, 0.43, 6.10, 2.74, 1.12, "Inspection scenario",
+        ["Fixed start/end", "Six inspection sites", "Motion and QoS limits"],
+        edge=COLORS["line"], size=5.0,
+    )
+    _card(
+        ax, 0.43, 4.80, 2.74, 0.98, "Heterogeneous payloads",
+        ["Point-specific data volumes"], edge=COLORS["gold"],
+        fill=COLORS["gold_light"], title_color="#7A5600", title_size=5.3, size=5.0,
+    )
+    _rounded_box(ax, 0.43, 2.80, 2.74, 0.92, COLORS["g2a_light"], COLORS["g2a"], radius=0.08, lw=0.8)
+    _text(ax, 1.80, 3.43, "G2A outage", size=5.1, weight="bold", color=COLORS["g2a"])
+    ax.add_patch(Rectangle((0.70, 2.98), 2.20, 0.28, facecolor=COLORS["g2a"], alpha=0.22, edgecolor="none"))
+    _rounded_box(ax, 0.43, 1.68, 2.74, 0.92, COLORS["a2g_light"], COLORS["a2g"], radius=0.08, lw=0.8)
+    _text(ax, 1.80, 2.31, "A2G uplink-SNR", size=5.1, weight="bold", color=COLORS["a2g"])
+    ax.add_patch(Rectangle((0.70, 1.86), 2.20, 0.28, facecolor=COLORS["a2g"], alpha=0.30, edgecolor="none"))
 
-    # Input-to-IGA links.
-    _arrow(ax, (3.32, 6.04), (3.94, 7.50), color=COLORS["gold"], lw=1.0, connection="arc3,rad=-0.16")
-    _arrow(ax, (1.79, 4.30), (3.94, 6.98), color=COLORS["g2a"], lw=1.05, connection="arc3,rad=-0.13")
-    _arrow(ax, (3.32, 4.30), (3.94, 6.66), color=COLORS["a2g"], lw=1.05, connection="arc3,rad=0.10")
-    _arrow(ax, (3.32, 7.32), (3.94, 7.80), color=COLORS["ink"], lw=0.9)
+    # Stage 2: PRISM.
+    _card(
+        ax, 3.82, 5.85, 3.78, 1.42, "Edge feature construction",
+        ["flight time + payload upload", "+ G2A outage exposure"],
+        edge=COLORS["iga"], fill=COLORS["iga_light"], title_color=COLORS["iga"], size=5.1,
+    )
+    _card(
+        ax, 3.82, 4.05, 3.78, 1.30, "Permutation genetic search",
+        ["Select  ->  Cross  ->  Mutate", "Exact $K!$ certificate"],
+        edge=COLORS["iga"], size=5.1,
+    )
+    _rounded_box(ax, 3.82, 2.42, 3.78, 0.96, COLORS["iga"], COLORS["iga"], radius=0.12, lw=0.8)
+    _text(ax, 5.71, 2.90, "Optimized inspection order  O*", size=5.2, weight="bold",
+          color=COLORS["white"])
 
-    # Stage 3: environment, actor, state/action definitions and TD3 updates.
-    _rounded_box(ax, 8.36, 6.45, 2.28, 1.63, COLORS["white"], COLORS["ink"], radius=0.10, lw=0.9)
-    _text(ax, 9.50, 7.72, "UAV inspection\nenvironment", size=5.3, weight="bold")
-    _text(ax, 9.50, 7.19, "Move - map query - upload", size=4.4, color=COLORS["muted"])
-    _text(ax, 9.50, 6.83, "reward r_n, next state s_(n+1)", size=4.35, color=COLORS["ink"])
-    _rounded_box(ax, 11.05, 6.76, 1.50, 0.98, COLORS["td3_light"], COLORS["td3"], radius=0.10, lw=1.0)
-    _text(ax, 11.80, 7.40, "Actor", size=6.5, weight="bold", color=COLORS["td3"])
-    _text(ax, 11.80, 7.08, "pi_phi(s_n)", size=5.2, color=COLORS["td3"])
-    _arrow(ax, (10.64, 7.36), (11.04, 7.36), color=COLORS["td3"], lw=1.0)
-    _arrow(ax, (11.10, 6.87), (10.62, 6.88), color=COLORS["ink"], lw=0.9, connection="arc3,rad=-0.28")
-    _text(ax, 10.85, 6.62, "action a_n", size=4.6, color=COLORS["muted"])
+    # Stage 3: standard TD3 executor.
+    _card(
+        ax, 8.30, 6.02, 2.64, 1.15, "Environment",
+        ["Move, query maps, upload", "Compute T and tau"],
+        edge=COLORS["ink"], size=5.0,
+    )
+    _card(
+        ax, 11.23, 6.02, 3.02, 1.15, "Training only",
+        ["MapGuide demonstrations", "BC anchor"],
+        edge=COLORS["gold"], fill=COLORS["gold_light"],
+        title_color="#7A5600", size=5.0, dashed=True,
+    )
+    _card(
+        ax, 8.30, 4.52, 2.64, 1.08, "Map-aware state",
+        ["position, backlog, QoS", "A2G SNR, G2A outage"],
+        edge=COLORS["g2a"], fill=COLORS["g2a_light"], title_color=COLORS["g2a"], size=5.0,
+    )
+    _card(
+        ax, 11.23, 4.52, 3.02, 1.08, "Continuous action",
+        ["relative heading offset", "flight distance"],
+        edge=COLORS["a2g"], fill=COLORS["a2g_light"], title_color=COLORS["a2g"], size=5.0,
+    )
+    _card(
+        ax, 8.30, 2.92, 2.64, 1.05, "Twin critics",
+        ["Q1(s,a) and Q2(s,a)"],
+        edge=COLORS["td3"], fill=COLORS["td3_light"], title_color=COLORS["td3"], size=5.0,
+    )
+    _rounded_box(ax, 11.23, 2.92, 3.02, 0.86, COLORS["td3"], COLORS["td3"], radius=0.14, lw=0.8)
+    _text(ax, 12.74, 3.35, "Guide-free Actor (evaluation)", size=5.2, weight="bold",
+          color=COLORS["white"])
 
-    _rounded_box(ax, 12.88, 6.44, 1.45, 1.68, COLORS["gold_light"], COLORS["gold"],
-                 radius=0.10, lw=0.9, linestyle="--")
-    _text(ax, 13.60, 7.80, "Training only", size=5.5, weight="bold", color="#9A6700")
-    _text(ax, 13.60, 7.30, "MapGuide\nfeasible\ndemonstrations", size=4.15,
-          color="#7A5600", linespacing=0.95)
-    _text(ax, 13.60, 6.73, "BC anchor", size=5.0, weight="bold", color="#7A5600")
-    _arrow(ax, (12.88, 7.30), (12.54, 7.30), color=COLORS["gold"], lw=0.8, dashed=True)
+    # Stage 4: mission output.
+    _trajectory_icon(ax, 15.00, 5.92, 2.52, 1.18)
+    _text(ax, 16.26, 5.66, "Continuous trajectory Q*", size=5.4, weight="bold",
+          color=COLORS["td3"])
+    _card(
+        ax, 15.00, 4.53, 2.52, 0.96, "Objective",
+        ["min  T + tau_total"], edge=COLORS["gold"],
+        fill=COLORS["gold_light"], title_color="#7A5600", size=5.2,
+    )
+    _card(
+        ax, 15.00, 3.27, 2.52, 0.96, "Hard QoS constraint",
+        ["T_out <= T_out^max"], edge=COLORS["g2a"],
+        fill=COLORS["g2a_light"], title_color=COLORS["g2a"], size=5.2,
+    )
+    _card(
+        ax, 15.00, 1.46, 2.52, 1.45, "Mission record",
+        ["T, tau_total, T_out", "flight distance"],
+        edge=COLORS["line"], size=5.0,
+    )
 
-    _rounded_box(ax, 8.36, 4.79, 3.21, 1.18, COLORS["g2a_light"], COLORS["g2a"], radius=0.08, lw=0.75)
-    _text(ax, 8.53, 5.73, "Map-aware state s_n", size=5.8, weight="bold", ha="left", color=COLORS["g2a"])
-    _text(ax, 8.53, 5.34, "[q, target - q, D_buf, T_out/T_max,", size=4.8, ha="left")
-    _text(ax, 8.53, 5.02, " A2G SNR, G2A outage probability]", size=4.8, ha="left")
-    _rounded_box(ax, 11.82, 4.79, 2.51, 1.18, COLORS["a2g_light"], COLORS["a2g"], radius=0.08, lw=0.75)
-    _text(ax, 13.075, 5.73, "Continuous action a_n", size=5.7, weight="bold", color=COLORS["a2g"])
-    _text(ax, 13.075, 5.26, "relative heading offset", size=4.8)
-    _text(ax, 13.075, 4.98, "+ flight distance", size=4.8)
+    # Main pipeline and the only secondary loop.
+    _arrow(ax, (3.35, 3.58), (3.82, 3.58), color=COLORS["ink"], lw=1.3)
+    _arrow(ax, (7.60, 3.58), (8.30, 3.58), color=COLORS["iga"], lw=1.3)
+    _arrow(ax, (14.52, 3.58), (15.00, 3.58), color=COLORS["td3"], lw=1.3)
+    _arrow(ax, (5.71, 5.85), (5.71, 5.35), color=COLORS["iga"], lw=1.0)
+    _arrow(ax, (5.71, 4.05), (5.71, 3.38), color=COLORS["iga"], lw=1.0)
+    _arrow(ax, (10.94, 6.02), (10.94, 5.60), color=COLORS["ink"], lw=1.0)
+    _arrow(ax, (12.74, 6.02), (12.74, 5.60), color=COLORS["gold"], lw=0.9, dashed=True)
+    _arrow(ax, (12.74, 4.52), (12.74, 3.78), color=COLORS["td3"], lw=1.0)
+    _arrow(ax, (10.94, 2.92), (10.94, 2.35), color=COLORS["td3"], lw=0.9)
+    _arrow(ax, (11.23, 2.35), (14.52, 2.35), color=COLORS["td3"], lw=0.9)
+    _arrow(ax, (14.52, 2.35), (15.00, 2.35), color=COLORS["td3"], lw=0.9)
 
-    _rounded_box(ax, 8.58, 2.73, 2.08, 1.22, COLORS["white"], COLORS["td3"], radius=0.10, lw=0.9)
-    _text(ax, 9.62, 3.50, "Replay buffer", size=6.0, weight="bold", color=COLORS["td3"])
-    _text(ax, 9.62, 3.16, "(s, a, r, s')", size=5.0, color=COLORS["muted"])
-    for offset in (0.0, 0.10, 0.20):
-        ax.plot([8.91, 10.33], [2.98 + offset, 2.98 + offset], color=COLORS["td3"], lw=0.65, zorder=5)
-    _rounded_box(ax, 11.10, 2.73, 1.44, 1.22, COLORS["td3_light"], COLORS["td3"], radius=0.10, lw=0.9)
-    _text(ax, 11.82, 3.50, "Twin critics", size=5.7, weight="bold", color=COLORS["td3"])
-    _text(ax, 11.82, 3.17, "Q1(s,a)  Q2(s,a)", size=4.8, color=COLORS["td3"])
-    _rounded_box(ax, 12.97, 2.73, 1.36, 1.22, COLORS["white"], COLORS["td3"], radius=0.10, lw=0.9, linestyle="--")
-    _text(ax, 13.65, 3.50, "Target nets", size=5.5, weight="bold", color=COLORS["td3"])
-    _text(ax, 13.65, 3.17, "min target Q", size=4.8, color=COLORS["muted"])
-    ax.plot([8.50, 8.25, 8.25, 9.02], [6.45, 6.15, 4.20, 4.20],
-            color=COLORS["ink"], lw=0.85, zorder=4)
-    _arrow(ax, (9.02, 4.20), (9.02, 3.95), color=COLORS["ink"], lw=0.85)
-    _arrow(ax, (10.66, 3.35), (11.09, 3.35), color=COLORS["td3"], lw=0.9)
-    _arrow(ax, (12.54, 3.35), (12.96, 3.35), color=COLORS["td3"], lw=0.9, dashed=True)
-    _arrow(ax, (13.65, 3.96), (12.35, 6.76), color=COLORS["td3"], lw=0.75, dashed=True,
-           connection="arc3,rad=-0.22")
-    _text(ax, 13.61, 4.33, "delayed soft updates", size=4.6, color=COLORS["td3"])
-    ax.plot([13.60, 14.42, 14.42, 10.22], [6.44, 6.18, 4.25, 4.25],
-            color=COLORS["gold"], lw=0.70, linestyle="--", zorder=4)
-    _arrow(ax, (10.22, 4.25), (10.22, 3.95), color=COLORS["gold"], lw=0.70, dashed=True)
-
-    _rounded_box(ax, 10.02, 1.25, 3.05, 0.70, COLORS["td3"], COLORS["td3"], radius=0.18, lw=0.8)
-    _text(ax, 11.545, 1.60, "Guide-free Actor (evaluation)", size=5.0,
-          weight="bold", color=COLORS["white"])
-    ax.plot([7.51, 7.92, 7.92], [1.395, 1.395, 5.48], color=COLORS["iga"], lw=1.0, zorder=4)
-    _arrow(ax, (7.92, 5.48), (8.35, 5.48), color=COLORS["iga"], lw=1.0)
-
-    # The state box names both map queries; colored rails make their roles visible
-    # without long cross-panel arrows obscuring the IGA stage.
-    ax.add_patch(Rectangle((8.36, 4.79), 0.055, 1.18, facecolor=COLORS["g2a"], edgecolor="none", zorder=6))
-    ax.add_patch(Rectangle((8.43, 4.79), 0.055, 1.18, facecolor=COLORS["a2g"], edgecolor="none", zorder=6))
-
-    # Stage 4: optimized mission and distinct objective/constraint boxes.
-    _trajectory_icon(ax, 15.08, 6.52, 2.40, 1.56)
-    _text(ax, 16.28, 6.25, "Continuous trajectory  Q*", size=5.7,
-          weight="bold", color=COLORS["td3"])
-    _rounded_box(ax, 15.08, 4.57, 2.40, 1.40, COLORS["white"], COLORS["success"], radius=0.08, lw=0.8)
-    for idx, label in enumerate(("All points visited", "All payloads uploaded", "Destination reached")):
-        cy = 5.67 - 0.39 * idx
-        _text(ax, 15.30, cy, "✓", size=6.5, weight="bold", color=COLORS["success"])
-        _text(ax, 15.50, cy, label, size=5.0, ha="left")
-    _rounded_box(ax, 15.08, 3.25, 2.40, 0.88, COLORS["gold_light"], COLORS["gold"], radius=0.08, lw=0.9)
-    _text(ax, 16.28, 3.85, "Optimization objective", size=4.9, weight="bold", color="#9A6700")
-    _text(ax, 16.28, 3.49, "min  T + tau_total", size=6.0, weight="bold", color="#7A5600")
-    _rounded_box(ax, 15.08, 2.08, 2.40, 0.84, COLORS["g2a_light"], COLORS["g2a"], radius=0.08, lw=0.9)
-    _text(ax, 16.28, 2.65, "Hard QoS constraint", size=4.9, weight="bold", color=COLORS["g2a"])
-    _text(ax, 16.28, 2.30, "T_out <= T_out^max", size=5.8, weight="bold", color=COLORS["g2a"])
-    _rounded_box(ax, 15.08, 1.13, 2.40, 0.57, COLORS["white"], COLORS["line"], radius=0.08, lw=0.8)
-    _text(ax, 16.28, 1.415, "T, tau_total, T_out, flight distance", size=4.7, color=COLORS["muted"])
-    ax.plot([13.08, 14.50, 14.50, 14.76], [1.60, 1.60, 7.23, 7.23],
-            color=COLORS["td3"], lw=1.0, zorder=4)
-    _arrow(ax, (14.76, 7.23), (15.06, 7.23), color=COLORS["td3"], lw=1.0)
-    _text(ax, 14.56, 4.55, "policy", size=4.4, weight="bold", color=COLORS["td3"],
-          rotation=90)
-
-    # Legend.
-    legend_y = 0.24
-    _text(ax, 12.70, legend_y, "Information flow", size=4.6, color=COLORS["muted"], ha="right")
-    ax.plot([12.82, 13.28], [legend_y, legend_y], color=COLORS["ink"], lw=0.9, zorder=5)
-    _text(ax, 14.23, legend_y, "Training/update", size=4.6, color=COLORS["muted"], ha="right")
-    ax.plot([14.35, 14.81], [legend_y, legend_y], color=COLORS["td3"], lw=0.9, linestyle="--", zorder=5)
-    _text(ax, 15.86, legend_y, "G2A", size=4.6, color=COLORS["g2a"], ha="right")
-    ax.plot([15.96, 16.35], [legend_y, legend_y], color=COLORS["g2a"], lw=1.0, zorder=5)
-    _text(ax, 17.14, legend_y, "A2G", size=4.6, color=COLORS["a2g"], ha="right")
-    ax.plot([17.24, 17.63], [legend_y, legend_y], color=COLORS["a2g"], lw=1.0, zorder=5)
-
-    stem = output_dir / "proposed_iga_td3_framework"
-    paths = {suffix: stem.with_suffix(f".{suffix}") for suffix in ("svg", "pdf", "png")}
+    stem = output_dir / "prism_td3_framework"
+    svg_path = stem.with_suffix(".svg")
+    pdf_path = stem.with_suffix(".pdf")
+    png_path = stem.with_suffix(".png")
+    tiff_path = stem.with_suffix(".tiff")
     metadata = {
-        "Title": "Proposed dual-radio-map-aware IGA-TD3 framework",
+        "Title": "Proposed dual-radio-map-aware PRISM-TD3 framework",
         "Subject": "UAV inspection sequence and trajectory optimization",
         "Creator": "Matplotlib",
     }
-    fig.savefig(paths["svg"], format="svg", facecolor="white", metadata={"Title": metadata["Title"]})
+    fig.savefig(svg_path, format="svg", facecolor="white", metadata={"Title": metadata["Title"]})
     # Matplotlib writes trailing spaces in multi-line SVG path data. Normalize
     # them so generated artifacts remain clean in Git and reproducible reviews.
-    svg_text = paths["svg"].read_text(encoding="utf-8")
-    paths["svg"].write_text(
+    svg_text = svg_path.read_text(encoding="utf-8")
+    svg_path.write_text(
         "\n".join(line.rstrip() for line in svg_text.splitlines()) + "\n",
         encoding="utf-8",
     )
-    fig.savefig(paths["pdf"], format="pdf", facecolor="white", metadata=metadata)
-    fig.savefig(paths["png"], format="png", dpi=300, facecolor="white",
+    fig.savefig(pdf_path, format="pdf", facecolor="white", metadata=metadata)
+    fig.savefig(png_path, format="png", dpi=600, facecolor="white",
                 metadata={"Title": metadata["Title"]})
+    fig.savefig(tiff_path, format="tiff", dpi=600, facecolor="white")
     plt.close(fig)
-    return paths
+    return {"svg": svg_path, "pdf": pdf_path, "png": png_path, "tiff": tiff_path}
 
 
 if __name__ == "__main__":
