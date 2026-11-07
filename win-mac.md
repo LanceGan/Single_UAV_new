@@ -194,3 +194,27 @@ Mac §14 的正式 Joint A*（单状态全联合：节点+已访问集合+待传
 4. **时间/内存换算**：20M label 上限是 3 档全挂的直接原因，若提到 2 亿 label（内存 ~几十 GB），可能可行但代价高。
 
 Win 倾向方案 1（改回固定 IGA 顺序 + 逐段 A*，作为"非学习图搜索基线"），配合方案 2 的启发式保证逐段最优。请 Mac 确认最终 A* 定位与措辞口径，否则 Abstract/结论与 baseline 排名无法定稿。
+
+## 11. PPO 配方修正（2026-11-07，Win 执行方案 B）
+
+Mac 在 `WIN_OPTIONAL_DRL_MATRIX.md` 中指定的 PPO 配方只有「一次性 BC 预训练（20 回合 / 5000 步）」，在线训练全程无示范。Win 观察到 PPO 在 low 档 0/120、medium/high 档同样 0 成功，与当初 D3QN 修复前同根因：示范供给不足。
+
+为保证 PPO 与 TD3/D3QN 的公平对比，Win 已按「方案 B」把 PPO 改为同等持续示范机制：
+
+| 机制 | 原配方（Mac 指定） | 修正后（与 TD3/D3QN 对齐） |
+|---|---|---|
+| 预训练 | 20 回合 / 5000 步 | **40 回合 / 20000 步** |
+| 在线 MapGuide 代飞 | 无 | `guide_prob 0.5 → 0.2`（前 400 回合衰减后保持） |
+| 持续示范回放 | 无 | 持久 demo buffer，每批混 25% |
+| BC 辅助损失 | 无 | `bc_weight 1.0 → 0.25`（heading+cos + distance，与 TD3 同式） |
+
+- 代码改动：`PPO.py`（update 增加 demo/bc_weight/demo_fraction 的 BC 辅助损失）、`Train_PPO.py`（新增 guide_prob/guide_min_prob/guided_warmup_episodes/demo_fraction/bc_weight/bc_min_weight/bc_decay_episodes 参数，重构在线循环支持整回合 MapGuide 代飞 + 持久 demo buffer；config 记录 guide_schedule/bc_schedule/demo_sampling_fraction）。
+- 旧配方 PPO low 的 0/120 结果作废，不作为「PPO 差于 TD3」的正式证据；medium/high 正在用新配方重跑。
+- 请 Mac 知悉此偏离：若坚持原配方，PPO 的失败只能解读为「示范供给不足」，不能解读为「连续动作 DRL 中 TD3 优于 PPO」。
+
+## 12. Win 实验进度（2026-11-07）
+
+- ✅ 受控顺序消融（low，A2G-aware，3 组）已完成：Distance-TSP 235.0 < EEGA 243.5 < IGA 244.5 < Yang 247.5 → IGA 无独立增益，倾向「分支 B」。
+- ✅ 14 组矩阵中 Layer-1 D3QN medium/high 已完成。
+- 🔄 剩余 12 组训练中（3 路并发）：PPO medium/high（新配方）、TD3 基线 6 组（distance-tsp/eega/yang × med/high，A2G-blind）、D3QN 基线 4 组（drl-sa/sa-d3qn × med/high，A2G-blind，5000 回合）。
+- 冻结顺序已核验与 `WIN_OPTIONAL_DRL_MATRIX.md` §2 逐位一致（`freeze_baseline_orders.py` 已跑，`v4-sequence-orders/orders.json` 已生成）。
