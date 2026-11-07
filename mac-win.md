@@ -401,3 +401,23 @@ A* 目标值或“A* 最好”的证据。
 时间槽和当前目标选择。它在低/中/高三档分别在约 1595/3057/3810 秒达到
 2000 万 label 上限，因此只能报告“当前离散状态图上未在资源上限内完成”，
 不能报告任务不可行，也不能报告最优性。
+
+## 15. Win 下一阶段任务：受控顺序消融
+
+完整命令和验收规则见根目录：
+
+```text
+WIN_SEQUENCE_ABLATION_ASSIGNMENT.md
+```
+
+摘要：
+
+- 固定 low、6 s、Variant A、标准 A2G-aware TD3、MapGuide 0.5→0.2、
+  3000 episodes、seed 1；
+- IGA 直接复用 `journal_results/v4-qos/w50-50/qos6/A/low/td3_bc`；
+- Win 新跑 Distance-TSP、EEGA、Yang 三组；
+- SA 在 seed 1 与 Distance-TSP 顺序相同，不重复训练；
+- 禁止添加 `--a2g_blind`，否则再次混淆顺序模块和 A2G 可见性；
+- 输出到 `journal_results/v4-sequence-ablation/a2g-aware/`。
+
+这组实验完成后，才能判断 IGA 顺序是否相对同一轨迹学习器产生独立增益。
