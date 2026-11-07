@@ -17,7 +17,7 @@
   },
   "qos": [
     {
-      "label": "TD3 (0.8, 0.2)",
+      "label": "CA-TD3 (0.8, 0.2)",
       "source": "journal_results/v4-qos/w80-20/qos3/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 3.0,
@@ -46,7 +46,7 @@
       "w2": 0.2
     },
     {
-      "label": "TD3 (0.8, 0.2)",
+      "label": "CA-TD3 (0.8, 0.2)",
       "source": "journal_results/v4-qos/w80-20/qos4/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 4.0,
@@ -75,7 +75,7 @@
       "w2": 0.2
     },
     {
-      "label": "TD3 (0.8, 0.2)",
+      "label": "CA-TD3 (0.8, 0.2)",
       "source": "journal_results/v4-qos/w80-20/qos5/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 5.0,
@@ -104,7 +104,7 @@
       "w2": 0.2
     },
     {
-      "label": "TD3 (0.8, 0.2)",
+      "label": "CA-TD3 (0.8, 0.2)",
       "source": "journal_results/v4-qos/w80-20/qos6/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 6.0,
@@ -133,7 +133,7 @@
       "w2": 0.2
     },
     {
-      "label": "TD3 (0.8, 0.2)",
+      "label": "CA-TD3 (0.8, 0.2)",
       "source": "journal_results/v4-qos/w80-20/qos8/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 8.0,
@@ -162,7 +162,7 @@
       "w2": 0.2
     },
     {
-      "label": "TD3 (0.5, 0.5)",
+      "label": "CA-TD3 (0.5, 0.5)",
       "source": "journal_results/v4-qos/w50-50/qos3/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 3.0,
@@ -191,7 +191,7 @@
       "w2": 0.5
     },
     {
-      "label": "TD3 (0.5, 0.5)",
+      "label": "CA-TD3 (0.5, 0.5)",
       "source": "journal_results/v4-qos/w50-50/qos4/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 4.0,
@@ -220,7 +220,7 @@
       "w2": 0.5
     },
     {
-      "label": "TD3 (0.5, 0.5)",
+      "label": "CA-TD3 (0.5, 0.5)",
       "source": "journal_results/v4-qos/w50-50/qos5/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 5.0,
@@ -249,7 +249,7 @@
       "w2": 0.5
     },
     {
-      "label": "TD3 (0.5, 0.5)",
+      "label": "CA-TD3 (0.5, 0.5)",
       "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 6.0,
@@ -278,7 +278,7 @@
       "w2": 0.5
     },
     {
-      "label": "TD3 (0.5, 0.5)",
+      "label": "CA-TD3 (0.5, 0.5)",
       "source": "journal_results/v4-qos/w50-50/qos8/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 8.0,
@@ -307,7 +307,7 @@
       "w2": 0.5
     },
     {
-      "label": "TD3 (0.2, 0.8)",
+      "label": "CA-TD3 (0.2, 0.8)",
       "source": "journal_results/v4-qos/w20-80/qos3/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 3.0,
@@ -336,7 +336,7 @@
       "w2": 0.8
     },
     {
-      "label": "TD3 (0.2, 0.8)",
+      "label": "CA-TD3 (0.2, 0.8)",
       "source": "journal_results/v4-qos/w20-80/qos4/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 4.0,
@@ -365,7 +365,7 @@
       "w2": 0.8
     },
     {
-      "label": "TD3 (0.2, 0.8)",
+      "label": "CA-TD3 (0.2, 0.8)",
       "source": "journal_results/v4-qos/w20-80/qos5/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 5.0,
@@ -394,7 +394,7 @@
       "w2": 0.8
     },
     {
-      "label": "TD3 (0.2, 0.8)",
+      "label": "CA-TD3 (0.2, 0.8)",
       "source": "journal_results/v4-qos/w20-80/qos6/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 6.0,
@@ -423,7 +423,7 @@
       "w2": 0.8
     },
     {
-      "label": "TD3 (0.2, 0.8)",
+      "label": "CA-TD3 (0.2, 0.8)",
       "source": "journal_results/v4-qos/w20-80/qos8/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 8.0,
@@ -454,7 +454,7 @@
   ],
   "weights_at_qos6": [
     {
-      "label": "TD3 (0.8, 0.2)",
+      "label": "CA-TD3 (0.8, 0.2)",
       "source": "journal_results/v4-qos/w80-20/qos6/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 6.0,
@@ -483,7 +483,7 @@
       "w2": 0.2
     },
     {
-      "label": "TD3 (0.5, 0.5)",
+      "label": "CA-TD3 (0.5, 0.5)",
       "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 6.0,
@@ -512,7 +512,7 @@
       "w2": 0.5
     },
     {
-      "label": "TD3 (0.2, 0.8)",
+      "label": "CA-TD3 (0.2, 0.8)",
       "source": "journal_results/v4-qos/w20-80/qos6/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 6.0,
@@ -545,7 +545,7 @@
     "proposed": [
       {
         "level": "Low",
-        "label": "TD3 (0.5, 0.5)",
+        "label": "CA-TD3 (0.5, 0.5)",
         "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
         "algorithm": "td3_bc",
         "budget_s": 6.0,
@@ -575,7 +575,7 @@
       },
       {
         "level": "Medium",
-        "label": "PRISM-TD3",
+        "label": "DRM-HO",
         "source": "journal_results/v4-models/load/medium/A/medium/td3_bc",
         "algorithm": "td3_bc",
         "budget_s": 6.0,
@@ -602,7 +602,7 @@
       },
       {
         "level": "High",
-        "label": "PRISM-TD3",
+        "label": "DRM-HO",
         "source": "journal_results/v4-models/load/high/A/high/td3_bc",
         "algorithm": "td3_bc",
         "budget_s": 6.0,
@@ -653,11 +653,139 @@
         "outage_s": 2.5,
         "source": "journal_results/v4-deterministic/mapguide-preflight-6/high/preflight.json"
       }
+    ],
+    "pure_heuristics": [
+      {
+        "label": "A*",
+        "source": "journal_results/v4-deterministic/pure-heuristics-6/astar/low/metrics.json",
+        "algorithm": "Pure A*",
+        "budget_s": 6.0,
+        "evaluations": 1,
+        "feasible_evaluations": 0,
+        "feasible_rate": 0.0,
+        "best_feasible": null,
+        "selected_evaluation": {
+          "episode": null,
+          "success": false,
+          "termination_reason": "qos_violation",
+          "task_time_s": 80.5,
+          "transmission_delay_s": 55.5,
+          "outage_time_s": 6.5,
+          "visited_inspection_points": 1
+        },
+        "level": "low",
+        "deterministic": true
+      },
+      {
+        "label": "PSO",
+        "source": "journal_results/v4-deterministic/pure-heuristics-6/pso/low/metrics.json",
+        "algorithm": "Pure PSO",
+        "budget_s": 6.0,
+        "evaluations": 1,
+        "feasible_evaluations": 0,
+        "feasible_rate": 0.0,
+        "best_feasible": null,
+        "selected_evaluation": {
+          "episode": null,
+          "success": false,
+          "termination_reason": "qos_violation",
+          "task_time_s": 65.5,
+          "transmission_delay_s": 42.5,
+          "outage_time_s": 6.5,
+          "visited_inspection_points": 1
+        },
+        "level": "low",
+        "deterministic": true
+      },
+      {
+        "label": "A*",
+        "source": "journal_results/v4-deterministic/pure-heuristics-6/astar/medium/metrics.json",
+        "algorithm": "Pure A*",
+        "budget_s": 6.0,
+        "evaluations": 1,
+        "feasible_evaluations": 0,
+        "feasible_rate": 0.0,
+        "best_feasible": null,
+        "selected_evaluation": {
+          "episode": null,
+          "success": false,
+          "termination_reason": "qos_violation",
+          "task_time_s": 135.5,
+          "transmission_delay_s": 110.5,
+          "outage_time_s": 6.5,
+          "visited_inspection_points": 1
+        },
+        "level": "medium",
+        "deterministic": true
+      },
+      {
+        "label": "PSO",
+        "source": "journal_results/v4-deterministic/pure-heuristics-6/pso/medium/metrics.json",
+        "algorithm": "Pure PSO",
+        "budget_s": 6.0,
+        "evaluations": 1,
+        "feasible_evaluations": 0,
+        "feasible_rate": 0.0,
+        "best_feasible": null,
+        "selected_evaluation": {
+          "episode": null,
+          "success": false,
+          "termination_reason": "qos_violation",
+          "task_time_s": 107.5,
+          "transmission_delay_s": 84.5,
+          "outage_time_s": 6.5,
+          "visited_inspection_points": 1
+        },
+        "level": "medium",
+        "deterministic": true
+      },
+      {
+        "label": "A*",
+        "source": "journal_results/v4-deterministic/pure-heuristics-6/astar/high/metrics.json",
+        "algorithm": "Pure A*",
+        "budget_s": 6.0,
+        "evaluations": 1,
+        "feasible_evaluations": 0,
+        "feasible_rate": 0.0,
+        "best_feasible": null,
+        "selected_evaluation": {
+          "episode": null,
+          "success": false,
+          "termination_reason": "qos_violation",
+          "task_time_s": 153.5,
+          "transmission_delay_s": 128.5,
+          "outage_time_s": 6.5,
+          "visited_inspection_points": 1
+        },
+        "level": "high",
+        "deterministic": true
+      },
+      {
+        "label": "PSO",
+        "source": "journal_results/v4-deterministic/pure-heuristics-6/pso/high/metrics.json",
+        "algorithm": "Pure PSO",
+        "budget_s": 6.0,
+        "evaluations": 1,
+        "feasible_evaluations": 0,
+        "feasible_rate": 0.0,
+        "best_feasible": null,
+        "selected_evaluation": {
+          "episode": null,
+          "success": false,
+          "termination_reason": "qos_violation",
+          "task_time_s": 121.5,
+          "transmission_delay_s": 98.5,
+          "outage_time_s": 6.5,
+          "visited_inspection_points": 1
+        },
+        "level": "high",
+        "deterministic": true
+      }
     ]
   },
   "layer1": [
     {
-      "label": "TD3 (0.5, 0.5)",
+      "label": "CA-TD3 (0.5, 0.5)",
       "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 6.0,
@@ -729,11 +857,53 @@
         "outage_time_s": 6.5,
         "visited_inspection_points": 6
       }
+    },
+    {
+      "label": "A*",
+      "source": "journal_results/v4-deterministic/pure-heuristics-6/astar/low/metrics.json",
+      "algorithm": "Pure A*",
+      "budget_s": 6.0,
+      "evaluations": 1,
+      "feasible_evaluations": 0,
+      "feasible_rate": 0.0,
+      "best_feasible": null,
+      "selected_evaluation": {
+        "episode": null,
+        "success": false,
+        "termination_reason": "qos_violation",
+        "task_time_s": 80.5,
+        "transmission_delay_s": 55.5,
+        "outage_time_s": 6.5,
+        "visited_inspection_points": 1
+      },
+      "level": "low",
+      "deterministic": true
+    },
+    {
+      "label": "PSO",
+      "source": "journal_results/v4-deterministic/pure-heuristics-6/pso/low/metrics.json",
+      "algorithm": "Pure PSO",
+      "budget_s": 6.0,
+      "evaluations": 1,
+      "feasible_evaluations": 0,
+      "feasible_rate": 0.0,
+      "best_feasible": null,
+      "selected_evaluation": {
+        "episode": null,
+        "success": false,
+        "termination_reason": "qos_violation",
+        "task_time_s": 65.5,
+        "transmission_delay_s": 42.5,
+        "outage_time_s": 6.5,
+        "visited_inspection_points": 1
+      },
+      "level": "low",
+      "deterministic": true
     }
   ],
   "layer3": [
     {
-      "label": "TD3 (0.5, 0.5)",
+      "label": "CA-TD3 (0.5, 0.5)",
       "source": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
       "algorithm": "td3_bc",
       "budget_s": 6.0,

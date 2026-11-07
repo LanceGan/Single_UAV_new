@@ -1,5 +1,9 @@
 # Baseline 对比方案与实施计划
 
+> **2026-11-07 最新定义：** 正式 A*/PSO 对比已改为完全不读取 G2A/A2G、
+> 载荷或 PRIGA 顺序的纯几何端到端启发式。旧文中的 Joint A*/PSO 记录只作
+> 历史追溯，以 `mac-win.md` §14 和 `pure_heuristic_baselines.py` 为准。
+
 > **2026-11-05 约束更新**：正式 QoS 硬约束已改为最长一次连续中断 `T_out^cont ≤ T_out^cont,max`。本文旧结果中的 `T_out` 若为累计值，只作历史追溯；新版正式实验按 `QOS_RETRAINING_PLAN.md` 重做。
 
 > 更新时间：2026-10-31  

@@ -24,7 +24,7 @@ def test_framework_figure_contains_required_method_semantics(tmp_path: Path):
         "G2A outage",
         "A2G uplink-SNR",
         "Heterogeneous payloads",
-        "PRISM: payload + radio",
+        "PRIGA: payload + radio",
         "Optimized inspection order",
         "Twin critics",
         "Training only",
@@ -41,10 +41,10 @@ def test_framework_uses_compact_labels_for_ieee_column_width(tmp_path: Path):
     svg = build_framework_figure(tmp_path)["svg"].read_text(encoding="utf-8")
 
     assert "System inputs" in svg
-    assert "Map-aware TD3" in svg
+    assert "CA-TD3: communication-adaptive" in svg
     assert "Mission output" in svg
     assert "System and task inputs" not in svg
-    assert "Map-aware TD3 trajectory optimization" not in svg
+    assert "Communication-adaptive TD3 trajectory optimization" not in svg
     assert "Optimized mission" not in svg
     assert "Guide-free Actor (evaluation)" in svg
     assert "Guide-free Actor at evaluation" not in svg

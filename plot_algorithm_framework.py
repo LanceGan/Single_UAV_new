@@ -1,4 +1,4 @@
-"""Publication figure for the proposed dual-radio-map-aware PRISM-TD3 method.
+"""Publication figure for the proposed DRM-HO hierarchical framework.
 
 The drawing is deliberately self-contained: it does not read training results or
 radio-map files, so regenerating the framework cannot disturb running experiments.
@@ -235,7 +235,7 @@ def build_framework_figure(output_dir: Path | str = DEFAULT_OUTPUT_DIR) -> dict[
     ax.set_ylim(0, 9)
     ax.axis("off")
 
-    _text(ax, 9.0, 8.62, "Proposed dual-radio-map-aware PRISM-TD3 framework",
+    _text(ax, 9.0, 8.62, "Proposed dual-radio-map hierarchical optimization (DRM-HO) framework",
           size=9.0, weight="bold")
     _text(ax, 9.0, 8.22,
           "Heterogeneous inspection payloads  |  Joint sequence and continuous-trajectory optimization",
@@ -243,8 +243,8 @@ def build_framework_figure(output_dir: Path | str = DEFAULT_OUTPUT_DIR) -> dict[
 
     panel_y, panel_h = 0.55, 7.25
     _stage_panel(ax, 0.25, panel_y, 3.10, panel_h, 1, "System inputs", COLORS["ink"])
-    _stage_panel(ax, 3.62, panel_y, 4.18, panel_h, 2, "PRISM: payload + radio", COLORS["iga"])
-    _stage_panel(ax, 8.07, panel_y, 6.45, panel_h, 3, "Map-aware TD3", COLORS["td3"])
+    _stage_panel(ax, 3.62, panel_y, 4.18, panel_h, 2, "PRIGA: payload + radio", COLORS["iga"])
+    _stage_panel(ax, 8.07, panel_y, 6.45, panel_h, 3, "CA-TD3: communication-adaptive", COLORS["td3"])
     _rounded_box(
         ax, 14.80, panel_y, 2.92, panel_h, COLORS["panel"], COLORS["line"],
         radius=0.16, lw=0.8,
@@ -270,7 +270,7 @@ def build_framework_figure(output_dir: Path | str = DEFAULT_OUTPUT_DIR) -> dict[
     _text(ax, 1.80, 2.31, "A2G uplink-SNR", size=5.1, weight="bold", color=COLORS["a2g"])
     ax.add_patch(Rectangle((0.70, 1.86), 2.20, 0.28, facecolor=COLORS["a2g"], alpha=0.30, edgecolor="none"))
 
-    # Stage 2: PRISM.
+    # Stage 2: PRIGA.
     _card(
         ax, 3.82, 5.85, 3.78, 1.42, "Edge feature construction",
         ["flight time + payload upload", "+ G2A outage exposure"],
@@ -349,13 +349,13 @@ def build_framework_figure(output_dir: Path | str = DEFAULT_OUTPUT_DIR) -> dict[
     _arrow(ax, (11.23, 2.35), (14.52, 2.35), color=COLORS["td3"], lw=0.9)
     _arrow(ax, (14.52, 2.35), (15.00, 2.35), color=COLORS["td3"], lw=0.9)
 
-    stem = output_dir / "prism_td3_framework"
+    stem = output_dir / "drm_ho_framework"
     svg_path = stem.with_suffix(".svg")
     pdf_path = stem.with_suffix(".pdf")
     png_path = stem.with_suffix(".png")
     tiff_path = stem.with_suffix(".tiff")
     metadata = {
-        "Title": "Proposed dual-radio-map-aware PRISM-TD3 framework",
+        "Title": "Proposed dual-radio-map hierarchical optimization (DRM-HO) framework",
         "Subject": "UAV inspection sequence and trajectory optimization",
         "Creator": "Matplotlib",
     }

@@ -1,0 +1,304 @@
+{
+  "low": {
+    "priga": {
+      "method": "priga",
+      "order": [
+        1,
+        6,
+        2,
+        3,
+        5,
+        4
+      ],
+      "success": true,
+      "time_s": 196.5,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 450.0
+    },
+    "distance_tsp": {
+      "method": "distance_tsp",
+      "order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "success": true,
+      "time_s": 179.0,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 450.0
+    },
+    "eega": {
+      "method": "eega",
+      "order": [
+        1,
+        6,
+        5,
+        3,
+        2,
+        4
+      ],
+      "success": true,
+      "time_s": 188.0,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 450.0
+    },
+    "yang": {
+      "method": "yang",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "success": true,
+      "time_s": 193.5,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 450.0
+    },
+    "drl_sa": {
+      "method": "yang",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "success": true,
+      "time_s": 193.5,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 450.0,
+      "reused_from": "yang"
+    },
+    "sa_d3qn": {
+      "method": "distance_tsp",
+      "order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "success": true,
+      "time_s": 179.0,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 450.0,
+      "reused_from": "distance_tsp"
+    }
+  },
+  "medium": {
+    "priga": {
+      "method": "priga",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "success": true,
+      "time_s": 242.0,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 900.0
+    },
+    "distance_tsp": {
+      "method": "distance_tsp",
+      "order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "success": true,
+      "time_s": 229.5,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 900.0
+    },
+    "eega": {
+      "method": "distance_tsp",
+      "order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "success": true,
+      "time_s": 229.5,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 900.0,
+      "reused_from": "distance_tsp"
+    },
+    "yang": {
+      "method": "yang",
+      "order": [
+        1,
+        6,
+        5,
+        3,
+        2,
+        4
+      ],
+      "success": true,
+      "time_s": 230.5,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 900.0
+    },
+    "drl_sa": {
+      "method": "yang",
+      "order": [
+        1,
+        6,
+        5,
+        3,
+        2,
+        4
+      ],
+      "success": true,
+      "time_s": 230.5,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 900.0,
+      "reused_from": "yang"
+    },
+    "sa_d3qn": {
+      "method": "distance_tsp",
+      "order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "success": true,
+      "time_s": 229.5,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 900.0,
+      "reused_from": "distance_tsp"
+    }
+  },
+  "high": {
+    "priga": {
+      "method": "priga",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "success": true,
+      "time_s": 305.0,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 1500.0
+    },
+    "distance_tsp": {
+      "method": "distance_tsp",
+      "order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "success": true,
+      "time_s": 292.0,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 1500.0
+    },
+    "eega": {
+      "method": "distance_tsp",
+      "order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "success": true,
+      "time_s": 292.0,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 1500.0,
+      "reused_from": "distance_tsp"
+    },
+    "yang": {
+      "method": "yang",
+      "order": [
+        2,
+        3,
+        5,
+        6,
+        1,
+        4
+      ],
+      "success": true,
+      "time_s": 330.5,
+      "outage_s": 4.0,
+      "visited_points": 6,
+      "uploaded_mb": 1500.0
+    },
+    "drl_sa": {
+      "method": "yang",
+      "order": [
+        2,
+        3,
+        5,
+        6,
+        1,
+        4
+      ],
+      "success": true,
+      "time_s": 330.5,
+      "outage_s": 4.0,
+      "visited_points": 6,
+      "uploaded_mb": 1500.0,
+      "reused_from": "yang"
+    },
+    "sa_d3qn": {
+      "method": "distance_tsp",
+      "order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "success": true,
+      "time_s": 292.0,
+      "outage_s": 2.5,
+      "visited_points": 6,
+      "uploaded_mb": 1500.0,
+      "reused_from": "distance_tsp"
+    }
+  }
+}

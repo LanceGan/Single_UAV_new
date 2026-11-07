@@ -1,0 +1,122 @@
+{
+  "low": {
+    "Pure A*": {
+      "success": false,
+      "termination_reason": "qos_violation",
+      "inspection_order": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "path_distance_world_units": 52.164012194668565,
+      "task_time_s": 80.5,
+      "transmission_delay_s": 55.5,
+      "objective_s": null,
+      "outage_s": 6.5,
+      "visited_inspection_points": 1,
+      "uploaded_mb": 90.0
+    },
+    "Pure PSO": {
+      "success": false,
+      "termination_reason": "qos_violation",
+      "inspection_order": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "path_distance_world_units": 44.51267109805052,
+      "task_time_s": 65.5,
+      "transmission_delay_s": 42.5,
+      "objective_s": null,
+      "outage_s": 6.5,
+      "visited_inspection_points": 1,
+      "uploaded_mb": 90.0
+    }
+  },
+  "medium": {
+    "Pure A*": {
+      "success": false,
+      "termination_reason": "qos_violation",
+      "inspection_order": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "path_distance_world_units": 52.164012194668565,
+      "task_time_s": 135.5,
+      "transmission_delay_s": 110.5,
+      "objective_s": null,
+      "outage_s": 6.5,
+      "visited_inspection_points": 1,
+      "uploaded_mb": 180.0
+    },
+    "Pure PSO": {
+      "success": false,
+      "termination_reason": "qos_violation",
+      "inspection_order": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "path_distance_world_units": 44.51267109805052,
+      "task_time_s": 107.5,
+      "transmission_delay_s": 84.5,
+      "objective_s": null,
+      "outage_s": 6.5,
+      "visited_inspection_points": 1,
+      "uploaded_mb": 180.0
+    }
+  },
+  "high": {
+    "Pure A*": {
+      "success": false,
+      "termination_reason": "qos_violation",
+      "inspection_order": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "path_distance_world_units": 52.164012194668565,
+      "task_time_s": 153.5,
+      "transmission_delay_s": 128.5,
+      "objective_s": null,
+      "outage_s": 6.5,
+      "visited_inspection_points": 1,
+      "uploaded_mb": 210.0
+    },
+    "Pure PSO": {
+      "success": false,
+      "termination_reason": "qos_violation",
+      "inspection_order": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "path_distance_world_units": 44.51267109805052,
+      "task_time_s": 121.5,
+      "transmission_delay_s": 98.5,
+      "objective_s": null,
+      "outage_s": 6.5,
+      "visited_inspection_points": 1,
+      "uploaded_mb": 210.0
+    }
+  }
+}

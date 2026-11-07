@@ -338,14 +338,16 @@ Mac 收到 actor bundle 后将：
 4. 重画 Proposed 三档、三权重和 A2G 基线的双地图轨迹图；
 5. 运行字号、对齐和 PDF 碰撞审计后再同步到论文仓库。
 
-## 14. 正式 Joint A*/PSO 结果与 Win 写作交接（2026-11-07）
+## 14. 正式 Pure A*/PSO 结果与 Win 写作交接（2026-11-07）
 
 ### 14.1 实验定义
 
-- Proposed：IGA 选择巡检顺序，**标准 TD3 执行轨迹；TD3 没有算法改进**。
-- Joint A*：在 25 m 离散图上同时搜索巡检顺序、飞行轨迹、上传过程与 QoS 可行域。
-- Joint PSO：每个粒子同时编码巡检顺序优先级、每段控制点偏移和悬停时长。
-- 两种基线均不得调用 IGA 生成顺序。
+- Proposed：DRM-HO，由 PRIGA 选择巡检顺序、CA-TD3 优化连续轨迹；CA-TD3
+  底层更新仍是标准 TD3。
+- Pure A*：在 `(UAV位置, 已访问点集合)` 上只最小化几何距离，生成完整端到端轨迹。
+- Pure PSO：以纯几何路径长度优化完整巡检排列，并映射为分段直线轨迹。
+- 两种纯启发式均不读取 G2A、A2G、载荷或 PRIGA 顺序，统一采用“到点后悬停
+  至上传完成”的重放协议。
 
 ### 14.2 正式结果
 
@@ -356,53 +358,38 @@ journal_results/v4-summary/global-baselines-summary.json
 journal_results/v4-summary/global-baselines-summary.csv
 ```
 
-Joint PSO：
+| 方法 | 候选轨迹长度 | Low 重放 | Medium 重放 | High 重放 |
+|---|---:|---|---|---|
+| Pure A* | 5.216 km | QoS violation，6.5 s，1/6 | 同左 | 同左 |
+| Pure PSO | 4.451 km | QoS violation，6.5 s，1/6 | 同左 | 同左 |
 
-| 负载 | 有效性 | 顺序 | T (s) | tau (s) | T+tau (s) | T_out (s) | 访问/上传 |
-|---|---|---|---:|---:|---:|---:|---|
-| Low | 可行 | `[1,6,3,5,4,2]` | 157.0 | 109.5 | **266.5** | 6.0 | 6/6, 450/450 MB |
-| Medium | 不可行 | `[1,4,3,2,5,6]` | - | - | - | 6.5 | 5/6, 690/900 MB |
-| High | 不可行 | `[1,5,4,3,2,6]` | - | - | - | 6.0 | 3/6, 710/1500 MB |
-
-Medium 的失败原因是 QoS violation；High 的失败原因是 500 s timeout。
-失败轨迹的 T 和 tau 不是可行目标值，不能和 Proposed 的 244.5 s 排名。
-
-Joint A*：
-
-| 负载 | planner status | 最优性证明 | World replay | 处理 |
-|---|---|---|---|---|
-| Low | memory_limit | false | false | 无正式结果 |
-| Medium | memory_limit | false | false | 无正式结果 |
-| High | memory_limit | false | false | 无正式结果 |
-
-三档均达到 20,000,000 labels 上限。部分搜索路径不是完整任务，不能作为
-A* 目标值或“A* 最好”的证据。
+候选轨迹长度只描述几何路径，不是任务目标。两种方法完成第一个巡检点后
+均超过 6 s 最长连续中断约束，因此没有可排名的 `T+tau`。
 
 ### 14.3 Win 可以立即写的部分
 
 - Introduction、Related Work；
 - 系统模型、信道模型、双无线电地图与问题建模；
-- Proposed 方法：数据感知 IGA 顺序 + 标准 TD3 轨迹执行；
+- Proposed 方法：DRM-HO = PRIGA 顺序算法 + CA-TD3 通信感知轨迹算法；
 - 实验协议、负载档位、QoS 定义、`eval_best` 与真实 World 重放；
 - 已完成的 QoS、权重、负载、层面 1、层面 3、A2G 消融和训练曲线；
-- Joint PSO 仅 Low 档的可行结果可作为阶段性结果写入，但必须注明 Medium/High 失败。
+- Pure A*/PSO 的失败边界可写入 Results：完整几何轨迹存在，但 6 s 中断约束不满足。
 
 ### 14.4 暂不能定稿的部分
 
-- 不得引用固定 IGA 顺序 A* 的 `216.0/316.5/445.5 s` 作为正式 A*；
-- 不得写“A* 是全局最优”或“Proposed 接近/优于 A*”；
-- 不得写 Proposed 在三档上均优于 Joint PSO；
-- Abstract、Conclusion 和最终 baseline 排名必须等待 A* 重新求解；
-- 当前每档只有一个 PSO seed，不能写 seed-level 置信区间或显著性。
+- 不得让 Pure A*/PSO 读取无线电地图；
+- 不得把候选路径长度当作 `T+tau`；
+- 不得把不可行的 Pure A*/PSO 结果与 DRM-HO 排名；
+- 当前每个启发式只报告一次确定性重放，不能写 seed-level 置信区间。
 
 ### 14.5 对 A* 的技术表述
 
-本轮是单状态全联合 A*：状态包含节点、已访问集合、待传数据、连续中断、
-时间槽和当前目标选择。它在低/中/高三档分别在约 1595/3057/3810 秒达到
-2000 万 label 上限，因此只能报告“当前离散状态图上未在资源上限内完成”，
-不能报告任务不可行，也不能报告最优性。
+Pure A* 在 40825 次状态扩展后找到最短几何路径；Pure PSO 在 100 次上限内
+第 4 次迭代找到 4.451 km 路径。两者均是纯几何启发式，不包含通信可行域。
 
-## 15. Win 下一阶段任务：受控顺序消融
+完整定义、命令和写作边界见 `PURE_HEURISTIC_BASELINES.md`。
+
+## 15. Mac 正在执行：受控顺序消融
 
 完整命令和验收规则见根目录：
 
@@ -412,12 +399,43 @@ WIN_SEQUENCE_ABLATION_ASSIGNMENT.md
 
 摘要：
 
-- 固定 low、6 s、Variant A、标准 A2G-aware TD3、MapGuide 0.5→0.2、
+- 固定 low、6 s、Variant A、A2G-aware CA-TD3、MapGuide 0.5→0.2、
   3000 episodes、seed 1；
-- IGA 直接复用 `journal_results/v4-qos/w50-50/qos6/A/low/td3_bc`；
-- Win 新跑 Distance-TSP、EEGA、Yang 三组；
+- PRIGA 直接复用 `journal_results/v4-qos/w50-50/qos6/A/low/td3_bc`；
+- Mac 新跑 Distance-TSP、EEGA、Yang 三组；
 - SA 在 seed 1 与 Distance-TSP 顺序相同，不重复训练；
 - 禁止添加 `--a2g_blind`，否则再次混淆顺序模块和 A2G 可见性；
 - 输出到 `journal_results/v4-sequence-ablation/a2g-aware/`。
 
-这组实验完成后，才能判断 IGA 顺序是否相对同一轨迹学习器产生独立增益。
+三组由 `run_sequence_ablation_mac.sh` 在 MPS 上串行执行，日志位于
+`journal_results/v4-sequence-ablation/a2g-aware/logs/`。
+
+这组实验完成后，才能判断 PRIGA 顺序是否相对同一轨迹学习器产生独立增益。
+
+## 16. Optional DRL 扩展（Win）
+
+除多 seed 外的可选实验已全部纳入正式队列，完整命令见：
+
+```text
+WIN_OPTIONAL_DRL_MATRIX.md
+```
+
+Win 新增 14 组 DRL：
+
+- Layer-1 D3QN Medium/High：2 组；
+- PPO Medium/High：2 组；
+- Distance-TSP / EEGA / Yang-style + TD3 Medium/High：6 组；
+- DRL-SA / SA-D3QN Medium/High：4 组。
+
+Mac 已完成确定性部分：
+
+```text
+journal_results/v4-sequence-orders/orders.json
+journal_results/v4-sequence-preflight/summary.json
+```
+
+三档所有唯一顺序均通过当前 MapGuide 预检，完成 6/6 巡检和完整上传。
+
+后续待办：中断概率阈值鲁棒性实验，固定 Low、6 s、w50/50，比较
+`kappa_out = 0.5/0.3/0.2`。0.5 复用现有结果，0.3 和 0.2 各新跑一次。
+完整协议和代码参数化要求见 `DEFERRED_EXPERIMENTS.md`。

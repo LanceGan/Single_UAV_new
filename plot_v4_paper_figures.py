@@ -66,11 +66,15 @@ QOS_WEIGHTS = (
 PROPOSED_COLOR = "#0B6E99"
 PPO_COLOR = "#6A51A3"
 D3QN_COLOR = "#2A9D8F"
+PURE_ASTAR_COLOR = "#8C6D31"
+PURE_PSO_COLOR = "#A05195"
 BLIND_COLOR = "#B07C2B"
 VISIBLE_COLOR = "#2A9D8F"
 REFERENCE_COLOR = "#5F6368"
 METHOD_COLORS = {
-    "PRISM-TD3": PROPOSED_COLOR,
+    "DRM-HO": PROPOSED_COLOR,
+    "A*": PURE_ASTAR_COLOR,
+    "PSO": PURE_PSO_COLOR,
     "Yang-style+TD3": "#8C6D31",
     "EEGA-TD3": "#6B8E23",
     "Distance-TSP+TD3": BLIND_COLOR,
@@ -209,6 +213,58 @@ def load_mapguide_preflight(level: str) -> dict:
     }
 
 
+def load_pure_heuristic(level: str, method: str) -> dict:
+    slugs = {"A*": "astar", "PSO": "pso"}
+    if method not in slugs:
+        raise ValueError(f"unknown pure heuristic baseline: {method}")
+    source = (
+        ROOT
+        / "journal_results"
+        / "v4-deterministic"
+        / "pure-heuristics-6"
+        / slugs[method]
+        / level
+        / "metrics.json"
+    )
+    data = _read_json(source)
+    if float(data["outage_limit_s"]) != 6.0:
+        raise ValueError(f"{source}: expected the 6 s main outage budget")
+    if data.get("qos_constraint") != "max_contiguous_outage":
+        raise ValueError(f"{source}: expected max_contiguous_outage QoS constraint")
+    success = bool(data.get("success"))
+    record = {
+        "label": method,
+        "source": str(source.relative_to(ROOT)),
+        "algorithm": data.get("algorithm"),
+        "budget_s": 6.0,
+        "evaluations": 1,
+        "feasible_evaluations": int(success),
+        "feasible_rate": float(success),
+        "best_feasible": None,
+        "selected_evaluation": {
+            "episode": None,
+            "success": success,
+            "termination_reason": data.get("termination_reason"),
+            "task_time_s": data.get("task_time_s"),
+            "transmission_delay_s": data.get("transmission_delay_s"),
+            "outage_time_s": data.get("outage_time_s"),
+            "visited_inspection_points": data.get("visited_inspection_points"),
+        },
+        "level": level,
+        "deterministic": True,
+    }
+    if success:
+        record["best_feasible"] = {
+            "episode": None,
+            "task_time_s": float(data["task_time_s"]),
+            "transmission_delay_s": float(data["transmission_delay_s"]),
+            "objective_s": float(data["task_time_s"]) + float(data["transmission_delay_s"]),
+            "outage_s": float(data["outage_time_s"]),
+            "visited_inspection_points": int(data["visited_inspection_points"]),
+        }
+    return record
+
+
 def build_dataset() -> dict:
     qos = []
     qos_lookup = {}
@@ -224,7 +280,7 @@ def build_dataset() -> dict:
                 / "low"
                 / "td3_bc"
             )
-            record = load_run(run_dir, f"TD3 {weight['long_label']}", budget)
+            record = load_run(run_dir, f"CA-TD3 {weight['long_label']}", budget)
             record.update({"weight_id": weight["id"], "w1": weight["w1"], "w2": weight["w2"]})
             qos.append(record)
             qos_lookup[(weight["id"], budget)] = record
@@ -245,6 +301,8 @@ def build_dataset() -> dict:
             "PPO",
             6,
         ),
+        load_pure_heuristic("low", "A*"),
+        load_pure_heuristic("low", "PSO"),
     ]
 
     layer3 = [
@@ -289,7 +347,7 @@ def build_dataset() -> dict:
                 / "A"
                 / "medium"
                 / "td3_bc",
-                "PRISM-TD3",
+                "DRM-HO",
                 6,
             ),
         ),
@@ -304,7 +362,7 @@ def build_dataset() -> dict:
                 / "A"
                 / "high"
                 / "td3_bc",
-                "PRISM-TD3",
+                "DRM-HO",
                 6,
             ),
         ),
@@ -351,6 +409,11 @@ def build_dataset() -> dict:
         "load": {
             "proposed": [{"level": level, **record} for level, record in load_paths],
             "mapguide": [load_mapguide_preflight(level) for level in ("low", "medium", "high")],
+            "pure_heuristics": [
+                load_pure_heuristic(level, method)
+                for level in ("low", "medium", "high")
+                for method in ("A*", "PSO")
+            ],
         },
         "layer1": layer1,
         "layer3": layer3,
@@ -396,8 +459,8 @@ def _outage(record: dict) -> float:
 
 
 def _method_label(label: str) -> str:
-    if label.startswith("TD3 (0.5, 0.5)"):
-        return "PRISM-TD3"
+    if label.startswith("CA-TD3 (0.5, 0.5)"):
+        return "DRM-HO"
     return label
 
 
@@ -520,7 +583,6 @@ def plot_weight_sensitivity(dataset: dict, output: Path) -> None:
 
 def plot_load_sensitivity(dataset: dict, output: Path) -> None:
     proposed = dataset["load"]["proposed"]
-    mapguide = dataset["load"]["mapguide"]
     levels = [row["level"] for row in proposed]
     x = np.arange(len(levels))
     figure, axes = plt.subplots(1, 2, figsize=(WIDTH_DOUBLE_IN, 2.65))
@@ -530,16 +592,6 @@ def plot_load_sensitivity(dataset: dict, output: Path) -> None:
     delays = np.asarray([_delay(row) for row in proposed])
     axes[0].bar(x, times, width=0.58, color=PROPOSED_COLOR, label="T")
     axes[0].bar(x, delays, width=0.58, bottom=times, color="#79A9C1", label="τ")
-    axes[0].scatter(
-        x,
-        [row["objective_s"] for row in mapguide],
-        marker="_",
-        s=95,
-        linewidth=1.6,
-        color=REFERENCE_COLOR,
-        label="MapGuide",
-        zorder=4,
-    )
     for index, row in enumerate(proposed):
         total = _objective(row)
         axes[0].annotate(
@@ -555,7 +607,7 @@ def plot_load_sensitivity(dataset: dict, output: Path) -> None:
     axes[0].set_ylim(0, 570)
     axes[0].set_title("Objective decomposition")
     handles, labels = axes[0].get_legend_handles_labels()
-    figure.legend(handles, labels, loc="lower left", bbox_to_anchor=(0.08, 0.01), ncol=3)
+    figure.legend(handles, labels, loc="lower left", bbox_to_anchor=(0.08, 0.01), ncol=2)
 
     rates = [100.0 * row["feasible_rate"] for row in proposed]
     bars = axes[1].bar(x, rates, color=PROPOSED_COLOR, width=0.58)
@@ -582,7 +634,7 @@ def plot_layer1(dataset: dict, output: Path) -> None:
     rows = dataset["layer1"]
     labels = [_method_label(row["label"]) for row in rows]
     x = np.arange(len(rows))
-    colors = [PROPOSED_COLOR, D3QN_COLOR, PPO_COLOR]
+    colors = [METHOD_COLORS.get(label, "#777777") for label in labels]
     feasible = [row["best_feasible"] is not None for row in rows]
     objectives = [_objective(row) if has else np.nan for row, has in zip(rows, feasible)]
 
@@ -591,17 +643,19 @@ def plot_layer1(dataset: dict, output: Path) -> None:
     for index, row in enumerate(rows):
         if feasible[index]:
             axes[0].bar(index, objectives[index], color=colors[index], width=0.58)
-            axes[0].text(
-                index,
-                objectives[index] - 20,
+            axes[0].annotate(
                 f"{objectives[index]:.1f}",
+                xy=(index, objectives[index]),
+                xytext=(0, 6),
+                textcoords="offset points",
                 ha="center",
-                va="top",
-                color="white",
+                va="bottom",
+                color=colors[index],
+                fontsize=6.1,
             )
     axes[0].set_xticks(x, labels)
     axes[0].set_ylabel("Feasible T + τ (s)")
-    axes[0].set_ylim(0, 310)
+    axes[0].set_ylim(0, 500)
     axes[0].set_title("Selected objective")
 
     width = 0.25
@@ -614,18 +668,18 @@ def plot_layer1(dataset: dict, output: Path) -> None:
         axes[1].bar(index + width / 2, delay, width=width, color=colors[index], alpha=0.48)
     axes[1].set_xticks(x, labels)
     axes[1].set_ylabel("Seconds")
-    axes[1].set_ylim(0, 290)
+    axes[1].set_ylim(0, 500)
     axes[1].set_title("T (solid) and τ (light)")
 
-    rates = [100.0 * row["feasible_rate"] for row in rows]
-    axes[2].bar(x, rates, color=colors, width=0.58)
-    for index, row in enumerate(rows):
-        axes[2].text(index, rates[index] + 2, f"{row['feasible_evaluations']}/{row['evaluations']}",
-                     ha="center", va="bottom")
+    outage = [_outage(row) for row in rows]
+    axes[2].bar(x, outage, color=colors, width=0.58)
+    axes[2].axhline(6.0, color="#555555", linestyle=(0, (2, 2)), linewidth=0.8)
     axes[2].set_xticks(x, labels)
-    axes[2].set_ylabel("Feasible evaluations (%)")
-    axes[2].set_ylim(0, 100)
-    axes[2].set_title("Reliability")
+    axes[2].set_ylabel("Longest continuous outage (s)")
+    axes[2].set_ylim(0, 7.2)
+    axes[2].set_title("Constraint use (6 s bound)")
+    for axis in axes:
+        axis.tick_params(axis="x", labelrotation=18)
     for index, axis in enumerate(axes):
         _panel_label(axis, "abc"[index])
     _save_figure(figure, output / "layer1_methods_v4", multi_panel=True)
@@ -721,12 +775,14 @@ def load_rewards(record: dict) -> tuple[np.ndarray, np.ndarray]:
 
 def plot_training_returns(dataset: dict, output: Path) -> None:
     proposed = dataset["load"]["proposed"]
+    d3qn = next(row for row in dataset["layer1"] if row["label"] == "D3QN")
+    ppo = next(row for row in dataset["layer1"] if row["label"] == "PPO")
     network_rows = [
         ("Low", proposed[0], PROPOSED_COLOR),
         ("Medium", proposed[1], "#4C78A8"),
         ("High", proposed[2], "#8C6D31"),
-        ("D3QN", dataset["layer1"][1], D3QN_COLOR),
-        ("PPO", dataset["layer1"][2], PPO_COLOR),
+        ("D3QN", d3qn, D3QN_COLOR),
+        ("PPO", ppo, PPO_COLOR),
     ]
     figure, axis = plt.subplots(figsize=(WIDTH_DOUBLE_IN, 2.85))
     figure.subplots_adjust(left=0.085, right=0.985, bottom=0.22, top=0.86)
@@ -793,7 +849,7 @@ def write_source_data(dataset: dict, output: Path) -> None:
         )
     fieldnames = list(rows[0])
     with (output / "figure_source_data_v4.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 

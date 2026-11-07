@@ -1,5 +1,9 @@
 # 最长连续中断版本：全量重跑分工
 
+> **2026-11-07 最新定义：** 正式 A*/PSO 基线已改为无线电地图-free 的
+> 端到端几何启发式，旧 Joint A*/PSO 章节只作历史追溯。当前入口为
+> `run_pure_heuristics.py`，结果和写作口径见 `mac-win.md` §14。
+
 > 更新日期：2026-11-05
 > 前置版本：`feat/mac` 中 `state_schema = v4-max-contiguous`、`qos_constraint = max_contiguous_outage`
 > 旧结果状态：所有累计中断口径结果标记为 `legacy-cumulative`，不得进入新版主表或主图

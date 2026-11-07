@@ -1,0 +1,361 @@
+{
+  "distance_tsp": {
+    "order": [
+      1,
+      6,
+      5,
+      2,
+      3,
+      4
+    ],
+    "levels": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "meta": {
+      "method": "exact distance TSP over all permutations",
+      "distance_m": 4438.901212895504,
+      "uses_g2a": false,
+      "uses_a2g": false,
+      "uses_payloads": false
+    }
+  },
+  "sa_d3qn": {
+    "order": [
+      1,
+      6,
+      5,
+      2,
+      3,
+      4
+    ],
+    "levels": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "meta": {
+      "method": "simulated annealing on pure flight distance",
+      "seed": 1,
+      "distance_m": 4438.901212895504,
+      "sweeps": 4000,
+      "cooling": 0.995,
+      "uses_g2a": false,
+      "uses_a2g": false,
+      "uses_payloads": false
+    },
+    "alias_of": "distance_tsp"
+  },
+  "levels": {
+    "low": {
+      "payloads_mb": [
+        90.0,
+        90.0,
+        60.0,
+        60.0,
+        90.0,
+        60.0
+      ],
+      "priga": {
+        "order": [
+          1,
+          6,
+          2,
+          3,
+          5,
+          4
+        ],
+        "meta": {
+          "method": "PRIGA seed-1 order"
+        }
+      },
+      "distance_tsp": {
+        "order": [
+          1,
+          6,
+          5,
+          2,
+          3,
+          4
+        ],
+        "alias": "distance_tsp"
+      },
+      "eega": {
+        "order": [
+          1,
+          6,
+          5,
+          3,
+          2,
+          4
+        ],
+        "meta": {
+          "method": "EEGA-style GA on L_ij=(I_i/Q_ij)*E_ij (G2A reciprocity throughput)",
+          "seed": 1,
+          "objective": 3274.491098184568,
+          "uses_g2a": true,
+          "uses_a2g": false,
+          "uses_payloads": true,
+          "adaptation_notes": "Q_ij from G2A reciprocity; adaptive GA operator schedule unpublished, standard tournament/OX/swap used; start legs zero-cost per the literal formula"
+        }
+      },
+      "yang": {
+        "order": [
+          1,
+          6,
+          5,
+          4,
+          2,
+          3
+        ],
+        "meta": {
+          "method": "Yang-style weighted order: flight seconds + I_i/Q_ij, exact over permutations",
+          "objective_s": 326.13778972663107,
+          "uses_g2a": true,
+          "uses_a2g": false,
+          "uses_payloads": true,
+          "adaptation_notes": "original trajectory method is SCA/BCD; TD3 pairing is an adaptation; Q_ij from G2A reciprocity"
+        }
+      },
+      "drl_sa": {
+        "order": [
+          1,
+          6,
+          5,
+          4,
+          2,
+          3
+        ],
+        "meta": {
+          "method": "simulated annealing on flight plus payload offload time",
+          "seed": 1,
+          "objective_s": 326.13778972663107,
+          "sweeps": 4000,
+          "cooling": 0.995,
+          "uses_g2a": true,
+          "uses_a2g": false,
+          "uses_payloads": true,
+          "throughput_estimate": "G2A reciprocity"
+        }
+      },
+      "sa_d3qn": {
+        "order": [
+          1,
+          6,
+          5,
+          2,
+          3,
+          4
+        ],
+        "alias_of": "distance_tsp"
+      }
+    },
+    "medium": {
+      "payloads_mb": [
+        180.0,
+        180.0,
+        180.0,
+        120.0,
+        120.0,
+        120.0
+      ],
+      "priga": {
+        "order": [
+          1,
+          6,
+          5,
+          4,
+          2,
+          3
+        ],
+        "meta": {
+          "method": "PRIGA seed-1 order"
+        }
+      },
+      "distance_tsp": {
+        "order": [
+          1,
+          6,
+          5,
+          2,
+          3,
+          4
+        ],
+        "alias": "distance_tsp"
+      },
+      "eega": {
+        "order": [
+          1,
+          6,
+          5,
+          2,
+          3,
+          4
+        ],
+        "meta": {
+          "method": "EEGA-style GA on L_ij=(I_i/Q_ij)*E_ij (G2A reciprocity throughput)",
+          "seed": 1,
+          "objective": 6182.648857719227,
+          "uses_g2a": true,
+          "uses_a2g": false,
+          "uses_payloads": true,
+          "adaptation_notes": "Q_ij from G2A reciprocity; adaptive GA operator schedule unpublished, standard tournament/OX/swap used; start legs zero-cost per the literal formula"
+        }
+      },
+      "yang": {
+        "order": [
+          1,
+          6,
+          5,
+          3,
+          2,
+          4
+        ],
+        "meta": {
+          "method": "Yang-style weighted order: flight seconds + I_i/Q_ij, exact over permutations",
+          "objective_s": 556.4725677312847,
+          "uses_g2a": true,
+          "uses_a2g": false,
+          "uses_payloads": true,
+          "adaptation_notes": "original trajectory method is SCA/BCD; TD3 pairing is an adaptation; Q_ij from G2A reciprocity"
+        }
+      },
+      "drl_sa": {
+        "order": [
+          1,
+          6,
+          5,
+          3,
+          2,
+          4
+        ],
+        "meta": {
+          "method": "simulated annealing on flight plus payload offload time",
+          "seed": 1,
+          "objective_s": 556.4725677312847,
+          "sweeps": 4000,
+          "cooling": 0.995,
+          "uses_g2a": true,
+          "uses_a2g": false,
+          "uses_payloads": true,
+          "throughput_estimate": "G2A reciprocity"
+        }
+      },
+      "sa_d3qn": {
+        "order": [
+          1,
+          6,
+          5,
+          2,
+          3,
+          4
+        ],
+        "alias_of": "distance_tsp"
+      }
+    },
+    "high": {
+      "payloads_mb": [
+        210.0,
+        290.0,
+        290.0,
+        290.0,
+        210.0,
+        210.0
+      ],
+      "priga": {
+        "order": [
+          1,
+          6,
+          5,
+          4,
+          2,
+          3
+        ],
+        "meta": {
+          "method": "PRIGA seed-1 order"
+        }
+      },
+      "distance_tsp": {
+        "order": [
+          1,
+          6,
+          5,
+          2,
+          3,
+          4
+        ],
+        "alias": "distance_tsp"
+      },
+      "eega": {
+        "order": [
+          1,
+          6,
+          5,
+          2,
+          3,
+          4
+        ],
+        "meta": {
+          "method": "EEGA-style GA on L_ij=(I_i/Q_ij)*E_ij (G2A reciprocity throughput)",
+          "seed": 1,
+          "objective": 10231.050433962491,
+          "uses_g2a": true,
+          "uses_a2g": false,
+          "uses_payloads": true,
+          "adaptation_notes": "Q_ij from G2A reciprocity; adaptive GA operator schedule unpublished, standard tournament/OX/swap used; start legs zero-cost per the literal formula"
+        }
+      },
+      "yang": {
+        "order": [
+          2,
+          3,
+          5,
+          6,
+          1,
+          4
+        ],
+        "meta": {
+          "method": "Yang-style weighted order: flight seconds + I_i/Q_ij, exact over permutations",
+          "objective_s": 847.3044109308079,
+          "uses_g2a": true,
+          "uses_a2g": false,
+          "uses_payloads": true,
+          "adaptation_notes": "original trajectory method is SCA/BCD; TD3 pairing is an adaptation; Q_ij from G2A reciprocity"
+        }
+      },
+      "drl_sa": {
+        "order": [
+          2,
+          3,
+          5,
+          6,
+          1,
+          4
+        ],
+        "meta": {
+          "method": "simulated annealing on flight plus payload offload time",
+          "seed": 1,
+          "objective_s": 847.3044109308079,
+          "sweeps": 4000,
+          "cooling": 0.995,
+          "uses_g2a": true,
+          "uses_a2g": false,
+          "uses_payloads": true,
+          "throughput_estimate": "G2A reciprocity"
+        }
+      },
+      "sa_d3qn": {
+        "order": [
+          1,
+          6,
+          5,
+          2,
+          3,
+          4
+        ],
+        "alias_of": "distance_tsp"
+      }
+    }
+  }
+}
