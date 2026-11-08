@@ -9,6 +9,7 @@
   "records": [
     {
       "method": "A* on standard distance objective",
+      "method_id": "astar",
       "level": "high",
       "seed": 1,
       "payloads_mb": [
@@ -136,6 +137,7 @@
     },
     {
       "method": "EEGA-style GA on L_ij=(I_i/Q_ij)*E_ij (G2A reciprocity throughput)",
+      "method_id": "eega",
       "level": "high",
       "seed": 1,
       "payloads_mb": [
@@ -262,6 +264,7 @@
     },
     {
       "method": "PRIGA (original payload/radio edge cost)",
+      "method_id": "priga",
       "level": "high",
       "seed": 1,
       "payloads_mb": [
@@ -388,6 +391,7 @@
     },
     {
       "method": "Yang-style weighted order: flight seconds + I_i/Q_ij, exact over permutations",
+      "method_id": "yang",
       "level": "high",
       "seed": 1,
       "payloads_mb": [
@@ -514,6 +518,7 @@
     },
     {
       "method": "ordinary GA proxy for EEGA (distance-only fitness)",
+      "method_id": "ga",
       "level": "high",
       "seed": 1,
       "payloads_mb": [
@@ -642,6 +647,7 @@
     },
     {
       "method": "random-key PSO on standard distance objective",
+      "method_id": "pso",
       "level": "high",
       "seed": 1,
       "payloads_mb": [
@@ -769,6 +775,7 @@
     },
     {
       "method": "simulated annealing on pure flight distance",
+      "method_id": "sa",
       "level": "high",
       "seed": 1,
       "payloads_mb": [
@@ -896,6 +903,7 @@
     },
     {
       "method": "A* on standard distance objective",
+      "method_id": "astar",
       "level": "low",
       "seed": 1,
       "payloads_mb": [
@@ -1023,6 +1031,7 @@
     },
     {
       "method": "EEGA-style GA on L_ij=(I_i/Q_ij)*E_ij (G2A reciprocity throughput)",
+      "method_id": "eega",
       "level": "low",
       "seed": 1,
       "payloads_mb": [
@@ -1149,6 +1158,7 @@
     },
     {
       "method": "PRIGA (original payload/radio edge cost)",
+      "method_id": "priga",
       "level": "low",
       "seed": 1,
       "payloads_mb": [
@@ -1275,6 +1285,7 @@
     },
     {
       "method": "Yang-style weighted order: flight seconds + I_i/Q_ij, exact over permutations",
+      "method_id": "yang",
       "level": "low",
       "seed": 1,
       "payloads_mb": [
@@ -1401,6 +1412,7 @@
     },
     {
       "method": "ordinary GA proxy for EEGA (distance-only fitness)",
+      "method_id": "ga",
       "level": "low",
       "seed": 1,
       "payloads_mb": [
@@ -1529,6 +1541,7 @@
     },
     {
       "method": "random-key PSO on standard distance objective",
+      "method_id": "pso",
       "level": "low",
       "seed": 1,
       "payloads_mb": [
@@ -1656,6 +1669,7 @@
     },
     {
       "method": "simulated annealing on pure flight distance",
+      "method_id": "sa",
       "level": "low",
       "seed": 1,
       "payloads_mb": [
@@ -1783,6 +1797,7 @@
     },
     {
       "method": "A* on standard distance objective",
+      "method_id": "astar",
       "level": "medium",
       "seed": 1,
       "payloads_mb": [
@@ -1910,6 +1925,7 @@
     },
     {
       "method": "EEGA-style GA on L_ij=(I_i/Q_ij)*E_ij (G2A reciprocity throughput)",
+      "method_id": "eega",
       "level": "medium",
       "seed": 1,
       "payloads_mb": [
@@ -2036,6 +2052,7 @@
     },
     {
       "method": "PRIGA (original payload/radio edge cost)",
+      "method_id": "priga",
       "level": "medium",
       "seed": 1,
       "payloads_mb": [
@@ -2162,6 +2179,7 @@
     },
     {
       "method": "Yang-style weighted order: flight seconds + I_i/Q_ij, exact over permutations",
+      "method_id": "yang",
       "level": "medium",
       "seed": 1,
       "payloads_mb": [
@@ -2288,6 +2306,7 @@
     },
     {
       "method": "ordinary GA proxy for EEGA (distance-only fitness)",
+      "method_id": "ga",
       "level": "medium",
       "seed": 1,
       "payloads_mb": [
@@ -2416,6 +2435,7 @@
     },
     {
       "method": "random-key PSO on standard distance objective",
+      "method_id": "pso",
       "level": "medium",
       "seed": 1,
       "payloads_mb": [
@@ -2543,6 +2563,7 @@
     },
     {
       "method": "simulated annealing on pure flight distance",
+      "method_id": "sa",
       "level": "medium",
       "seed": 1,
       "payloads_mb": [

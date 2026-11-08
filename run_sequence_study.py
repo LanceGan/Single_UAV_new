@@ -160,6 +160,7 @@ def _run_task(task):
     proxy = route_proxy(order, payloads)
     return {
         "method": method,
+        "method_id": method,
         "level": level,
         "seed": int(seed),
         "payloads_mb": payloads.tolist(),
