@@ -84,11 +84,11 @@ python run_v5_matrix.py \
   --execute
 ```
 
-Low gate 通过后启动 Medium/High：
+Low gate 通过后，Win 启动 E1/E2/E4/E5 的 Medium/High：
 
 ```bash
 python run_v5_matrix.py \
-  --groups E1 E2 E3 E4 E5 \
+  --groups E1 E2 E4 E5 \
   --levels medium high \
   --device cuda \
   --workers 3 \
@@ -105,6 +105,27 @@ python run_v5_matrix.py \
   --workers 3 \
   --execute
 ```
+
+E3 的 Medium/High 四组由 Mac 的 MPS 四路并行执行，输出到：
+
+```text
+journal_results/v5-mac/E3/
+```
+
+因此 Win 的正式队列是 66 个唯一训练格，而不是 70 个。执行
+`run_v5_matrix.py --groups E1 E2 E4 E5` 即会自动跳过 E3。
+
+Mac 当前承担的完整实验块：
+
+- MCO-A*：Low/Medium/High，共 3 组，已完成；
+- sequence-only proxy：7 种顺序 x 3 档，共 21 个确定性评估，已完成；
+- E3 A2G ablation：Medium/High x blind/visible，共 4 组，正在运行。
+
+不在 Mac 上继续拆分 E1/E2/E5：
+
+- E1 需要五种轨迹算法同机比较；
+- E2 需要七种顺序对应的 CA-TD3 训练同机完成；
+- E5 的 Proposed 与文献基线需要共享同一训练硬件口径。
 
 ## 当前风险
 
