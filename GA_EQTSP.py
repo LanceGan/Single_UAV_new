@@ -23,7 +23,8 @@ def power(v):
 class GA(object):
     reference_speed_m_s = 50.0
     delta_t = 0.5
-    def __init__(self, num_city, num_total, iteration, data, data_sizes=None):
+    def __init__(self, num_city, num_total, iteration, data, data_sizes=None,
+                 outage_probability_threshold=0.5):
         self.num_city = num_city
         self.num_total = num_total
         self.scores = []
@@ -39,6 +40,9 @@ class GA(object):
             raise ValueError("data_sizes must align with all start, inspection, and end nodes")
         self.THREHOLD = 1
         self.radio_maps = FixedRadioMaps('results/datas')
+        self.outage_probability_threshold = float(outage_probability_threshold)
+        if not 0.0 < self.outage_probability_threshold <= 1.0:
+            raise ValueError("outage_probability_threshold must be in (0, 1]")
         # fruits中存每一个个体是下标的list
 
 
@@ -250,7 +254,12 @@ class GA(object):
                     outage_mat[i][j] = np.inf
                     continue
                 points, durations = self._leg_samples(location[i], location[j])
-                outages = np.array([self.radio_maps.g2a_outage_probability(point) >= 0.5 for point in points])
+                threshold = getattr(self, "outage_probability_threshold", 0.5)
+                outages = np.array([
+                    self.radio_maps.g2a_outage_probability(point)
+                    >= threshold
+                    for point in points
+                ])
                 outage_mat[i][j] = float(np.dot(outages, durations))
         return outage_mat
 

@@ -53,6 +53,27 @@ def test_leg_estimator_uses_kilometres_seconds_and_average_rate():
     assert np.isfinite(rate[0, 2])
 
 
+@pytest.mark.parametrize(
+    "threshold,expected_outage_s",
+    [(0.5, 0.0), (0.3, 2.0)],
+)
+def test_outage_matrix_uses_configured_probability_threshold(threshold, expected_outage_s):
+    ga = GA.__new__(GA)
+    ga.reference_speed_m_s = 50.0
+    ga.delta_t = 0.5
+    ga.outage_probability_threshold = threshold
+    ga.radio_maps = type(
+        "Maps",
+        (),
+        {"g2a_outage_probability": lambda self, _point: 0.4},
+    )()
+    locations = np.array([[0.0, 0.0], [0.1, 0.0]])
+
+    outage = ga.comput_outage(2, locations)
+
+    assert outage[0, 1] == pytest.approx(expected_outage_s)
+
+
 def test_ga_mutation_preserves_fixed_start_and_end():
     ga = GA.__new__(GA)
     for _ in range(20):
