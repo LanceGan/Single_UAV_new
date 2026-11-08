@@ -27,6 +27,7 @@ def test_load_run_context_accepts_ddpg_configuration(tmp_path):
         "payloads_mb": [90.0, 90.0, 60.0, 60.0, 90.0, 60.0],
         "state_dim": 8,
         "qos_constraint": "max_contiguous_outage",
+        "outage_probability_threshold": 0.3,
         "uav_h": 1.0,
         "state_schema": STATE_SCHEMA,
         "variant": "baseline",
@@ -40,6 +41,110 @@ def test_load_run_context_accepts_ddpg_configuration(tmp_path):
         load_run_context(tmp_path)
 
     assert context.algorithm == "ddpg"
+    assert context.outage_probability_threshold == 0.3
+    assert context.total_steps == 1000
+    assert context.qos_enforcement == "hard"
+
+    config["state_schema"] = STATE_SCHEMA
+    config.pop("outage_probability_threshold")
+    (tmp_path / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
+    legacy_context = load_run_context(tmp_path)
+    assert legacy_context.outage_probability_threshold == 0.5
+
+
+def test_load_run_context_reads_v5_horizon_and_qos_mode(tmp_path):
+    from evaluate_policy import STATE_SCHEMA, _build_world, load_run_context
+
+    data_dir = Path(__file__).resolve().parents[1] / "results" / "datas"
+    map_hashes = {
+        name: hashlib.sha256((data_dir / name).read_bytes()).hexdigest()
+        for name in ("Radio_datas.npz", "Radio_datas_A2G.npz")
+    }
+    config = {
+        "algorithm": "td3_bc",
+        "data_level": "low",
+        "episodes": 3000,
+        "map_hashes": map_hashes,
+        "net_width": 256,
+        "order": [1, 6, 2, 3, 5, 4],
+        "outage_max_s": 6.0,
+        "payloads_mb": [90.0, 90.0, 60.0, 60.0, 90.0, 60.0],
+        "state_dim": 8,
+        "qos_constraint": "max_contiguous_outage",
+        "uav_h": 1.0,
+        "state_schema": STATE_SCHEMA,
+        "variant": "A",
+        "total_steps": 2000,
+        "qos_enforcement": "continue",
+    }
+    (tmp_path / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
+
+    context = load_run_context(tmp_path)
+    assert context.total_steps == 2000
+    assert context.qos_enforcement == "continue"
+    assert _build_world(context).T == 2000
+    assert _build_world(context).qos_enforcement == "continue"
+
+
+@pytest.mark.parametrize("total_steps", [0, -1])
+def test_load_run_context_rejects_invalid_total_steps(tmp_path, total_steps):
+    from evaluate_policy import STATE_SCHEMA, load_run_context
+
+    data_dir = Path(__file__).resolve().parents[1] / "results" / "datas"
+    map_hashes = {
+        name: hashlib.sha256((data_dir / name).read_bytes()).hexdigest()
+        for name in ("Radio_datas.npz", "Radio_datas_A2G.npz")
+    }
+    config = {
+        "algorithm": "td3_bc",
+        "data_level": "low",
+        "episodes": 3000,
+        "map_hashes": map_hashes,
+        "net_width": 256,
+        "order": [1, 6, 2, 3, 5, 4],
+        "outage_max_s": 6.0,
+        "payloads_mb": [90.0, 90.0, 60.0, 60.0, 90.0, 60.0],
+        "state_dim": 8,
+        "qos_constraint": "max_contiguous_outage",
+        "uav_h": 1.0,
+        "state_schema": STATE_SCHEMA,
+        "variant": "A",
+        "total_steps": total_steps,
+    }
+    (tmp_path / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="total_steps"):
+        load_run_context(tmp_path)
+
+
+def test_load_run_context_rejects_unknown_qos_mode(tmp_path):
+    from evaluate_policy import STATE_SCHEMA, load_run_context
+
+    data_dir = Path(__file__).resolve().parents[1] / "results" / "datas"
+    map_hashes = {
+        name: hashlib.sha256((data_dir / name).read_bytes()).hexdigest()
+        for name in ("Radio_datas.npz", "Radio_datas_A2G.npz")
+    }
+    config = {
+        "algorithm": "td3_bc",
+        "data_level": "low",
+        "episodes": 3000,
+        "map_hashes": map_hashes,
+        "net_width": 256,
+        "order": [1, 6, 2, 3, 5, 4],
+        "outage_max_s": 6.0,
+        "payloads_mb": [90.0, 90.0, 60.0, 60.0, 90.0, 60.0],
+        "state_dim": 8,
+        "qos_constraint": "max_contiguous_outage",
+        "uav_h": 1.0,
+        "state_schema": STATE_SCHEMA,
+        "variant": "A",
+        "qos_enforcement": "unknown",
+    }
+    (tmp_path / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="qos_enforcement"):
+        load_run_context(tmp_path)
 
 
 def test_checkpoint_paths_use_algorithm_specific_training_names(tmp_path):
@@ -141,9 +246,24 @@ def test_load_actor_rejects_checkpoint_with_wrong_state_dimension(tmp_path):
 
 
 
-def _report(success, visited=6, uploaded=450.0, time_s=150.0, delay_s=100.0):
-    return {"success": success, "visited_inspection_points": visited, "uploaded_mb": uploaded,
-            "task_time_s": time_s, "transmission_delay_s": delay_s}
+def _report(
+    success,
+    visited=6,
+    uploaded=450.0,
+    time_s=150.0,
+    delay_s=100.0,
+    mission_complete=None,
+):
+    complete = success if mission_complete is None else mission_complete
+    return {
+        "success": success,
+        "qos_feasible": success,
+        "mission_complete": complete,
+        "visited_inspection_points": visited,
+        "uploaded_mb": uploaded,
+        "task_time_s": time_s,
+        "transmission_delay_s": delay_s,
+    }
 
 
 def test_selection_key_prefers_feasible_then_lower_objective_then_progress():
@@ -161,6 +281,36 @@ def test_selection_key_prefers_feasible_then_lower_objective_then_progress():
 
     assert [(r["success"], r["task_time_s"], r["visited_inspection_points"]) for r in ranked] == [
         (True, 140.0, 6), (True, 160.0, 6), (False, 150.0, 5), (False, 150.0, 2)]
+
+
+def test_selection_key_ranks_complete_infeasible_before_incomplete():
+    from evaluate_policy import selection_key
+
+    ranked = sorted(
+        [
+            _report(False, visited=5, uploaded=400.0, time_s=90.0),
+            _report(
+                False,
+                mission_complete=True,
+                visited=6,
+                uploaded=450.0,
+                time_s=220.0,
+                delay_s=140.0,
+            ),
+            _report(
+                False,
+                mission_complete=True,
+                visited=6,
+                uploaded=450.0,
+                time_s=210.0,
+                delay_s=130.0,
+            ),
+        ],
+        key=selection_key,
+    )
+
+    assert [record["mission_complete"] for record in ranked] == [True, True, False]
+    assert [record["task_time_s"] for record in ranked[:2]] == [210.0, 220.0]
 
 
 def test_checkpoint_paths_include_eval_best_only_when_saved(tmp_path):

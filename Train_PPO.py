@@ -26,10 +26,12 @@ from evaluate_policy import (
 from map_guidance import MapGuide
 from mission_preflight import run_preflight
 from exploration import exploration_scales
+from demonstration import linear_decay
 from sequence_optimizers import (
     distance_sa_order,
     distance_tsp_order,
     eega_order,
+    priga_order,
     sa_order,
     service_sa_order,
     yang_order,
@@ -58,18 +60,27 @@ def create_parser():
     parser.add_argument("--eval_interval", type=int, default=25)
     parser.add_argument("--uav_h", type=float, default=1.0)
     parser.add_argument("--outage_max_s", type=float, default=6.0)
+    parser.add_argument("--total_steps", type=int, default=1000)
+    parser.add_argument(
+        "--qos_enforcement",
+        choices=World.QOS_ENFORCEMENT_MODES,
+        default="hard",
+    )
     parser.add_argument("--objective_w1", type=float, default=0.5)
     parser.add_argument("--objective_w2", type=float, default=0.5)
     parser.add_argument("--variant", choices=World.VARIANTS, default="A")
     parser.add_argument("--a2g_blind", action="store_true")
     parser.add_argument("--sequence_method",
-                        choices=("iga", "distance_tsp", "sa", "sa_service",
+                        choices=("priga", "iga", "distance_tsp", "sa", "sa_service",
                                  "sa_distance", "eega", "yang"),
                         default="iga")
     parser.add_argument("--ga_iterations", type=int, default=500)
     parser.add_argument("--teacher", choices=("mapguide", "none"), default="mapguide")
     parser.add_argument("--pretrain_demo_episodes", type=int, default=20)
     parser.add_argument("--pretrain_updates", type=int, default=5000)
+    parser.add_argument("--guided_warmup_episodes", type=int, default=400)
+    parser.add_argument("--guide_prob", type=float, default=0.5)
+    parser.add_argument("--guide_min_prob", type=float, default=0.5)
     parser.add_argument("--demo_noise_scale", type=float, default=0.25)
     parser.add_argument("--net_width", type=int, default=256)
     parser.add_argument("--learning_rate", type=float, default=3e-4)
@@ -85,11 +96,18 @@ def create_parser():
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--checkpoint_interval", type=int, default=50)
     parser.add_argument("--preflight_only", action="store_true")
+    parser.add_argument("--allow_preflight_failure", action="store_true")
     parser.add_argument("--device", default=None)
     return parser
 
 
 def build_sequence(args, payloads):
+    if args.sequence_method in ("priga", "iga"):
+        return priga_order(
+            payloads,
+            seed=args.seed,
+            generations=args.ga_iterations,
+        )
     if args.sequence_method == "distance_tsp":
         return distance_tsp_order()
     if args.sequence_method == "sa":
@@ -118,7 +136,7 @@ def make_world(args, order, payloads):
         uav_num=1,
         dist_max=0.25,
         delta_t=0.5,
-        t=1000,
+        t=int(args.total_steps),
         uav_h=args.uav_h,
         data_size=300,
         data_sizes=payloads,
@@ -132,6 +150,7 @@ def make_world(args, order, payloads):
         a2g_blind=args.a2g_blind,
         objective_w1=args.objective_w1,
         objective_w2=args.objective_w2,
+        qos_enforcement=args.qos_enforcement,
     )
 
 
@@ -188,6 +207,8 @@ def main():
     args = create_parser().parse_args()
     if args.episodes <= 0 or args.eval_interval <= 0 or args.n_steps <= 0:
         raise ValueError("episodes, eval_interval and n_steps must be positive")
+    if not 0.0 <= args.guide_min_prob <= args.guide_prob <= 1.0:
+        raise ValueError("MapGuide probabilities must satisfy 0 <= min <= max <= 1")
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -214,10 +235,17 @@ def main():
         run_dir / "preflight",
         order=order,
         outage_max_s=args.outage_max_s,
+        total_steps=args.total_steps,
         a2g_blind=args.a2g_blind,
+        qos_enforcement=args.qos_enforcement,
     )
     if not preflight["success"]:
-        raise RuntimeError("Full mission preflight failed; PPO training was not started.")
+        if not args.allow_preflight_failure:
+            raise RuntimeError(
+                "Full mission preflight failed; PPO training was not started. "
+                "Pass --allow_preflight_failure for an explicitly reported "
+                "completion-oriented run."
+            )
     if args.preflight_only:
         writer.close()
         return
@@ -237,12 +265,17 @@ def main():
         "sequence_method": sequence_meta["method"],
         "sequence_meta": sequence_meta,
         "map_hashes": preflight["map_hashes"],
+        "preflight_success": bool(preflight["success"]),
+        "preflight_allowed_failure": bool(
+            args.allow_preflight_failure and not preflight["success"]
+        ),
         "model_selection": "eval_best: feasible first, then minimum weighted T + tau",
         "evaluation_control": "deterministic policy mean (no sampling, no guidance)",
         "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; max contiguous outage hard constraint; x0.01",
         "demonstration": (
             f"{args.pretrain_demo_episodes} MapGuide episodes followed by "
-            f"{args.pretrain_updates} supervised actor updates"
+            f"{args.pretrain_updates} supervised actor updates; "
+            f"online guided-episode probability decays {args.guide_prob}->{args.guide_min_prob}"
             if args.teacher == "mapguide" else "none"
         ),
         "training_objective": "clipped PPO surrogate with GAE",
@@ -321,13 +354,53 @@ def main():
         )
         writer.add_scalar("eval/max_contiguous_outage_s", report["outage_time_s"], episode)
 
+    def choose_guided(episode):
+        if args.teacher != "mapguide":
+            return False
+        probability = linear_decay(
+            args.guide_prob,
+            episode - 1,
+            args.guided_warmup_episodes,
+            floor=args.guide_min_prob,
+        )
+        return bool(np.random.random() < probability)
+
+    def guided_action(world, guide, episode):
+        uav = world.UAVs[0]
+        target_distance = float(np.linalg.norm(
+            np.asarray([uav.x, uav.y]) - world.target_loc
+        ))
+        angle_noise, distance_noise = exploration_scales(
+            episode, max(int(args.episodes), 1), target_distance
+        )
+        absolute = guide.action(
+            angle_noise * args.demo_noise_scale,
+            distance_noise * args.demo_noise_scale,
+            np.random,
+        )
+        return np.clip(
+            world.absolute_to_action(absolute),
+            [-np.pi, 0.0],
+            [np.pi, world.dist_max],
+        )
+
     episode = 1
     state, step = world.reset()
+    episode_is_guided = choose_guided(episode)
+    episode_guide = (
+        MapGuide(world, use_a2g=not args.a2g_blind)
+        if episode_is_guided
+        else None
+    )
     episode_reward = 0.0
     episode_length = 0
     done = False
     while episode <= args.episodes:
-        action, log_prob, value = agent.sample_action(state)
+        if episode_is_guided:
+            action = guided_action(world, episode_guide, episode)
+            log_prob, value = agent.evaluate_state_action(state, action)
+        else:
+            action, log_prob, value = agent.sample_action(state)
         previous_state = state
         with contextlib.redirect_stdout(io.StringIO()):
             state, reward, done, step, _ = world.step_inside(action, state, step)
@@ -356,7 +429,7 @@ def main():
         if done:
             rewards.append(episode_reward)
             lengths.append(episode_length)
-            guided.append(False)
+            guided.append(bool(episode_is_guided))
             global_steps.append(global_step)
             writer.add_scalar("episode/reward", episode_reward, episode)
             writer.add_scalar("episode/steps", episode_length, episode)
@@ -372,6 +445,12 @@ def main():
             episode += 1
             if episode <= args.episodes:
                 state, step = world.reset()
+                episode_is_guided = choose_guided(episode)
+                episode_guide = (
+                    MapGuide(world, use_a2g=not args.a2g_blind)
+                    if episode_is_guided
+                    else None
+                )
                 episode_reward = 0.0
                 episode_length = 0
                 done = False

@@ -24,6 +24,7 @@ def test_pending_upload_can_escape_target_protection_ring():
         UAVs=[SimpleNamespace(x=0.9, y=1.0)],
         length=2.0,
         width=2.0,
+        outage_probability_threshold=0.5,
     )
 
     action = MapGuide(world).action()

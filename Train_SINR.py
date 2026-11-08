@@ -6,7 +6,17 @@ from World import World
 from reward_logging import log_reward_terms
 from training_config import ALGORITHMS, build_output_paths, load_fixed_payloads, resolve_algorithm
 from sequence_runner import solve_ga_order
-from sequence_optimizers import distance_tsp_order, eega_order, ga_proxy_order, sa_order, yang_order
+from sequence_optimizers import (
+    distance_astar_order,
+    distance_pso_order,
+    distance_sa_order,
+    distance_tsp_order,
+    eega_order,
+    ga_proxy_order,
+    priga_order,
+    sa_order,
+    yang_order,
+)
 from training_transitions import replay_terminal_mask
 from exploration import exploration_scales
 from map_guidance import MapGuide
@@ -46,6 +56,16 @@ def create_parser():
                         help="td3/ddpg are standard agents; td3_bc/ddpg_bc add MapGuide demonstrations and imitation")
     parser.add_argument("--outage_max_s", type=float, default=100.0,
                         help="hard maximum-continuous G2A outage budget")
+    parser.add_argument("--total_steps", type=int, default=1000,
+                        help="simulation horizon in 0.5 s slots")
+    parser.add_argument(
+        "--qos_enforcement",
+        choices=World.QOS_ENFORCEMENT_MODES,
+        default="hard",
+        help="hard keeps legacy termination; continue records violations but finishes the mission",
+    )
+    parser.add_argument("--outage_probability_threshold", type=float, default=0.5,
+                        help="G2A outage event threshold kappa_out in (0, 1]")
     parser.add_argument("--train_memory_size", type=int, default=2000)
     parser.add_argument("--teacher", choices=("astar", "mapguide"), default="astar",
                         help="demonstration source for *_bc agents (A* optimal plan, or MapGuide planner)")
@@ -64,6 +84,12 @@ def create_parser():
     parser.add_argument("--bc_decay_episodes", type=int, default=600,
                         help="episodes over which bc_weight decays to bc_min_weight")
     parser.add_argument("--preflight_only", action="store_true")
+    parser.add_argument(
+        "--allow_preflight_failure",
+        action="store_true",
+        help="continue training when the deterministic preflight is incomplete; "
+             "the failure remains recorded and must be reported",
+    )
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--eval_interval", type=int, default=25)
     parser.add_argument("--objective_w1", type=float, default=0.5,
@@ -74,7 +100,12 @@ def create_parser():
                         help="deny the trajectory stack all A2G knowledge (sequence baselines): "
                              "state drops the A2G SNR feature and the MapGuide teacher is G2A-only")
     parser.add_argument("--sequence_method",
-                        choices=("iga", "distance_tsp", "sa", "ga_proxy", "eega", "yang"), default="iga",
+                        choices=(
+                            "priga", "iga", "ga", "ga_proxy", "pso",
+                            "sa", "sa_distance", "astar", "eega", "yang",
+                            "distance_tsp",
+                        ),
+                        default="iga",
                         help="inspection order: data-aware IGA (proposed), exact distance TSP, "
                              "G2A-only simulated annealing, ordinary GA proxy, EEGA weighted GA, "
                              "or Yang-style weighted order (the last two use G2A-reciprocity throughput)")
@@ -216,6 +247,8 @@ args.guide_prob, args.bc_weight = profile["guide_prob"], profile["bc_weight"]
 args.guide_min_prob = profile["guide_min_prob"]
 args.bc_min_weight, args.demo_fraction = profile["bc_min_weight"], profile["demo_fraction"]
 outage_max_s = args.outage_max_s
+if not 0.0 < args.outage_probability_threshold <= 1.0:
+    parser.error("--outage_probability_threshold must be in (0, 1]")
 train_memory_size_arg = args.train_memory_size
 guided_warmup_episodes = args.guided_warmup_episodes
 payloads = load_fixed_payloads(data_level)
@@ -228,7 +261,7 @@ writer = SummaryWriter(train_path)
 # 环境参数
 uav_num = 1
 user_num = 6
-T = 1000
+T = int(args.total_steps)
 Length = 20
 Width = 20
 a_dim = uav_num*2
@@ -253,22 +286,44 @@ end_loc = [18.95, 11.12]
 BS_loc = np.array([[4.77,4.56,0.25],[14.89,4.89,0.25],[4.63,13.78,0.25],[13.48,14.89,0.25]])
 if args.sequence_method == "distance_tsp":
     trave_order, sequence_meta = distance_tsp_order()
-elif args.sequence_method == "sa":
-    trave_order, sequence_meta = sa_order(seed=args.seed)
-elif args.sequence_method == "ga_proxy":
+elif args.sequence_method in ("priga", "iga"):
+    trave_order, sequence_meta = priga_order(
+        payloads,
+        seed=args.seed,
+        generations=args.ga_iterations,
+        outage_probability_threshold=args.outage_probability_threshold,
+    )
+elif args.sequence_method in ("ga", "ga_proxy"):
     trave_order, sequence_meta = ga_proxy_order(seed=args.seed)
+elif args.sequence_method == "pso":
+    trave_order, sequence_meta = distance_pso_order(seed=args.seed)
+elif args.sequence_method == "astar":
+    trave_order, sequence_meta = distance_astar_order()
+elif args.sequence_method == "sa_distance":
+    trave_order, sequence_meta = distance_sa_order(seed=args.seed)
+elif args.sequence_method == "sa":
+    trave_order, sequence_meta = sa_order(
+        seed=args.seed,
+        outage_probability_threshold=args.outage_probability_threshold,
+    )
 elif args.sequence_method == "eega":
     trave_order, sequence_meta = eega_order(payloads, seed=args.seed)
 elif args.sequence_method == "yang":
     trave_order, sequence_meta = yang_order(payloads)
 else:
-    trave_order = solve_ga_order(payloads, iterations=args.ga_iterations)
-    sequence_meta = {"method": "GA with exact verification/fallback",
-                     "uses_g2a": True, "uses_a2g": True, "uses_payloads": True}
+    raise ValueError(f"unsupported sequence method: {args.sequence_method}")
+sequence_meta["outage_probability_threshold"] = float(
+    args.outage_probability_threshold
+)
 print("Sequence:", args.sequence_method, trave_order, sequence_meta, flush=True)
 teacher_positions = teacher_meta = None
 if args.teacher == "astar" and profile["guide_prob"] > 0.0:
-    teacher_positions, teacher_meta = load_or_plan_teacher_path(data_level, trave_order)
+    teacher_positions, teacher_meta = load_or_plan_teacher_path(
+        data_level,
+        trave_order,
+        outage_probability_threshold=args.outage_probability_threshold,
+        outage_max_s=outage_max_s,
+    )
     print("A* demonstration teacher:", {k: teacher_meta.get(k) for k in ("objective_s", "from_cache", "expansions")}, flush=True)
 
 world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, delta_t=delta_t, t=T, uav_h=uav_h,
@@ -276,19 +331,33 @@ world = World(length=Length, width=Width, uav_num=uav_num, dist_max=dist_max, de
               users_name='results/datas/Users_'+str(user_num)+'.txt',
               BS_loc=BS_loc, traverse_sequence=trave_order, data_sizes=payloads, outage_max_s=outage_max_s,
               variant=args.variant, a2g_blind=args.a2g_blind,
-              objective_w1=args.objective_w1, objective_w2=args.objective_w2)
+              objective_w1=args.objective_w1, objective_w2=args.objective_w2,
+              outage_probability_threshold=args.outage_probability_threshold,
+              qos_enforcement=args.qos_enforcement)
 s_dim = world.state_dim
 
 preflight = run_preflight(data_level, output_paths["root"] / "preflight", order=trave_order,
                           outage_max_s=outage_max_s, total_steps=T,
-                          a2g_blind=args.a2g_blind)
+                          a2g_blind=args.a2g_blind,
+                          outage_probability_threshold=args.outage_probability_threshold,
+                          qos_enforcement=args.qos_enforcement)
 print("Mission preflight:", {k: preflight[k] for k in (
     "success", "time_s", "outage_s", "total_outage_s", "uploaded_mb", "visited_points"
 )}, flush=True)
 writer.flush()
 if not preflight["success"]:
-    writer.close()
-    raise RuntimeError("Full mission preflight failed; training was not started. See preflight.json.")
+    if not args.allow_preflight_failure:
+        writer.close()
+        raise RuntimeError(
+            "Full mission preflight failed; training was not started. "
+            "See preflight.json or pass --allow_preflight_failure to run an "
+            "explicit incomplete-mission experiment."
+        )
+    print(
+        "Mission preflight is incomplete; continuing because "
+        "--allow_preflight_failure was set.",
+        flush=True,
+    )
 if args.preflight_only:
     writer.close()
     raise SystemExit(0)
@@ -297,6 +366,10 @@ if args.preflight_only:
     **vars(args), "state_dim": s_dim, "order": trave_order, "payloads_mb": payloads.tolist(),
     "map_hashes": preflight["map_hashes"], "sequence_method": sequence_meta["method"],
     "sequence_meta": sequence_meta,
+    "preflight_success": bool(preflight["success"]),
+    "preflight_allowed_failure": bool(
+        args.allow_preflight_failure and not preflight["success"]
+    ),
     "state_schema": A2G_BLIND_STATE_SCHEMA if args.a2g_blind else STATE_SCHEMA,
     "qos_constraint": "max_contiguous_outage",
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",

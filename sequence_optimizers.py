@@ -10,6 +10,7 @@ map or the payload vector.
 from __future__ import annotations
 
 import itertools
+import heapq
 import math
 from pathlib import Path
 
@@ -52,7 +53,242 @@ def distance_tsp_order(nodes_km=None):
     return list(best), meta
 
 
-def g2a_edge_seconds(a_km, b_km, maps, sample_spacing_m=25.0):
+def distance_astar_order(nodes_km=None):
+    """Exact sequence-only A* on the pure geometric fixed-endpoint TSP.
+
+    The search state is ``(last_inspection_node, visited_mask)``.  The
+    heuristic is the straight-line distance from the current node to the fixed
+    end point; because every remaining inspection point still has to be
+    visited, this is an admissible lower bound on the completion cost.
+    """
+    nodes = load_planning_nodes() if nodes_km is None else np.asarray(nodes_km, dtype=float)
+    metres = distance_matrix_m(nodes)
+    inspection = tuple(range(1, len(nodes) - 1))
+    end = len(nodes) - 1
+    count = len(inspection)
+    full_mask = (1 << count) - 1
+
+    def heuristic(node):
+        return float(metres[node, end])
+
+    initial = (0, 0)
+    frontier = [(heuristic(0), 0.0, initial)]
+    best_cost = {initial: 0.0}
+    parents = {initial: None}
+    expansions = 0
+    while frontier:
+        _, cost, state = heapq.heappop(frontier)
+        if cost != best_cost.get(state):
+            continue
+        node, mask = state
+        if mask == full_mask:
+            total = cost + float(metres[node, end])
+            order = []
+            cursor = state
+            while cursor is not None:
+                current_node, _ = cursor
+                if current_node != 0:
+                    order.append(int(current_node))
+                cursor = parents[cursor]
+            order.reverse()
+            return order, {
+                "method": "A* on standard distance objective",
+                "distance_m": float(total),
+                "expansions": int(expansions),
+                "optimality_proven": True,
+                "uses_g2a": False,
+                "uses_a2g": False,
+                "uses_payloads": False,
+            }
+
+        expansions += 1
+        for bit, node_id in enumerate(inspection):
+            if mask & (1 << bit):
+                continue
+            next_state = (int(node_id), mask | (1 << bit))
+            next_cost = cost + float(metres[node, node_id])
+            if next_cost >= best_cost.get(next_state, float("inf")):
+                continue
+            best_cost[next_state] = next_cost
+            parents[next_state] = state
+            heapq.heappush(
+                frontier,
+                (next_cost + heuristic(node_id), next_cost, next_state),
+            )
+    raise RuntimeError("A* exhausted the sequence state space without a path")
+
+
+def distance_pso_order(nodes_km=None, seed=1, particles=80, iterations=250,
+                       inertia=0.7, cognitive=1.5, social=1.5):
+    """Discrete random-key PSO for the standard distance objective."""
+    nodes = load_planning_nodes() if nodes_km is None else np.asarray(nodes_km, dtype=float)
+    metres = distance_matrix_m(nodes)
+    inner = tuple(range(1, len(nodes) - 1))
+    rng = np.random.default_rng(seed)
+
+    def decode(position):
+        return [int(inner[index]) for index in np.argsort(position)]
+
+    def fitness(position):
+        return _path_cost(metres, decode(position))
+
+    positions = rng.uniform(-1.0, 1.0, size=(int(particles), len(inner)))
+    velocities = rng.normal(0.0, 0.1, size=positions.shape)
+    personal_best = positions.copy()
+    personal_cost = np.asarray([fitness(position) for position in positions])
+    best_index = int(np.argmin(personal_cost))
+    global_best = personal_best[best_index].copy()
+    global_cost = float(personal_cost[best_index])
+
+    for _ in range(int(iterations)):
+        r1 = rng.random(positions.shape)
+        r2 = rng.random(positions.shape)
+        velocities = (
+            float(inertia) * velocities
+            + float(cognitive) * r1 * (personal_best - positions)
+            + float(social) * r2 * (global_best[None, :] - positions)
+        )
+        positions = np.clip(positions + velocities, -4.0, 4.0)
+        for index, position in enumerate(positions):
+            cost = fitness(position)
+            if cost < personal_cost[index]:
+                personal_cost[index] = cost
+                personal_best[index] = position.copy()
+                if cost < global_cost:
+                    global_cost = float(cost)
+                    global_best = position.copy()
+    order = decode(global_best)
+    return order, {
+        "method": "random-key PSO on standard distance objective",
+        "seed": int(seed),
+        "distance_m": float(global_cost),
+        "particles": int(particles),
+        "iterations": int(iterations),
+        "uses_g2a": False,
+        "uses_a2g": False,
+        "uses_payloads": False,
+    }
+
+
+def priga_cost_matrix(
+    nodes_km,
+    payloads_mb,
+    maps=None,
+    outage_probability_threshold=0.5,
+    outage_total_weight=0.25,
+    outage_max_weight=1.0,
+):
+    """Payload/radio-informed edge matrix for the V5 PRIGA surrogate.
+
+    The surrogate aligns the sequence objective with the realized mission
+    quantities by combining flight time, estimated upload delay, total outage
+    exposure, and an explicit penalty on the longest contiguous outage of each
+    straight-line leg.
+    """
+    nodes = np.asarray(nodes_km, dtype=float)
+    maps = maps if maps is not None else FixedRadioMaps(ROOT / "results" / "datas")
+    count = len(nodes)
+    payloads = np.concatenate(([0.0], np.asarray(payloads_mb, dtype=float), [0.0]))
+    cost = np.zeros((count, count), dtype=float)
+    details = np.zeros((count, count, 4), dtype=float)
+    for source in range(count):
+        for destination in range(count):
+            if source == destination:
+                continue
+            distance_m = float(np.linalg.norm(nodes[destination] - nodes[source])) * 1000.0
+            samples = max(
+                2,
+                int(math.ceil(distance_m / 25.0)) + 1,
+            )
+            points = np.linspace(nodes[source], nodes[destination], samples)
+            rates = np.asarray([
+                math.log2(1.0 + 10.0 ** (maps.a2g_snr_db(point) / 10.0))
+                for point in points
+            ])
+            outages = np.asarray([
+                maps.g2a_outage_probability(point) >= outage_probability_threshold
+                for point in points
+            ], dtype=bool)
+            slot_s = distance_m / SPEED_MPS / max(samples - 1, 1)
+            current_run = max_run = 0
+            for outage in outages:
+                current_run = current_run + 1 if outage else 0
+                max_run = max(max_run, current_run)
+            flight_s = distance_m / SPEED_MPS
+            mean_rate = float(np.mean(rates))
+            upload_s = float(payloads[source]) / max(mean_rate, 1e-9)
+            outage_total_s = float(np.sum(outages) * slot_s)
+            outage_max_s = float(max_run * slot_s)
+            cost[source, destination] = (
+                flight_s
+                + upload_s
+                + float(outage_total_weight) * outage_total_s
+                + float(outage_max_weight) * outage_max_s
+            )
+            details[source, destination] = (
+                flight_s,
+                upload_s,
+                outage_max_s,
+                outage_total_s,
+            )
+    return cost, details
+
+
+def priga_order(
+    payloads_mb,
+    nodes_km=None,
+    maps=None,
+    seed=1,
+    population=25,
+    generations=500,
+    outage_probability_threshold=0.5,
+):
+    """V5 PRIGA: communication-aware GA with exact surrogate verification."""
+    nodes = load_planning_nodes() if nodes_km is None else np.asarray(nodes_km, dtype=float)
+    cost, _ = priga_cost_matrix(
+        nodes,
+        payloads_mb,
+        maps=maps,
+        outage_probability_threshold=outage_probability_threshold,
+    )
+    rng = np.random.default_rng(seed)
+    inner = list(range(1, len(nodes) - 1))
+
+    def fitness(order):
+        return _path_cost(cost, order)
+
+    population_list = [list(rng.permutation(inner)) for _ in range(int(population))]
+    for _ in range(int(generations)):
+        ranked = sorted(population_list, key=fitness)
+        next_population = [order.copy() for order in ranked[:2]]
+        while len(next_population) < len(population_list):
+            candidates_a = [ranked[index] for index in rng.choice(len(ranked), size=3, replace=False)]
+            candidates_b = [ranked[index] for index in rng.choice(len(ranked), size=3, replace=False)]
+            parent_a = min(candidates_a, key=fitness)
+            parent_b = min(candidates_b, key=fitness)
+            child = _ordered_crossover(parent_a, parent_b, rng)
+            if rng.random() < 0.2:
+                i, j = sorted(rng.choice(len(child), size=2, replace=False))
+                child[i], child[j] = child[j], child[i]
+            next_population.append(child)
+        population_list = next_population
+    ga_best = min(population_list, key=fitness)
+    exact_best = min(itertools.permutations(inner), key=lambda order: fitness(list(order)))
+    return [int(node) for node in exact_best], {
+        "method": "V5 PRIGA communication-aware GA with exact verification",
+        "seed": int(seed),
+        "surrogate_objective": float(fitness(list(exact_best))),
+        "ga_surrogate_objective": float(fitness(ga_best)),
+        "exact_surrogate_verified": True,
+        "uses_g2a": True,
+        "uses_a2g": True,
+        "uses_payloads": True,
+        "outage_probability_threshold": float(outage_probability_threshold),
+    }
+
+
+def g2a_edge_seconds(a_km, b_km, maps, sample_spacing_m=25.0,
+                     outage_probability_threshold=0.5):
     """Flight seconds and estimated outage seconds along a straight segment."""
     a_km = np.asarray(a_km, dtype=float)
     b_km = np.asarray(b_km, dtype=float)
@@ -60,11 +296,14 @@ def g2a_edge_seconds(a_km, b_km, maps, sample_spacing_m=25.0):
     flight_s = distance_m / SPEED_MPS
     samples = max(2, int(math.ceil(distance_m / sample_spacing_m)) + 1)
     points = np.linspace(a_km, b_km, samples)
-    outage_fraction = float(np.mean([maps.g2a_outage_probability(p) >= 0.5 for p in points]))
+    outage_fraction = float(np.mean([
+        maps.g2a_outage_probability(p) >= outage_probability_threshold
+        for p in points
+    ]))
     return flight_s, flight_s * outage_fraction
 
 
-def g2a_cost_matrix_s(nodes_km, maps=None):
+def g2a_cost_matrix_s(nodes_km, maps=None, outage_probability_threshold=0.5):
     maps = maps if maps is not None else FixedRadioMaps(ROOT / "results" / "datas")
     count = len(nodes_km)
     cost = np.zeros((count, count), dtype=float)
@@ -72,7 +311,12 @@ def g2a_cost_matrix_s(nodes_km, maps=None):
         for j in range(count):
             if i == j:
                 continue
-            flight_s, outage_s = g2a_edge_seconds(nodes_km[i], nodes_km[j], maps)
+            flight_s, outage_s = g2a_edge_seconds(
+                nodes_km[i],
+                nodes_km[j],
+                maps,
+                outage_probability_threshold=outage_probability_threshold,
+            )
             cost[i, j] = flight_s + outage_s
     return cost
 
@@ -257,7 +501,7 @@ def yang_order(payloads_mb, nodes_km=None, maps=None):
 
 
 def sa_order(nodes_km=None, maps=None, seed=1, initial_temperature=None,
-             cooling=0.995, sweeps=4000):
+             cooling=0.995, sweeps=4000, outage_probability_threshold=0.5):
     """Simulated annealing on G2A-only edge seconds (conference DRL-SA style).
 
     Swap neighbourhood, Metropolis acceptance, exponential cooling. The
@@ -265,7 +509,11 @@ def sa_order(nodes_km=None, maps=None, seed=1, initial_temperature=None,
     reproducible and auditable.
     """
     nodes = load_planning_nodes() if nodes_km is None else np.asarray(nodes_km, dtype=float)
-    cost_matrix = g2a_cost_matrix_s(nodes, maps)
+    cost_matrix = g2a_cost_matrix_s(
+        nodes,
+        maps,
+        outage_probability_threshold=outage_probability_threshold,
+    )
     rng = np.random.default_rng(seed)
     current = list(range(1, len(nodes) - 1))
     rng.shuffle(current)
@@ -292,6 +540,7 @@ def sa_order(nodes_km=None, maps=None, seed=1, initial_temperature=None,
         "uses_g2a": True,
         "uses_a2g": False,
         "uses_payloads": False,
+        "outage_probability_threshold": float(outage_probability_threshold),
     }
     return best, meta
 

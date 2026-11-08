@@ -37,6 +37,8 @@ ALGORITHMS = {
                 "bc_min_weight": 0.25, "demo_fraction": 0.25},
     "ppo": {"base": "ppo", "guide_prob": 0.0, "guide_min_prob": 0.0, "bc_weight": 0.0,
             "bc_min_weight": 0.0, "demo_fraction": 0.0},
+    "sac": {"base": "sac", "guide_prob": 0.5, "guide_min_prob": 0.5, "bc_weight": 1.0,
+            "bc_min_weight": 0.25, "demo_fraction": 0.25},
 }
 
 

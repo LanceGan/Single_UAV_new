@@ -55,8 +55,10 @@ class RunContext:
     order: tuple
     payloads_mb: np.ndarray
     outage_max_s: float
+    outage_probability_threshold: float = 0.5
     a2g_blind: bool = False
     total_steps: int = 1000
+    qos_enforcement: str = "hard"
     length: float = 20.0
     width: float = 20.0
     delta_t: float = 0.5
@@ -90,6 +92,20 @@ def load_run_context(run_dir):
     if config["variant"] not in World.VARIANTS:
         raise ValueError(f"unsupported variant: {config['variant']!r}")
     a2g_blind = bool(config.get("a2g_blind", False))
+    total_steps = int(config.get("total_steps", 1000))
+    if total_steps <= 0:
+        raise ValueError("run_config.json total_steps must be positive")
+    qos_enforcement = str(config.get("qos_enforcement", "hard"))
+    if qos_enforcement not in World.QOS_ENFORCEMENT_MODES:
+        raise ValueError(
+            f"run_config.json has unsupported qos_enforcement {qos_enforcement!r}; "
+            f"expected one of {World.QOS_ENFORCEMENT_MODES}"
+        )
+    outage_probability_threshold = float(
+        config.get("outage_probability_threshold", 0.5)
+    )
+    if not 0.0 < outage_probability_threshold <= 1.0:
+        raise ValueError("outage_probability_threshold must be in (0, 1]")
     if a2g_blind and config["variant"] == "AB":
         raise ValueError("a2g_blind runs cannot use the AB map-neighborhood variant")
     expected_dim = (World.BASE_STATE_DIM - (1 if a2g_blind else 0)
@@ -121,7 +137,10 @@ def load_run_context(run_dir):
         order=order,
         payloads_mb=payloads,
         outage_max_s=float(config["outage_max_s"]),
+        outage_probability_threshold=outage_probability_threshold,
         a2g_blind=a2g_blind,
+        total_steps=total_steps,
+        qos_enforcement=qos_enforcement,
     )
 
 
@@ -141,7 +160,7 @@ def checkpoint_paths(run_dir, algorithm, episodes):
 
 
 def selection_key(report, w1=0.5, w2=0.5):
-    """Sort key: feasible first, then lower w1*T + w2*tau, then more mission progress.
+    """Select feasible, then complete-infeasible, then incomplete rollouts.
 
     Equal weights reproduce the legacy T + tau ordering (scale is irrelevant
     to the ordering); weighted-objective runs select their eval_best by the
@@ -149,20 +168,32 @@ def selection_key(report, w1=0.5, w2=0.5):
     """
     objective = 2.0 * (w1 * report["task_time_s"] + w2 * report["transmission_delay_s"])
     progress = (report["visited_inspection_points"], report["uploaded_mb"])
-    if report["success"]:
+    qos_feasible = bool(report.get("qos_feasible", report["success"]))
+    mission_complete = bool(report.get("mission_complete", qos_feasible))
+    if qos_feasible:
         return (0, objective, 0.0, 0.0)
-    return (1, 0.0, -progress[0], -progress[1])
+    if mission_complete:
+        return (1, objective, 0.0, 0.0)
+    return (2, 0.0, -progress[0], -progress[1])
 
 
-def load_actor(checkpoint, state_dim, net_width):
+def load_actor(checkpoint, state_dim, net_width, algorithm="td3"):
     checkpoint = Path(checkpoint)
     if not checkpoint.is_file():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
     max_action = torch.tensor([math.pi, 0.25], dtype=torch.float32)
-    actor = Actor(state_dim, 2, net_width, max_action).cpu()
+    if algorithm == "sac":
+        from SAC import SACDeploymentActor, SACActor
+
+        policy = SACActor(state_dim, net_width, max_action).cpu()
+        actor = SACDeploymentActor(policy).cpu()
+        checkpoint_actor = policy
+    else:
+        actor = Actor(state_dim, 2, net_width, max_action).cpu()
+        checkpoint_actor = actor
     try:
         state_dict = torch.load(checkpoint, map_location="cpu", weights_only=True)
-        actor.load_state_dict(state_dict, strict=True)
+        checkpoint_actor.load_state_dict(state_dict, strict=True)
     except (RuntimeError, KeyError, TypeError, ValueError) as error:
         raise ValueError(f"checkpoint is incompatible with run_config.json: {checkpoint}") from error
     actor.eval()
@@ -218,11 +249,18 @@ def _build_world(context):
         traverse_sequence=list(context.order),
         variant=context.variant,
         a2g_blind=context.a2g_blind,
+        outage_probability_threshold=context.outage_probability_threshold,
+        qos_enforcement=context.qos_enforcement,
     )
 
 
 def evaluate_checkpoint(context, checkpoint):
-    actor = load_actor(checkpoint, context.state_dim, context.net_width)
+    actor = load_actor(
+        checkpoint,
+        context.state_dim,
+        context.net_width,
+        algorithm=context.algorithm,
+    )
     with contextlib.redirect_stdout(io.StringIO()):
         world = _build_world(context)
 
@@ -299,6 +337,13 @@ def rollout(context, world, act):
         uploaded_mb=uploaded_mb,
         expected_upload_mb=float(context.payloads_mb.sum()),
     )
+    full_upload = uploaded_mb >= float(context.payloads_mb.sum()) - 1e-7
+    all_points = world.Traverse_order >= len(context.order)
+    mission_complete = bool(terminal and full_upload and all_points)
+    outage_budget_exceeded = bool(
+        world.max_contiguous_outage_s > context.outage_max_s
+    )
+    qos_feasible = bool(mission_complete and not outage_budget_exceeded)
     time_s = float(step * context.delta_t)
     reward_terms = {key: float(value) for key, value in world.reward_summary().items()}
     trace = {
@@ -318,7 +363,13 @@ def rollout(context, world, act):
         "algorithm": context.algorithm,
         "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
         "qos_constraint": "max_contiguous_outage",
+        "outage_probability_threshold": context.outage_probability_threshold,
+        "qos_enforcement": context.qos_enforcement,
         "success": success,
+        "mission_complete": mission_complete,
+        "qos_feasible": qos_feasible,
+        "constraint_satisfied": qos_feasible,
+        "outage_budget_exceeded": outage_budget_exceeded,
         "termination_reason": termination_reason,
         "visited_inspection_points": int(min(world.Traverse_order, len(context.order))),
         "expected_inspection_points": len(context.order),
@@ -467,6 +518,10 @@ def main():
                 for key in (
                     "checkpoint",
                     "success",
+                    "mission_complete",
+                    "qos_feasible",
+                    "constraint_satisfied",
+                    "outage_budget_exceeded",
                     "termination_reason",
                     "visited_inspection_points",
                     "uploaded_mb",

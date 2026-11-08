@@ -25,6 +25,8 @@ class World(object):
     BASE_STATE_DIM = 8
     NEIGHBOR_DIRECTIONS = 8
     STALL_DISTANCE = 1e-3  # slots moving less than this count as motionless
+    QOS_ENFORCEMENT_MODES = ("hard", "continue")
+
     def __init__(self, length=10, width=10, uav_num=1, user_num=10,dist_max=0.10,
                  delta_t=0.5,t=200, uav_h=1,
                  data_size = 250, data_sizes=None, outage_max_s=100.0,
@@ -32,10 +34,17 @@ class World(object):
                  users_name='Users.txt'
                  ,BS_loc=[],
                  traverse_sequence=[], variant="baseline", a2g_blind=False,
-                 objective_w1=0.5, objective_w2=0.5, state_outage_max_s=None):
+                 objective_w1=0.5, objective_w2=0.5, state_outage_max_s=None,
+                 outage_probability_threshold=0.5, qos_enforcement="hard"):
         if variant not in self.VARIANTS:
             raise ValueError(f"unknown variant {variant!r}; expected one of {self.VARIANTS}")
+        if qos_enforcement not in self.QOS_ENFORCEMENT_MODES:
+            raise ValueError(
+                f"unknown qos_enforcement {qos_enforcement!r}; "
+                f"expected one of {self.QOS_ENFORCEMENT_MODES}"
+            )
         self.variant = variant
+        self.qos_enforcement = qos_enforcement
         self.relative_heading = variant in ("A", "AB")
         self.map_neighborhood = variant == "AB"
         # Weighted objective w1*T + w2*tau; (0.5, 0.5) reproduces the legacy
@@ -44,6 +53,9 @@ class World(object):
         self.objective_w2 = float(objective_w2)
         if self.objective_w1 < 0 or self.objective_w2 < 0:
             raise ValueError("objective weights must be non-negative")
+        self.outage_probability_threshold = float(outage_probability_threshold)
+        if not 0.0 < self.outage_probability_threshold <= 1.0:
+            raise ValueError("outage_probability_threshold must be in (0, 1]")
         self.a2g_blind = bool(a2g_blind)
         if self.a2g_blind and self.map_neighborhood:
             raise ValueError("a2g_blind is not supported with the AB map-neighborhood variant")
@@ -75,6 +87,7 @@ class World(object):
         self.out_time = 0.0
         self.current_contiguous_outage_s = 0.0
         self.max_contiguous_outage_s = 0.0
+        self.qos_violated = False
         self.outage_max_s = outage_max_s
         # Training and deployment normally share one budget.  A separate state
         # scale can keep the current-contiguous-outage observation fixed during
@@ -184,6 +197,7 @@ class World(object):
         self.out_time = 0
         self.current_contiguous_outage_s = 0.0
         self.max_contiguous_outage_s = 0.0
+        self.qos_violated = False
         self.total_engy = 0.0
         self.reward_term_totals = self._empty_reward_terms()
         initial_location = np.array([[self.UAVs[0].x, self.UAVs[0].y]])
@@ -301,7 +315,7 @@ class World(object):
         return self.radio_maps.g2a_snr_db(point_km)
 
     def get_g2a_outage(self, location):
-        return self.get_g2a_outage_probability(location) >= 0.5
+        return self.get_g2a_outage_probability(location) >= self.outage_probability_threshold
 
     def get_g2a_outage_probability(self, location):
         point_km = np.asarray(location, dtype=float).reshape(-1)[:2] / 10
@@ -353,7 +367,9 @@ class World(object):
         MaxSINR_G2A = self.get_date_rate_G2A(uav_location)  # 地对空的最大dB
         self.current_a2g_snr = MaxSINR_A2G
         self.current_g2a_outage_probability = self.get_g2a_outage_probability(uav_location)
-        g2a_outage = self.current_g2a_outage_probability >= 0.5
+        g2a_outage = (
+            self.current_g2a_outage_probability >= self.outage_probability_threshold
+        )
         if g2a_outage:
             self.out_time += self.delta_T
             self.current_contiguous_outage_s += self.delta_T
@@ -380,13 +396,22 @@ class World(object):
         if self.last_uploaded_data > 0 and self.current_payload > 0:
             reward += self.add_scaled_term("upload", self.UPLOAD_LEG_REWARD * self.last_uploaded_data / self.current_payload)
 
-        # The hard QoS constraint limits one continuous outage segment.  Its
-        # violation is failure even when it coincides with endpoint arrival.
-        if self.max_contiguous_outage_s > self.outage_max_s:
+        # The hard QoS constraint limits one continuous outage segment.  In
+        # "continue" mode the violation is retained as an evaluation flag while
+        # the mission keeps running so a complete but infeasible rollout can
+        # still report T and tau.
+        if (
+            self.max_contiguous_outage_s > self.outage_max_s
+            and not self.qos_violated
+        ):
+            self.qos_violated = True
             reward += self.add_scaled_term("qos", -self.INFEASIBLE_PENALTY)
-            self.terminal = False
-            self.r = reward
-            return self.update_state(fly_energy,self.target_loc,self.target_dis), reward, True, self.t, False
+            if self.qos_enforcement == "hard":
+                self.terminal = False
+                self.r = reward
+                return self.update_state(
+                    fly_energy, self.target_loc, self.target_dis
+                ), reward, True, self.t, False
                 
         if step_cur<=self.distance : # 达到检查点
             #只要到目标点了，就换下一个目标点，根据传输完成情况进行奖惩

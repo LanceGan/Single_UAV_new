@@ -192,6 +192,8 @@ class MCOAStarGuide:
         guard_margin: float = 0.15,
         max_expansions_per_search: int = 500_000,
         max_runtime_s_per_search: float = 120.0,
+        qos_slots_override: int | None = None,
+        profile: str = "hard-qos",
     ):
         self.world = world
         self.graph = graph
@@ -202,13 +204,19 @@ class MCOAStarGuide:
             world.radio_maps.g2a_outage_probability(point) >= 0.5
             for point in positions_km
         ])
+        qos_slots = (
+            int(round(world.outage_max_s / world.delta_T))
+            if qos_slots_override is None
+            else int(qos_slots_override)
+        )
         self.planner = MCOAStarPlanner(
             graph=graph,
             outage_by_node=self.outage_by_node,
-            qos_slots=int(round(world.outage_max_s / world.delta_T)),
+            qos_slots=qos_slots,
             max_expansions=max_expansions_per_search,
             max_runtime_s=max_runtime_s_per_search,
         )
+        self.profile = str(profile)
         self.route: list[np.ndarray] = []
         self.index = 0
         self.key = None
@@ -234,6 +242,7 @@ class MCOAStarGuide:
     def planner_audit(self) -> dict[str, object]:
         return {
             "algorithm": "MCO-A* adapted to 25 m / 0.5 s lattice",
+            "profile": self.profile,
             "qos_constraint": "max_contiguous_outage",
             "qos_slots": self.planner.qos_slots,
             "searches": self.search_count,

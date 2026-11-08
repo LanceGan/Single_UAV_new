@@ -524,13 +524,22 @@ class AStarPlanner:
                              runtime, False, "feasible path found leg by leg; each leg optimal given its start")
 
 
-def sample_radio_maps(graph: SpatialGraph, radio_maps) -> tuple[np.ndarray, np.ndarray]:
+def sample_radio_maps(
+    graph: SpatialGraph,
+    radio_maps,
+    outage_probability_threshold: float = 0.5,
+) -> tuple[np.ndarray, np.ndarray]:
     """Precompute destination radio values once for all search transitions."""
+    if not 0.0 < outage_probability_threshold <= 1.0:
+        raise ValueError("outage_probability_threshold must be in (0, 1]")
     snr = np.empty(len(graph.positions), dtype=float)
     outage = np.empty(len(graph.positions), dtype=bool)
     for node, point in enumerate(graph.positions):
         point_km = point / 10.0
         snr[node] = radio_maps.a2g_snr_db(point_km)
-        outage[node] = radio_maps.g2a_outage_probability(point_km) >= 0.5
+        outage[node] = (
+            radio_maps.g2a_outage_probability(point_km)
+            >= outage_probability_threshold
+        )
     return snr, outage
 

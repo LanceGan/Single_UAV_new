@@ -80,6 +80,82 @@ def test_world_terminates_when_g2a_outage_budget_is_exceeded(monkeypatch):
     assert done and not terminal and world.out_time == 1.0
 
 
+def test_continue_mode_records_qos_violation_without_ending_mission(monkeypatch):
+    world = World(
+        length=20,
+        width=20,
+        uav_num=1,
+        dist_max=0.25,
+        delta_t=0.5,
+        t=100,
+        outage_max_s=0.5,
+        qos_enforcement="continue",
+        ini_loc=[2.62, 2.65],
+        end_loc=[18.95, 11.12],
+        users_name="results/datas/Users_6.txt",
+        BS_loc=np.zeros((4, 3)),
+        traverse_sequence=[1, 2, 3, 4, 5, 6],
+    )
+    monkeypatch.setattr(world, "get_date_rate_A2G", lambda _location: 10.0)
+    monkeypatch.setattr(world, "get_g2a_outage_probability", lambda _location: 1.0)
+    state, step = world.reset()
+
+    state, _, done, step, terminal = world.step_inside(np.zeros(2), state, step)
+    assert not done and not terminal and not world.qos_violated
+
+    state, _, done, step, terminal = world.step_inside(np.zeros(2), state, step)
+    assert not done and not terminal
+    assert world.qos_violated
+    assert world.max_contiguous_outage_s == pytest.approx(1.0)
+
+    _, _, _, _, _ = world.step_inside(np.zeros(2), state, step)
+    assert world.qos_violated
+    assert world.reward_summary()["qos"] == pytest.approx(
+        -world.INFEASIBLE_PENALTY * world.REWARD_SCALE
+    )
+
+
+def test_continue_mode_can_finish_after_qos_violation(monkeypatch):
+    world = World(
+        length=20,
+        width=20,
+        uav_num=1,
+        delta_t=0.5,
+        t=100,
+        outage_max_s=0.5,
+        qos_enforcement="continue",
+        ini_loc=[2.62, 2.65],
+        end_loc=[18.95, 11.12],
+        users_name="results/datas/Users_6.txt",
+        BS_loc=np.zeros((4, 3)),
+        traverse_sequence=[1],
+    )
+    state, step = world.reset()
+    world.Traverse_order = 1
+    world.target_loc = np.array(world.end_loc)
+    world.UAVs[0].x, world.UAVs[0].y = world.end_loc
+    world.current_contiguous_outage_s = world.outage_max_s
+    world.max_contiguous_outage_s = world.outage_max_s
+    monkeypatch.setattr(world, "get_g2a_outage_probability", lambda _: 1.0)
+
+    _, _, done, _, terminal = world.step_inside(np.zeros(2), state, step)
+
+    assert done and terminal
+    assert world.qos_violated
+    assert world.max_contiguous_outage_s == pytest.approx(1.0)
+    assert world.reward_summary()["completion"] > 0.0
+
+
+def test_world_rejects_unknown_qos_enforcement_mode():
+    with pytest.raises(ValueError, match="qos_enforcement"):
+        World(
+            users_name="results/datas/Users_6.txt",
+            traverse_sequence=[1],
+            BS_loc=np.zeros((4, 3)),
+            qos_enforcement="unknown",
+        )
+
+
 def test_qos_budget_caps_continuous_outage_not_accumulated_outage(monkeypatch):
     world = World(length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
                   outage_max_s=0.5, ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
@@ -142,6 +218,45 @@ def test_world_defaults_to_fixed_maps_and_100_second_qos_budget():
                   traverse_sequence=[1, 2, 3, 4, 5, 6])
     assert world.outage_max_s == 100.0
     assert world.get_date_rate_A2G(np.array([[0.0, 0.0]])) == world.radio_maps.a2g_snr_db(np.array([0.0, 0.0]))
+
+
+def test_outage_probability_threshold_controls_outage_classification_and_qos(monkeypatch):
+    probability = 0.4
+    base_kwargs = dict(
+        length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=100,
+        ini_loc=[2.62, 2.65], end_loc=[18.95, 11.12],
+        users_name="results/datas/Users_6.txt", BS_loc=np.zeros((4, 3)),
+        traverse_sequence=[1, 2, 3, 4, 5, 6],
+    )
+    non_outage = World(outage_probability_threshold=0.5, **base_kwargs)
+    outage = World(outage_probability_threshold=0.3, **base_kwargs)
+    for world in (non_outage, outage):
+        monkeypatch.setattr(
+            world,
+            "get_g2a_outage_probability",
+            lambda _location, value=probability: value,
+        )
+
+    assert not non_outage.get_g2a_outage([0.0, 0.0])
+    assert outage.get_g2a_outage([0.0, 0.0])
+
+    non_outage_state, non_outage_t = non_outage.reset()
+    outage_state, outage_t = outage.reset()
+    non_outage.step_inside(np.zeros(2), non_outage_state, non_outage_t)
+    outage.step_inside(np.zeros(2), outage_state, outage_t)
+    assert non_outage.current_contiguous_outage_s == 0.0
+    assert outage.current_contiguous_outage_s == pytest.approx(outage.delta_T)
+
+
+@pytest.mark.parametrize("threshold", [0.0, -0.1, 1.01])
+def test_world_rejects_invalid_outage_probability_threshold(threshold):
+    with pytest.raises(ValueError, match="outage_probability_threshold"):
+        World(
+            users_name="results/datas/Users_6.txt",
+            traverse_sequence=[1],
+            BS_loc=np.zeros((4, 3)),
+            outage_probability_threshold=threshold,
+        )
 
 
 def test_state_exposes_qos_usage_and_penalizes_each_outage_slot(monkeypatch):

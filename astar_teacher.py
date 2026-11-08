@@ -34,7 +34,12 @@ def _map_hashes() -> dict[str, str]:
     }
 
 
-def _plan_sequential_positions(level: str, order: Sequence[int]) -> tuple[np.ndarray, dict]:
+def _plan_sequential_positions(
+    level: str,
+    order: Sequence[int],
+    outage_probability_threshold: float = 0.5,
+    outage_max_s: float = 100.0,
+) -> tuple[np.ndarray, dict]:
     from training_config import load_fixed_payloads
 
     payloads = load_fixed_payloads(level)
@@ -46,7 +51,11 @@ def _plan_sequential_positions(level: str, order: Sequence[int]) -> tuple[np.nda
     targets = np.vstack([users[node - 1] for node in order] + [END])
     leg_payloads = np.asarray([payloads[node - 1] for node in order], dtype=float)
     maps = FixedRadioMaps(ROOT / "results" / "datas")
-    snr, outage = sample_radio_maps(graph, maps)
+    snr, outage = sample_radio_maps(
+        graph,
+        maps,
+        outage_probability_threshold=outage_probability_threshold,
+    )
     planner = AStarPlanner(
         graph=graph,
         start_node=graph.special_nodes["start"],
@@ -54,6 +63,7 @@ def _plan_sequential_positions(level: str, order: Sequence[int]) -> tuple[np.nda
         payloads_mb=leg_payloads,
         snr_db_by_node=snr,
         outage_by_node=outage,
+        qos_slots=math.floor(float(outage_max_s) / 0.5 + 1e-12),
     )
     result = planner.plan_sequential()
     if not result.success:
@@ -66,12 +76,21 @@ def _plan_sequential_positions(level: str, order: Sequence[int]) -> tuple[np.nda
         "expansions": int(result.expansions),
         "runtime_s": float(result.runtime_s),
         "map_hashes": _map_hashes(),
+        "outage_probability_threshold": float(outage_probability_threshold),
+        "outage_max_s": float(outage_max_s),
     }
     return positions, meta
 
 
-def load_or_plan_teacher_path(level: str, order: Sequence[int], *, cache_dir=None,
-                              plan_if_missing: bool = True) -> tuple[np.ndarray, dict]:
+def load_or_plan_teacher_path(
+    level: str,
+    order: Sequence[int],
+    *,
+    cache_dir=None,
+    plan_if_missing: bool = True,
+    outage_probability_threshold: float = 0.5,
+    outage_max_s: float = 100.0,
+) -> tuple[np.ndarray, dict]:
     """Return ``(positions, meta)`` for the A* teacher of one ``(level, order)``.
 
     A JSON cache is keyed by level; its stored order must match the request. When
@@ -80,10 +99,28 @@ def load_or_plan_teacher_path(level: str, order: Sequence[int], *, cache_dir=Non
     """
     order = tuple(int(node) for node in order)
     cache_dir = Path(cache_dir) if cache_dir is not None else DEFAULT_CACHE_DIR
-    cache_path = cache_dir / f"teacher_{level}.json"
+    outage_probability_threshold = float(outage_probability_threshold)
+    if not 0.0 < outage_probability_threshold <= 1.0:
+        raise ValueError("outage_probability_threshold must be in (0, 1]")
+    outage_max_s = float(outage_max_s)
+    if outage_max_s <= 0:
+        raise ValueError("outage_max_s must be positive")
+    threshold_tag = f"{outage_probability_threshold:g}".replace(".", "p")
+    threshold_suffix = (
+        "" if outage_probability_threshold == 0.5
+        else f"_kappa{threshold_tag}"
+    )
+    budget_suffix = "" if outage_max_s == 100.0 else f"_qos{outage_max_s:g}s"
+    cache_path = cache_dir / f"teacher_{level}{threshold_suffix}{budget_suffix}.json"
     if cache_path.is_file():
         data = json.loads(cache_path.read_text(encoding="utf-8"))
-        if tuple(data.get("order", ())) == order:
+        cached_threshold = float(data.get("outage_probability_threshold", 0.5))
+        cached_budget = float(data.get("outage_max_s", 100.0))
+        if (
+            tuple(data.get("order", ())) == order
+            and cached_threshold == outage_probability_threshold
+            and cached_budget == outage_max_s
+        ):
             positions = np.asarray(data["positions"], dtype=float)
             meta = dict(data)
             meta["cache_dir"] = str(cache_dir)
@@ -92,7 +129,12 @@ def load_or_plan_teacher_path(level: str, order: Sequence[int], *, cache_dir=Non
         if not plan_if_missing:
             raise ValueError(f"cached teacher order {data.get('order')} != requested {order}")
 
-    positions, meta = _plan_sequential_positions(level, order)
+    positions, meta = _plan_sequential_positions(
+        level,
+        order,
+        outage_probability_threshold=outage_probability_threshold,
+        outage_max_s=outage_max_s,
+    )
     meta["positions"] = positions.tolist()
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
@@ -149,7 +191,14 @@ class AStarTeacher:
         return best
 
 
-def d3qn_demo_pairs(level, order, codec, cache_dir=None):
+def d3qn_demo_pairs(
+    level,
+    order,
+    codec,
+    cache_dir=None,
+    outage_probability_threshold=0.5,
+    outage_max_s=100.0,
+):
     """Return ``(states, actions)`` demonstration pairs for D3QN.
 
     The A* path is replayed with its exact continuous actions so the episode stays
@@ -162,18 +211,25 @@ def d3qn_demo_pairs(level, order, codec, cache_dir=None):
     from World import World
     from training_config import load_fixed_payloads
 
-    positions, _ = load_or_plan_teacher_path(level, order, cache_dir=cache_dir)
+    positions, _ = load_or_plan_teacher_path(
+        level,
+        order,
+        cache_dir=cache_dir,
+        outage_probability_threshold=outage_probability_threshold,
+        outage_max_s=outage_max_s,
+    )
     order = tuple(int(node) for node in order)
     payloads = load_fixed_payloads(level)
     with contextlib.redirect_stdout(io.StringIO()):
         world = World(
             length=20, width=20, uav_num=1, dist_max=0.25, delta_t=0.5, t=1000,
-            data_sizes=payloads, outage_max_s=100.0,
+            data_sizes=payloads, outage_max_s=outage_max_s,
             ini_loc=START.tolist(), end_loc=END.tolist(),
             users_name=str(ROOT / "results" / "datas" / "Users_6.txt"),
             BS_loc=np.array([[4.77, 4.56, 0.25], [14.89, 4.89, 0.25],
                              [4.63, 13.78, 0.25], [13.48, 14.89, 0.25]]),
             traverse_sequence=list(order), variant="A",
+            outage_probability_threshold=outage_probability_threshold,
         )
     state, t = world.reset()
     teacher = AStarTeacher(world, positions)

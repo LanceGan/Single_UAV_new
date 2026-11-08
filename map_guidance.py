@@ -19,7 +19,11 @@ class MapGuide:
         yy, xx = np.indices(self.shape)
         self.xy = np.column_stack((xx.ravel(), yy.ravel())) / 10.0
         self.rate = np.log2(1 + 10 ** (world.radio_maps.a2g_snr.ravel() / 10)) * world.BandWidth
-        self.outage = world.radio_maps.g2a_outage.ravel() >= 0.5
+        threshold = getattr(world, "outage_probability_threshold", 0.5)
+        self.outage = (
+            world.radio_maps.g2a_outage.ravel()
+            >= threshold
+        )
         self.key = None
         self.route = []
         self.index = 0
@@ -118,6 +122,8 @@ class MapGuide:
             return action
         # Guidance noise must not turn a safe planned step into an outage step.
         intended = position + action[1] * np.array([math.cos(action[0]), math.sin(action[0])])
-        if w.get_g2a_outage_probability([endpoint]) >= 0.5 > w.get_g2a_outage_probability([intended]):
+        threshold = getattr(w, "outage_probability_threshold", 0.5)
+        if (w.get_g2a_outage_probability([endpoint]) >= threshold
+                > w.get_g2a_outage_probability([intended])):
             return action
         return noisy

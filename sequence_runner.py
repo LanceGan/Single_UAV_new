@@ -18,9 +18,17 @@ def load_planning_nodes():
     return np.vstack(([2.62, 2.65], users, [18.95, 11.12])) / 10.0
 
 
-def solve_ga_order(inspection_payloads, population=25, iterations=500):
+def solve_ga_order(inspection_payloads, population=25, iterations=500,
+                   outage_probability_threshold=0.5):
     data = load_planning_nodes()
-    model = GA(data.shape[0], population, iterations, data, data_sizes=node_payloads_for_tsp(inspection_payloads))
+    model = GA(
+        data.shape[0],
+        population,
+        iterations,
+        data,
+        data_sizes=node_payloads_for_tsp(inspection_payloads),
+        outage_probability_threshold=outage_probability_threshold,
+    )
     model.run()
     ga_order = [index for index in model.best_indices if index not in (0, data.shape[0] - 1)]
     nodes = tuple(range(1, data.shape[0] - 1))

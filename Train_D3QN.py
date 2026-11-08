@@ -29,8 +29,12 @@ from astar_teacher import d3qn_demo_pairs
 from map_guidance import MapGuide
 from sequence_runner import solve_ga_order
 from sequence_optimizers import (
+    distance_astar_order,
+    distance_pso_order,
     distance_sa_order,
     distance_tsp_order,
+    ga_proxy_order,
+    priga_order,
     sa_order,
     service_sa_order,
 )
@@ -54,6 +58,12 @@ def create_parser():
     parser.add_argument("--uav_h", type=float, default=1.0)
     parser.add_argument("--outage_max_s", type=float, default=100.0,
                         help="hard maximum-continuous G2A outage budget")
+    parser.add_argument("--total_steps", type=int, default=1000)
+    parser.add_argument(
+        "--qos_enforcement",
+        choices=World.QOS_ENFORCEMENT_MODES,
+        default="hard",
+    )
     parser.add_argument("--gamma", type=float, default=0.995)
     parser.add_argument("--buffer", type=int, default=200_000)
     parser.add_argument("--net_width", type=int, default=256)
@@ -74,7 +84,10 @@ def create_parser():
                         help="drop the A2G SNR feature for A2G-unaware baselines")
     parser.add_argument(
         "--sequence_method",
-        choices=("iga", "distance_tsp", "sa", "sa_service", "sa_distance"),
+        choices=(
+            "priga", "iga", "distance_tsp", "ga", "ga_proxy", "pso",
+            "sa", "sa_service", "sa_distance", "astar",
+        ),
         default="iga",
         help=(
             "iga: proposed sequence; distance_tsp: exact distance TSP; "
@@ -143,14 +156,23 @@ def _map_hashes():
     }
 
 
-def _make_world(*, payloads, order, uav_h, outage_max_s, a2g_blind=False):
+def _make_world(
+    *,
+    payloads,
+    order,
+    uav_h,
+    outage_max_s,
+    a2g_blind=False,
+    total_steps=1000,
+    qos_enforcement="hard",
+):
     return World(
         length=20,
         width=20,
         uav_num=1,
         dist_max=0.25,
         delta_t=0.5,
-        t=1000,
+        t=int(total_steps),
         uav_h=uav_h,
         data_size=300,
         data_sizes=payloads,
@@ -165,6 +187,7 @@ def _make_world(*, payloads, order, uav_h, outage_max_s, a2g_blind=False):
         traverse_sequence=list(order),
         variant="A",
         a2g_blind=a2g_blind,
+        qos_enforcement=qos_enforcement,
     )
 
 
@@ -179,8 +202,12 @@ def _rollout_context(run_dir, config, state_dim):
         order=tuple(config["order"]),
         payloads_mb=np.asarray(config["payloads_mb"], dtype=float),
         outage_max_s=float(config["outage_max_s"]),
+        outage_probability_threshold=float(
+            config.get("outage_probability_threshold", 0.5)
+        ),
         a2g_blind=bool(config.get("a2g_blind", False)),
-        total_steps=1000,
+        total_steps=int(config.get("total_steps", 1000)),
+        qos_enforcement=str(config.get("qos_enforcement", "hard")),
         length=20.0,
         width=20.0,
         delta_t=0.5,
@@ -245,20 +272,33 @@ def run_training(
     sequence_selector = getattr(args, "sequence_method", "iga")
     if sequence_selector == "distance_tsp":
         order, sequence_meta = distance_tsp_order()
+    elif sequence_selector in ("priga", "iga"):
+        if order_solver is not solve_ga_order:
+            order = list(order_solver(payloads, iterations=args.ga_iterations))
+            sequence_meta = {
+                "method": "injected sequence solver",
+                "uses_g2a": True,
+                "uses_a2g": True,
+                "uses_payloads": True,
+            }
+        else:
+            order, sequence_meta = priga_order(
+                payloads,
+                seed=args.seed,
+                generations=args.ga_iterations,
+            )
+    elif sequence_selector in ("ga", "ga_proxy"):
+        order, sequence_meta = ga_proxy_order(seed=args.seed)
+    elif sequence_selector == "pso":
+        order, sequence_meta = distance_pso_order(seed=args.seed)
+    elif sequence_selector == "astar":
+        order, sequence_meta = distance_astar_order()
     elif sequence_selector == "sa":
         order, sequence_meta = sa_order(seed=args.seed)
     elif sequence_selector == "sa_service":
         order, sequence_meta = service_sa_order(payloads, seed=args.seed)
     elif sequence_selector == "sa_distance":
         order, sequence_meta = distance_sa_order(seed=args.seed)
-    elif sequence_selector == "iga":
-        order = list(order_solver(payloads, iterations=args.ga_iterations))
-        sequence_meta = {
-            "method": "GA with exact verification/fallback",
-            "uses_g2a": True,
-            "uses_a2g": True,
-            "uses_payloads": True,
-        }
     else:
         raise ValueError(f"unsupported sequence method: {sequence_selector!r}")
     order = [int(node) for node in order]
@@ -285,6 +325,8 @@ def run_training(
         "state_dim": state_dim,
         "state_schema": state_schema,
         "a2g_blind": a2g_blind,
+        "total_steps": int(getattr(args, "total_steps", 1000)),
+        "qos_enforcement": str(getattr(args, "qos_enforcement", "hard")),
         "qos_constraint": "max_contiguous_outage",
         "action_count": 33,
         "action_schema": ACTION_SCHEMA,
@@ -325,6 +367,8 @@ def run_training(
         "uav_h": args.uav_h,
         "outage_max_s": args.outage_max_s,
         "a2g_blind": a2g_blind,
+        "total_steps": int(getattr(args, "total_steps", 1000)),
+        "qos_enforcement": str(getattr(args, "qos_enforcement", "hard")),
     }
     training_world = world_factory(**world_arguments)
     evaluation_world = world_factory(**world_arguments)

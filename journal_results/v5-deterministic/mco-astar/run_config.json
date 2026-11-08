@@ -1,0 +1,15 @@
+{
+  "algorithm": "mco_astar_adapted",
+  "levels": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "total_steps": 2000,
+  "task_horizon_s": 1000.0,
+  "qos_constraint": "max_contiguous_outage",
+  "outage_max_s": 6.0,
+  "qos_enforcement": "continue",
+  "relaxed_completion_fallback": true,
+  "order_override": null
+}

@@ -104,6 +104,18 @@ class PPOAgent:
             float(value.item()),
         )
 
+    def evaluate_state_action(self, state, action):
+        """Return the log probability and value of a supplied action."""
+        with torch.no_grad():
+            states = self._tensor_state(state)
+            actions = torch.as_tensor(
+                np.asarray(action, dtype=np.float32),
+                device=self.device,
+            ).reshape(1, -1)
+            log_prob, _ = self.evaluate_actions(states, actions)
+            value = self.value(states)
+        return float(log_prob.item()), float(value.item())
+
     def evaluate_actions(self, states, actions):
         _, distribution = self._distribution(states)
         log_prob = distribution.log_prob(actions).sum(dim=-1)

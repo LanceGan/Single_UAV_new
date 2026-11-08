@@ -1,0 +1,115 @@
+# V5 Implementation Status
+
+更新：2026-11-08
+
+## 已完成
+
+- `World` 支持 `qos_enforcement=hard|continue`；
+- QoS 违约后继续任务；
+- `mission_complete` 与 `qos_feasible` 独立记录；
+- 1000 s 时域参数化；
+- 模型选择支持完整但 QoS 违约的策略；
+- V5 PRIGA 通信感知目标；
+- sequence-only GA、PSO、SA、A*；
+- 顺序代理指标和 JSON/CSV 输出；
+- DDPG、PPO、TD3、D3QN 的 V5 参数透传；
+- SAC 训练器；
+- MCO-A* 的 1000 s 和 relaxed completion fallback；
+- Win 并行矩阵驱动 `run_v5_matrix.py`；
+- 全量测试通过。
+
+## Mac 已完成结果
+
+### MCO-A*
+
+1000 s, `T_out_cont<=6 s`, `qos_enforcement=continue`：
+
+| Level | T | tau | T+tau | T_out_cont | Constraint |
+|---|---:|---:|---:|---:|---|
+| Low | 287.5 | 170.0 | 457.5 | 6.0 | pass |
+| Medium | 459.5 | 329.5 | 789.0 | 5.5 | pass |
+| High | 663.0 | 533.0 | 1196.0 | 5.5 | pass |
+
+结果目录：
+
+```text
+journal_results/v5-deterministic/mco-astar/
+```
+
+### Sequence proxy
+
+七种顺序方法的三档结果：
+
+```text
+journal_results/v5-sequence/sequence-study.json
+journal_results/v5-sequence/sequence-study.csv
+```
+
+Low：
+
+| Method | Order | Proxy T+tau | Payload-weighted A2G rate | Mean leg outage |
+|---|---|---:|---:|---:|
+| V5 PRIGA | 1-6-5-4-2-3 | 248.5 | 3.414 | 3.29 |
+| Yang-style | 1-6-5-4-2-3 | 248.5 | 3.414 | 3.29 |
+| Standard GA | 1-6-5-2-3-4 | 257.1 | 2.750 | 3.48 |
+| PSO | 1-6-5-2-3-4 | 257.1 | 2.750 | 3.48 |
+| SA | 1-6-5-2-3-4 | 257.1 | 2.750 | 3.48 |
+| A* | 1-6-5-2-3-4 | 257.1 | 2.750 | 3.48 |
+| EEGA-style | 1-6-5-3-2-4 | 264.1 | 2.780 | 3.36 |
+
+Medium 和 High 中 V5 PRIGA 均取得最低代理目标值；Low 与 Yang-style
+并列。该代理不是 World replay，最终结论仍由 CA-TD3 端到端实验决定。
+
+## Win 启动
+
+先停止所有 legacy-v4 任务。拉取本分支后：
+
+```bash
+python run_v5_matrix.py \
+  --groups E1 E2 E3 E4 E5 \
+  --levels low medium high \
+  --device cuda \
+  --workers 3 \
+  --execute
+```
+
+建议先做 Low gate：
+
+```bash
+python run_v5_matrix.py \
+  --groups E1 E2 \
+  --levels low \
+  --device cuda \
+  --workers 3 \
+  --execute
+```
+
+Low gate 通过后启动 Medium/High：
+
+```bash
+python run_v5_matrix.py \
+  --groups E1 E2 E3 E4 E5 \
+  --levels medium high \
+  --device cuda \
+  --workers 3 \
+  --execute
+```
+
+最后补 E4 Low：
+
+```bash
+python run_v5_matrix.py \
+  --groups E4 \
+  --levels low \
+  --device cuda \
+  --workers 3 \
+  --execute
+```
+
+## 当前风险
+
+- V5 是新的 1000 s 协议，不能把旧 500 s 训练结果混入主表；
+- PRIGA 在 Low 的代理目标与 Yang-style 并列，尚未证明严格领先；
+- SAC 已通过单元和短 smoke test，但尚未在 Win 上进行正式长训练；
+- DDPG/PPO/SAC 的正式可行性必须由 Win 的 CUDA pilot 决定；
+- 当前所有训练均为 seed 1，暂无 seed-level uncertainty。
