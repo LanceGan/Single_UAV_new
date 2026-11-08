@@ -188,8 +188,8 @@ def build_jobs(args):
     jobs = []
     if "E1" in args.groups:
         for level in args.levels:
-            jobs.extend(
-                [
+            if not args.reuse_existing_e1:
+                jobs.append(
                     _td3_ddpg_job(
                         python=args.python,
                         device=args.device,
@@ -199,7 +199,10 @@ def build_jobs(args):
                         level=level,
                         algorithm="td3_bc",
                         sequence="priga",
-                    ),
+                    )
+                )
+            jobs.extend(
+                [
                     _td3_ddpg_job(
                         python=args.python,
                         device=args.device,
@@ -208,15 +211,6 @@ def build_jobs(args):
                         label="ddpg",
                         level=level,
                         algorithm="ddpg_bc",
-                        sequence="priga",
-                    ),
-                    _d3qn_job(
-                        python=args.python,
-                        device=args.device,
-                        base=base,
-                        group="E1",
-                        label="d3qn",
-                        level=level,
                         sequence="priga",
                     ),
                     _ppo_job(
@@ -233,6 +227,18 @@ def build_jobs(args):
                     ),
                 ]
             )
+            if not args.reuse_existing_e1 or level in ("medium", "high"):
+                jobs.append(
+                    _d3qn_job(
+                        python=args.python,
+                        device=args.device,
+                        base=base,
+                        group="E1",
+                        label="d3qn",
+                        level=level,
+                        sequence="priga",
+                    )
+                )
     if "E2" in args.groups:
         for level in args.levels:
             for sequence in ("ga", "pso", "sa_distance", "astar", "eega", "yang"):
@@ -350,6 +356,7 @@ def build_jobs(args):
     # E1 CA-TD3 is the shared PRIGA+CA-TD3 run used by E2 and E5.
     if (
         not args.skip_shared_proposed
+        and not args.reuse_existing_e1
         and any(group in args.groups for group in ("E2", "E4", "E5"))
     ):
         existing = {job.job_id for job in jobs}
@@ -412,6 +419,11 @@ def main():
         "--skip-shared-proposed",
         action="store_true",
         help="Do not duplicate the E1 PRIGA+CA-TD3 runs when only E5 baselines are assigned to this machine.",
+    )
+    parser.add_argument(
+        "--reuse-existing-e1",
+        action="store_true",
+        help="Reuse E1 CA-TD3, D3QN Low, and PPO Low; schedule only the missing V5 E1 runs.",
     )
     parser.add_argument("--stop-after", type=int, default=0)
     args = parser.parse_args()

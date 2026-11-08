@@ -11,6 +11,7 @@ def _args(groups, levels=("low", "medium", "high")):
         device="cuda",
         output_root="/tmp/v5-plan",
         skip_shared_proposed=False,
+        reuse_existing_e1=False,
     )
 
 
@@ -29,6 +30,20 @@ def test_mac_e5_can_reuse_proposed_without_duplication():
 
     assert len(jobs) == 15
     assert all(job.group == "E5" for job in jobs)
+
+
+def test_minimal_e1_schedules_only_missing_runs():
+    args = _args(("E1",))
+    args.reuse_existing_e1 = True
+    jobs = build_jobs(args)
+
+    assert len(jobs) == 11
+    methods = sorted(job.job_id.split("/")[1] for job in jobs)
+    assert methods.count("d3qn") == 2
+    assert methods.count("ppo") == 3
+    assert methods.count("ddpg") == 3
+    assert methods.count("sac") == 3
+    assert "ca_td3" not in methods
 
 
 def test_every_job_invokes_a_training_entrypoint():
