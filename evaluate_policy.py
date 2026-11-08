@@ -122,6 +122,7 @@ def load_run_context(run_dir):
         payloads_mb=payloads,
         outage_max_s=float(config["outage_max_s"]),
         a2g_blind=a2g_blind,
+        total_steps=int(config.get("total_steps", 1000)),
     )
 
 

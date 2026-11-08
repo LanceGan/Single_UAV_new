@@ -46,6 +46,8 @@ def create_parser():
                         help="td3/ddpg are standard agents; td3_bc/ddpg_bc add MapGuide demonstrations and imitation")
     parser.add_argument("--outage_max_s", type=float, default=100.0,
                         help="hard maximum-continuous G2A outage budget")
+    parser.add_argument("--total_steps", type=int, default=1000,
+                        help="mission horizon in slots (1000 slots = 500 s); raised to 2000 for high-tier A2G-blind baselines")
     parser.add_argument("--train_memory_size", type=int, default=2000)
     parser.add_argument("--teacher", choices=("astar", "mapguide"), default="astar",
                         help="demonstration source for *_bc agents (A* optimal plan, or MapGuide planner)")
@@ -228,7 +230,7 @@ writer = SummaryWriter(train_path)
 # 环境参数
 uav_num = 1
 user_num = 6
-T = 1000
+T = args.total_steps
 Length = 20
 Width = 20
 a_dim = uav_num*2
@@ -299,6 +301,7 @@ if args.preflight_only:
     "sequence_meta": sequence_meta,
     "state_schema": A2G_BLIND_STATE_SCHEMA if args.a2g_blind else STATE_SCHEMA,
     "qos_constraint": "max_contiguous_outage",
+    "total_steps": int(T),
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
     "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
     "base_agent": profile["base"],

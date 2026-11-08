@@ -120,9 +120,20 @@ class PPOAgent:
         advantages,
         epochs=10,
         batch_size=256,
+        demo=None,
+        bc_weight=0.0,
+        demo_fraction=0.25,
     ):
         states = torch.as_tensor(states, dtype=torch.float32, device=self.device)
         actions = torch.as_tensor(actions, dtype=torch.float32, device=self.device)
+        demo_pair = None
+        if demo is not None and bc_weight > 0:
+            demo_states, demo_actions = demo
+            demo_pair = (
+                torch.as_tensor(demo_states, dtype=torch.float32, device=self.device),
+                torch.as_tensor(demo_actions, dtype=torch.float32, device=self.device),
+            )
+            demo_batch = max(1, int(batch_size * float(demo_fraction)))
         old_log_probs = torch.as_tensor(old_log_probs, dtype=torch.float32, device=self.device)
         returns = torch.as_tensor(returns, dtype=torch.float32, device=self.device)
         advantages = torch.as_tensor(advantages, dtype=torch.float32, device=self.device)
@@ -148,6 +159,14 @@ class PPOAgent:
                     ratio, 1.0 - self.clip_ratio, 1.0 + self.clip_ratio
                 ) * batch_advantages
                 policy_loss = -torch.minimum(unclipped, clipped).mean()
+                if demo_pair is not None:
+                    demo_states, demo_actions = demo_pair
+                    demo_idx = torch.randint(0, demo_states.shape[0], (demo_batch,), device=self.device)
+                    pred = self.actor(demo_states[demo_idx])
+                    heading = (1.0 - torch.cos(pred[:, :1] - demo_actions[demo_idx][:, :1])).mean()
+                    distance = ((pred[:, 1:2] - demo_actions[demo_idx][:, 1:2]) / self.max_action[1]).pow(2).mean()
+                    bc_loss = heading + distance
+                    policy_loss = policy_loss + bc_weight * bc_loss
 
                 values = self.value(batch_states)
                 value_loss = F.mse_loss(values, batch_returns)

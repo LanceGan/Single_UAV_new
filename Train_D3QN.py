@@ -54,6 +54,8 @@ def create_parser():
     parser.add_argument("--uav_h", type=float, default=1.0)
     parser.add_argument("--outage_max_s", type=float, default=100.0,
                         help="hard maximum-continuous G2A outage budget")
+    parser.add_argument("--total_steps", type=int, default=1000,
+                        help="mission horizon in slots (1000 slots = 500 s); raised to 2000 for high-tier A2G-blind baselines")
     parser.add_argument("--gamma", type=float, default=0.995)
     parser.add_argument("--buffer", type=int, default=200_000)
     parser.add_argument("--net_width", type=int, default=256)
@@ -143,14 +145,14 @@ def _map_hashes():
     }
 
 
-def _make_world(*, payloads, order, uav_h, outage_max_s, a2g_blind=False):
+def _make_world(*, payloads, order, uav_h, outage_max_s, a2g_blind=False, total_steps=1000):
     return World(
         length=20,
         width=20,
         uav_num=1,
         dist_max=0.25,
         delta_t=0.5,
-        t=1000,
+        t=total_steps,
         uav_h=uav_h,
         data_size=300,
         data_sizes=payloads,
@@ -180,7 +182,7 @@ def _rollout_context(run_dir, config, state_dim):
         payloads_mb=np.asarray(config["payloads_mb"], dtype=float),
         outage_max_s=float(config["outage_max_s"]),
         a2g_blind=bool(config.get("a2g_blind", False)),
-        total_steps=1000,
+        total_steps=int(config.get("total_steps", 1000)),
         length=20.0,
         width=20.0,
         delta_t=0.5,
@@ -286,6 +288,7 @@ def run_training(
         "state_schema": state_schema,
         "a2g_blind": a2g_blind,
         "qos_constraint": "max_contiguous_outage",
+        "total_steps": int(getattr(args, "total_steps", 1000)),
         "action_count": 33,
         "action_schema": ACTION_SCHEMA,
         "order": order,
@@ -325,6 +328,7 @@ def run_training(
         "uav_h": args.uav_h,
         "outage_max_s": args.outage_max_s,
         "a2g_blind": a2g_blind,
+        "total_steps": int(getattr(args, "total_steps", 1000)),
     }
     training_world = world_factory(**world_arguments)
     evaluation_world = world_factory(**world_arguments)
