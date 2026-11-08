@@ -66,7 +66,7 @@ Medium 和 High 中 V5 PRIGA 均取得最低代理目标值；Low 与 Yang-style
 
 ```bash
 python run_v5_matrix.py \
-  --groups E1 E2 E3 E4 E5 \
+  --groups E1 E2 E4 \
   --levels low medium high \
   --device cuda \
   --workers 3 \
@@ -84,11 +84,11 @@ python run_v5_matrix.py \
   --execute
 ```
 
-Low gate 通过后，Win 启动 E1/E2/E4/E5 的 Medium/High：
+Low gate 通过后，Win 启动 E1/E2/E4 的 Medium/High：
 
 ```bash
 python run_v5_matrix.py \
-  --groups E1 E2 E4 E5 \
+  --groups E1 E2 E4 \
   --levels medium high \
   --device cuda \
   --workers 3 \
@@ -106,26 +106,43 @@ python run_v5_matrix.py \
   --execute
 ```
 
-E3 的 Medium/High 四组由 Mac 的 MPS 四路并行执行，输出到：
+Mac 负责：
+
+```bash
+python run_v5_matrix.py \
+  --groups E5 \
+  --levels low medium high \
+  --device mps \
+  --workers 4 \
+  --skip-shared-proposed \
+  --output-root journal_results/v5-mac \
+  --execute
+```
+
+E3 的 Medium/High 四组由 Mac 的 MPS 并行执行，E5 的其余 15 个基线也由
+Mac 重新训练。E5 的 PRIGA+CA-TD3 复用 Win 的 E1 结果，不重复训练。
+
+输出到：
 
 ```text
 journal_results/v5-mac/E3/
+journal_results/v5-mac/E5/
 ```
 
-因此 Win 的正式队列是 66 个唯一训练格，而不是 70 个。执行
-`run_v5_matrix.py --groups E1 E2 E4 E5` 即会自动跳过 E3。
+因此 Win 的正式队列是 51 个唯一训练格。Mac 承担 E3 的 4 个训练格和
+E5 的 15 个基线训练格。
 
 Mac 当前承担的完整实验块：
 
 - MCO-A*：Low/Medium/High，共 3 组，已完成；
 - sequence-only proxy：7 种顺序 x 3 档，共 21 个确定性评估，已完成；
-- E3 A2G ablation：Medium/High x blind/visible，共 4 组，正在运行。
+- E3 A2G ablation：Medium/High x blind/visible，共 4 组，正在运行；
+- E5 literature baselines：6 种方法 x 3 档，共 15 组，复用 Win Proposed。
 
-不在 Mac 上继续拆分 E1/E2/E5：
+E1/E2 整体放在 Win：
 
 - E1 需要五种轨迹算法同机比较；
 - E2 需要七种顺序对应的 CA-TD3 训练同机完成；
-- E5 的 Proposed 与文献基线需要共享同一训练硬件口径。
 
 ## 当前风险
 

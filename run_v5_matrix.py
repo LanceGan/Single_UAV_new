@@ -348,7 +348,10 @@ def build_jobs(args):
                     )
                 )
     # E1 CA-TD3 is the shared PRIGA+CA-TD3 run used by E2 and E5.
-    if any(group in args.groups for group in ("E2", "E4", "E5")):
+    if (
+        not args.skip_shared_proposed
+        and any(group in args.groups for group in ("E2", "E4", "E5"))
+    ):
         existing = {job.job_id for job in jobs}
         for level in args.levels:
             job_id = f"E1/ca_td3/{level}"
@@ -374,7 +377,12 @@ def build_jobs(args):
 def _execute(job):
     if any(job.output_root.rglob("run_config.json")):
         return job.job_id, "skip-existing", ""
-    log_dir = DEFAULT_OUTPUT / "logs"
+    path_parts = (job.output_root, *job.output_root.parents)
+    log_base = next(
+        (path for path in path_parts if path.name.startswith("v5-")),
+        DEFAULT_OUTPUT,
+    )
+    log_dir = log_base / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / (job.job_id.replace("/", "__") + ".log")
     env = dict(os.environ)
@@ -400,6 +408,11 @@ def main():
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT))
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument(
+        "--skip-shared-proposed",
+        action="store_true",
+        help="Do not duplicate the E1 PRIGA+CA-TD3 runs when only E5 baselines are assigned to this machine.",
+    )
     parser.add_argument("--stop-after", type=int, default=0)
     args = parser.parse_args()
     jobs = build_jobs(args)

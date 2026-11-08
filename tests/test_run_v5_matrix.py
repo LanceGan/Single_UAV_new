@@ -10,6 +10,7 @@ def _args(groups, levels=("low", "medium", "high")):
         python="python",
         device="cuda",
         output_root="/tmp/v5-plan",
+        skip_shared_proposed=False,
     )
 
 
@@ -19,6 +20,15 @@ def test_v5_matrix_cell_counts_and_dependencies():
     assert len(build_jobs(_args(("E3",)))) == 4
     assert len(build_jobs(_args(("E4",)))) == 21
     assert len(build_jobs(_args(("E5",)))) == 18
+
+
+def test_mac_e5_can_reuse_proposed_without_duplication():
+    args = _args(("E5",))
+    args.skip_shared_proposed = True
+    jobs = build_jobs(args)
+
+    assert len(jobs) == 15
+    assert all(job.group == "E5" for job in jobs)
 
 
 def test_every_job_invokes_a_training_entrypoint():
