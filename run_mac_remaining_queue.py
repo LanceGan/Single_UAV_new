@@ -57,7 +57,9 @@ def build_remaining_jobs(python, device="mps", output_root=DEFAULT_OUTPUT):
         )
         if job.job_id in {"E5/sa_d3qn/medium", "E5/sa_d3qn/high"}
     ]
-    return [*e4, *e5]
+    # Complete the two remaining E5 baselines before filling all twelve
+    # slots with the longer E4 sensitivity sweep.
+    return [*e5, *e4]
 
 
 def _complete(job):
