@@ -8,6 +8,8 @@
 - E1 CA-TD3 三档全部复用；
 - E2 Low 七种顺序全部复用；
 - E2 Medium/High 不重新训练轨迹算法，只计算顺序并用现有 CA-TD3 actor 重放；
+  停滞时由 MapGuide 接管；若混合控制在任务完成前终止，则明确执行整段
+  MapGuide restart fallback；
 - E3 Low 复用，只新增 Medium/High；
 - E4 Low 复用，只新增 Medium/High；
 - E5 DRM-HO 三档和六个基线 Low 全部复用；
@@ -19,7 +21,7 @@
 | ID | 实验内容 | 已完成/复用 | Mac 新增 | Win 新增 |
 |---|---|---|---|---|
 | E1 | 固定 PRIGA 的轨迹执行器比较 | CA-TD3 L/M/H；D3QN Low | — | PPO L/M/H；D3QN M/H；DDPG L/M/H；SAC L/M/H |
-| E2 | 固定现有 CA-TD3，比较巡检顺序算法 | Low 全部复用；PRIGA M/H 复用 | GA/PSO/SA/A*/EEGA/Yang 的 M/H 顺序计算与 CA-TD3 重放 | — |
+| E2 | CA-TD3 + MapGuide assisted completion，比较巡检顺序算法 | Low 全部复用；PRIGA M/H 复用 | GA/PSO/SA/A*/EEGA/Yang 的 M/H 顺序计算与 assisted replay | — |
 | E3 | 固定 Distance-TSP 的 A2G 消融 | Low blind/visible | Medium/High blind/visible | — |
 | E4 | QoS 与目标权重稀疏扫描 | Low 全部；M/H balanced 6 s | M/H 其余 12 个稀疏条件 | — |
 | E5 | 文献基线比较 | DRM-HO 三档；六基线 Low；MCO M/H | 五个学习型基线 M/H | — |
@@ -47,7 +49,8 @@ E5 five baselines Medium/High 10
 合计                          26
 ```
 
-E2 不包含神经网络重新训练，只有 12 个 Medium/High 顺序重放评估。
+E2 不包含神经网络重新训练，只有 12 个 Medium/High assisted replay。
+E2 结果必须同时报告接管时刻、MapGuide 控制步数以及是否使用了整段重启兜底。
 
 ## V5 新训练统一约束
 

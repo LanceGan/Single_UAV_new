@@ -81,6 +81,7 @@ def run_preflight(level, output_dir=None, order=None, outage_max_s=100,
                   world.max_contiguous_outage_s > world.outage_max_s
               ),
               "order": order, "payloads_mb": payloads.tolist(), "time_s": t * world.delta_T,
+              "transmission_delay_s": float(world.trans_delay * world.delta_T),
               "outage_s": world.max_contiguous_outage_s,
               "total_outage_s": world.out_time,
               "uploaded_mb": float(round(uploaded, 8)),
