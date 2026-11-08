@@ -132,15 +132,15 @@ def collect(output_root=DEFAULT_OUTPUT, now=None):
     records = []
     for history_path in sorted((output_root / "E3").rglob("eval_history.json")):
         record = summarize_run(history_path.parent, output_root, now=now)
-        if record is not None:
+        if record is not None and record["level"] in {"medium", "high"}:
             records.append(record)
     for history_path in sorted((output_root / "E4").rglob("eval_history.json")):
         record = summarize_run(history_path.parent, output_root, now=now)
-        if record is not None:
+        if record is not None and record["level"] in {"medium", "high"}:
             records.append(record)
     for history_path in sorted((output_root / "E5").rglob("eval_history.json")):
         record = summarize_run(history_path.parent, output_root, now=now)
-        if record is not None:
+        if record is not None and record["level"] in {"medium", "high"}:
             records.append(record)
     return records
 
