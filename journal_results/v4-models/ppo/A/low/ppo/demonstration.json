@@ -1,6 +1,6 @@
 {
-  "episodes": 20,
-  "transitions": 7867,
-  "updates": 5000,
-  "loss": 0.20861134192943573
+  "episodes": 40,
+  "transitions": 15718,
+  "updates": 20000,
+  "loss": 0.15592291512265802
 }

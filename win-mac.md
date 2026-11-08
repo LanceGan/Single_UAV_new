@@ -218,3 +218,49 @@ Mac 在 `WIN_OPTIONAL_DRL_MATRIX.md` 中指定的 PPO 配方只有「一次性 B
 - ✅ 14 组矩阵中 Layer-1 D3QN medium/high 已完成。
 - 🔄 剩余 12 组训练中（3 路并发）：PPO medium/high（新配方）、TD3 基线 6 组（distance-tsp/eega/yang × med/high，A2G-blind）、D3QN 基线 4 组（drl-sa/sa-d3qn × med/high，A2G-blind，5000 回合）。
 - 冻结顺序已核验与 `WIN_OPTIONAL_DRL_MATRIX.md` §2 逐位一致（`freeze_baseline_orders.py` 已跑，`v4-sequence-orders/orders.json` 已生成）。
+
+## 13. 全量实验结果汇总（2026-11-08，Win → Mac）
+
+### 13.1 受控顺序消融（low，A2G-aware，3 组新跑 + IGA 复用）
+
+| 顺序 | eval_best T+τ | 结论 |
+|---|---|---|
+| Distance-TSP | 235.0 | 最优 |
+| EEGA | 243.5 | |
+| IGA（复用） | 244.5 | |
+| Yang | 247.5 | 最差 |
+
+→ **IGA 无独立增益**（Distance-TSP 反而更好），支持 PAPER_STRATEGY_V4 §10 的「分支 B」。
+（注：Mac 在论文仓 sequence-ablation.json 记录的数字与此略有差异：236.0/247.0/244.0，EEGA 与 Yang 排序翻了个，疑为 Mac 用自己评估代码重新回放 eval_best 所致，建议 Mac 核对来源。）
+
+### 13.2 14 组矩阵 + PPO low 结果
+
+| 方法 | 档位 | 状态 | 成功率 | eval_best T+τ |
+|---|---|---|---|---|
+| TD3（A2G-aware，复用） | low/med/high | ✅ | 108/92/75 | 244.5 / 352.0 / 498.5 |
+| D3QN layer1（A2G-aware） | medium | ✅ | 20/120 | 400.0 |
+| D3QN layer1（A2G-aware） | high | ✅ | 13/120 | 532.5 |
+| PPO（新配方，A2G-aware） | low | ✅ | 4/120 | 288.5 |
+| PPO（新配方） | medium | ✅ | 2/120 | 562.0 |
+| PPO（新配方） | high | ❌ | 0/120 | 不可行 |
+| TD3 distance-tsp（A2G-blind） | medium | ✅ | 21/120 | 658.5 |
+| TD3 eega（A2G-blind） | medium | ✅ | 21/120 | 658.5 |
+| TD3 yang（A2G-blind） | medium | ✅ | 25/120 | 559.0 |
+| TD3 三基线（A2G-blind） | high | ❌ 预检失败 | — | 不可行 |
+| D3QN drl-sa（A2G-blind） | medium | ✅ | 4/200 | 649.5 |
+| D3QN sa-d3qn（A2G-blind） | medium | ✅ | 2/200 | 719.5 |
+| D3QN 两基线（A2G-blind） | high | ❌ | 0 | 不可行 |
+
+### 13.3 三个核心结论
+
+1. **A2G-aware TD3 全面最优**，medium 档与 A2G-blind 基线拉开 37–104% 差距（352 vs 559–719s）。
+2. **高负载 A2G-blind 彻底不可行**：TD3 三基线预检失败（G2A-only 教师 1500 MB 下 500s 超时），D3QN 两基线训练但 0 成功 → A2G 地图在高负载下更关键。
+3. **PPO 给了与 TD3/D3QN 同等的持续示范后仍学不好**（low 4/120、medium 2/120、high 0）→「连续 DRL 中 TD3 优于 PPO」成立且非示范差异所致。
+
+### 13.4 回传文件
+
+- `journal_results/v4-sequence-ablation/`（顺序消融）
+- `journal_results/v4-models/layer1/d3qn/{medium,high}`、`v4-models/ppo/A/{low,medium,high}`
+- `journal_results/v4-baselines/{distance-tsp,eega,yang,drl-sa,sa-d3qn}/...`
+- 全部含 run_config / eval_history / training_history（或 UAV_TD3_improved）/ preflight / 训练图；已排除 models/ 与 logs/。
+- 注：TD3 high 三基线无 eval_history（预检即失败），其 preflight.json 记录了失败现场。
