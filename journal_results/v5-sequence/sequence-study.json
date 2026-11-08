@@ -261,7 +261,7 @@
       "metric_scope": "predicted straight-line sequence proxy; not World replay"
     },
     {
-      "method": "V5 PRIGA communication-aware GA with exact verification",
+      "method": "PRIGA (original payload/radio edge cost)",
       "level": "high",
       "seed": 1,
       "payloads_mb": [
@@ -273,13 +273,11 @@
         210.0
       ],
       "payload_total_mb": 1500.0,
-      "surrogate_objective": 619.3434399773573,
-      "ga_surrogate_objective": 640.500834534787,
-      "exact_surrogate_verified": true,
       "uses_g2a": true,
       "uses_a2g": true,
       "uses_payloads": true,
       "outage_probability_threshold": 0.5,
+      "formula": "flight_time + payload/mean_A2G_rate + total_outage",
       "inspection_order": [
         1,
         6,
@@ -1150,7 +1148,7 @@
       "metric_scope": "predicted straight-line sequence proxy; not World replay"
     },
     {
-      "method": "V5 PRIGA communication-aware GA with exact verification",
+      "method": "PRIGA (original payload/radio edge cost)",
       "level": "low",
       "seed": 1,
       "payloads_mb": [
@@ -1162,40 +1160,38 @@
         60.0
       ],
       "payload_total_mb": 450.0,
-      "surrogate_objective": 281.87613648391584,
-      "ga_surrogate_objective": 288.596911020142,
-      "exact_surrogate_verified": true,
       "uses_g2a": true,
       "uses_a2g": true,
       "uses_payloads": true,
       "outage_probability_threshold": 0.5,
+      "formula": "flight_time + payload/mean_A2G_rate + total_outage",
       "inspection_order": [
         1,
         6,
-        5,
-        4,
         2,
-        3
+        3,
+        5,
+        4
       ],
       "canonical_route": [
         0,
         1,
         6,
-        5,
-        4,
         2,
         3,
+        5,
+        4,
         7
       ],
-      "flight_distance_m": 5314.6202362519425,
-      "estimated_t_s": 106.29240472503885,
-      "estimated_tau_s": 142.24260972108323,
-      "estimated_t_plus_tau_s": 248.5350144461221,
-      "mean_a2g_rate_length_weighted": 3.404595050237885,
-      "mean_a2g_rate_payload_weighted": 3.41415226740812,
-      "mean_leg_max_contiguous_g2a_outage_s": 3.2903567228254755,
-      "max_contiguous_g2a_outage_s": 5.350376030583182,
-      "total_g2a_outage_s": 41.234499912061835,
+      "flight_distance_m": 4636.731048252364,
+      "estimated_t_s": 92.73462096504728,
+      "estimated_tau_s": 160.18306356270813,
+      "estimated_t_plus_tau_s": 252.9176845277554,
+      "mean_a2g_rate_length_weighted": 3.011068751625821,
+      "mean_a2g_rate_payload_weighted": 3.115812830865139,
+      "mean_leg_max_contiguous_g2a_outage_s": 3.9231570834594405,
+      "max_contiguous_g2a_outage_s": 13.787715757774183,
+      "total_g2a_outage_s": 38.67166394578642,
       "legs": [
         {
           "source": 0,
@@ -1221,36 +1217,14 @@
         },
         {
           "source": 6,
-          "destination": 5,
-          "distance_m": 632.3171672507398,
-          "flight_time_s": 12.646343345014795,
-          "mean_a2g_rate": 2.2351282418852754,
-          "payload_mb": 60.0,
-          "estimated_upload_time_s": 26.844097298592356,
-          "max_contiguous_g2a_outage_s": 5.350376030583182,
-          "total_g2a_outage_s": 6.323171672507398
-        },
-        {
-          "source": 5,
-          "destination": 4,
-          "distance_m": 530.7099019238287,
-          "flight_time_s": 10.614198038476575,
-          "mean_a2g_rate": 5.277426107256162,
-          "payload_mb": 90.0,
-          "estimated_upload_time_s": 17.05376791088654,
-          "max_contiguous_g2a_outage_s": 0.48246354720348067,
-          "total_g2a_outage_s": 0.9649270944069613
-        },
-        {
-          "source": 4,
           "destination": 2,
-          "distance_m": 1049.5713410721542,
-          "flight_time_s": 20.991426821443085,
-          "mean_a2g_rate": 3.5720932253393527,
+          "distance_m": 935.5949978489624,
+          "flight_time_s": 18.71189995697925,
+          "mean_a2g_rate": 1.969472358335853,
           "payload_mb": 60.0,
-          "estimated_upload_time_s": 16.796874049752702,
-          "max_contiguous_g2a_outage_s": 4.9979587670102585,
-          "total_g2a_outage_s": 10.995509287422568
+          "estimated_upload_time_s": 30.4650124923298,
+          "max_contiguous_g2a_outage_s": 13.787715757774183,
+          "total_g2a_outage_s": 16.742226277297224
         },
         {
           "source": 2,
@@ -1265,14 +1239,36 @@
         },
         {
           "source": 3,
-          "destination": 7,
-          "distance_m": 1189.4267526838296,
-          "flight_time_s": 23.788535053676593,
-          "mean_a2g_rate": 3.3875116512473746,
+          "destination": 5,
+          "distance_m": 571.1076956231634,
+          "flight_time_s": 11.422153912463267,
+          "mean_a2g_rate": 2.193072324466379,
           "payload_mb": 60.0,
-          "estimated_upload_time_s": 17.712116201255384,
-          "max_contiguous_g2a_outage_s": 4.460350322564361,
-          "total_g2a_outage_s": 8.920700645128722
+          "estimated_upload_time_s": 27.358878834330863,
+          "max_contiguous_g2a_outage_s": 4.469538487485627,
+          "total_g2a_outage_s": 5.462769262482432
+        },
+        {
+          "source": 5,
+          "destination": 4,
+          "distance_m": 530.7099019238287,
+          "flight_time_s": 10.614198038476575,
+          "mean_a2g_rate": 5.277426107256162,
+          "payload_mb": 90.0,
+          "estimated_upload_time_s": 17.05376791088654,
+          "max_contiguous_g2a_outage_s": 0.48246354720348067,
+          "total_g2a_outage_s": 0.9649270944069613
+        },
+        {
+          "source": 4,
+          "destination": 7,
+          "distance_m": 686.7233795350207,
+          "flight_time_s": 13.734467590700415,
+          "mean_a2g_rate": 2.794642661597411,
+          "payload_mb": 60.0,
+          "estimated_upload_time_s": 21.469650064564657,
+          "max_contiguous_g2a_outage_s": 0.981033399335744,
+          "total_g2a_outage_s": 1.4715500990036159
         }
       ],
       "metric_scope": "predicted straight-line sequence proxy; not World replay"
@@ -2039,7 +2035,7 @@
       "metric_scope": "predicted straight-line sequence proxy; not World replay"
     },
     {
-      "method": "V5 PRIGA communication-aware GA with exact verification",
+      "method": "PRIGA (original payload/radio edge cost)",
       "level": "medium",
       "seed": 1,
       "payloads_mb": [
@@ -2051,13 +2047,11 @@
         120.0
       ],
       "payload_total_mb": 900.0,
-      "surrogate_objective": 430.4616837989968,
-      "ga_surrogate_objective": 430.4616837989968,
-      "exact_surrogate_verified": true,
       "uses_g2a": true,
       "uses_a2g": true,
       "uses_payloads": true,
       "outage_probability_threshold": 0.5,
+      "formula": "flight_time + payload/mean_A2G_rate + total_outage",
       "inspection_order": [
         1,
         6,

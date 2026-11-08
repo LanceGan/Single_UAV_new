@@ -9,7 +9,7 @@
 - `mission_complete` 与 `qos_feasible` 独立记录；
 - 1000 s 时域参数化；
 - 模型选择支持完整但 QoS 违约的策略；
-- V5 PRIGA 通信感知目标；
+- 恢复旧 PRIGA 载荷/无线电边权；
 - sequence-only GA、PSO、SA、A*；
 - 顺序代理指标和 JSON/CSV 输出；
 - DDPG、PPO、TD3、D3QN 的 V5 参数透传；
@@ -49,7 +49,7 @@ Low：
 
 | Method | Order | Proxy T+tau | Payload-weighted A2G rate | Mean leg outage |
 |---|---|---:|---:|---:|
-| V5 PRIGA | 1-6-5-4-2-3 | 248.5 | 3.414 | 3.29 |
+| PRIGA (original) | 1-6-2-3-5-4 | 252.9 | 3.116 | 3.92 |
 | Yang-style | 1-6-5-4-2-3 | 248.5 | 3.414 | 3.29 |
 | Standard GA | 1-6-5-2-3-4 | 257.1 | 2.750 | 3.48 |
 | PSO | 1-6-5-2-3-4 | 257.1 | 2.750 | 3.48 |
@@ -57,8 +57,8 @@ Low：
 | A* | 1-6-5-2-3-4 | 257.1 | 2.750 | 3.48 |
 | EEGA-style | 1-6-5-3-2-4 | 264.1 | 2.780 | 3.36 |
 
-Medium 和 High 中 V5 PRIGA 均取得最低代理目标值；Low 与 Yang-style
-并列。该代理不是 World replay，最终结论仍由 CA-TD3 端到端实验决定。
+Medium 和 High 中旧 PRIGA 均取得最低代理目标值；Low 低于 Yang-style。
+该代理不是 World replay，最终结论仍由 CA-TD3 端到端实验决定。
 
 ## Win 启动
 

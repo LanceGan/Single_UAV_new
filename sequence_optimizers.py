@@ -243,47 +243,28 @@ def priga_order(
     generations=500,
     outage_probability_threshold=0.5,
 ):
-    """V5 PRIGA: communication-aware GA with exact surrogate verification."""
-    nodes = load_planning_nodes() if nodes_km is None else np.asarray(nodes_km, dtype=float)
-    cost, _ = priga_cost_matrix(
-        nodes,
+    """Restore the original PRIGA order used by the formal experiments.
+
+    The canonical edge cost remains
+    ``flight_time + payload/rate + total_outage``.  The experimental V5
+    maximum-contiguous-outage surrogate is intentionally not used.
+    """
+    from sequence_runner import solve_ga_order
+
+    order = solve_ga_order(
         payloads_mb,
-        maps=maps,
+        population=population,
+        iterations=generations,
         outage_probability_threshold=outage_probability_threshold,
     )
-    rng = np.random.default_rng(seed)
-    inner = list(range(1, len(nodes) - 1))
-
-    def fitness(order):
-        return _path_cost(cost, order)
-
-    population_list = [list(rng.permutation(inner)) for _ in range(int(population))]
-    for _ in range(int(generations)):
-        ranked = sorted(population_list, key=fitness)
-        next_population = [order.copy() for order in ranked[:2]]
-        while len(next_population) < len(population_list):
-            candidates_a = [ranked[index] for index in rng.choice(len(ranked), size=3, replace=False)]
-            candidates_b = [ranked[index] for index in rng.choice(len(ranked), size=3, replace=False)]
-            parent_a = min(candidates_a, key=fitness)
-            parent_b = min(candidates_b, key=fitness)
-            child = _ordered_crossover(parent_a, parent_b, rng)
-            if rng.random() < 0.2:
-                i, j = sorted(rng.choice(len(child), size=2, replace=False))
-                child[i], child[j] = child[j], child[i]
-            next_population.append(child)
-        population_list = next_population
-    ga_best = min(population_list, key=fitness)
-    exact_best = min(itertools.permutations(inner), key=lambda order: fitness(list(order)))
-    return [int(node) for node in exact_best], {
-        "method": "V5 PRIGA communication-aware GA with exact verification",
+    return [int(node) for node in order], {
+        "method": "PRIGA (original payload/radio edge cost)",
         "seed": int(seed),
-        "surrogate_objective": float(fitness(list(exact_best))),
-        "ga_surrogate_objective": float(fitness(ga_best)),
-        "exact_surrogate_verified": True,
         "uses_g2a": True,
         "uses_a2g": True,
         "uses_payloads": True,
         "outage_probability_threshold": float(outage_probability_threshold),
+        "formula": "flight_time + payload/mean_A2G_rate + total_outage",
     }
 
 

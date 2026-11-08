@@ -55,7 +55,7 @@ Win 在收到 v5 代码的明确 commit 和启动指令前，不启动新训练�
 7. 补齐 Win 上 PPO 新配方的实际源码和测试；
 8. 新增 sequence-only PSO 与 A*；
 9. 新增顺序代理指标：平均 A2G rate、平均/最大 G2A outage；
-10. 重新设计 PRIGA 通信感知 edge cost；
+10. 恢复并冻结旧 PRIGA 载荷/无线电 edge cost；
 11. run config、history、actor、trajectory 和 summary 格式一致；
 12. 单元测试和 100 回合 smoke test 通过。
 
@@ -149,7 +149,7 @@ Low 包含七方法 eval-best 轨迹与完整指标；Medium/High 只出表。
 ### Mac
 
 - 全部 P0 代码和测试；
-- PRIGA 重新设计；
+- 恢复并审计旧 PRIGA；
 - sequence-only PSO/A* 和代理指标；
 - v5 配置生成器与输出 schema；
 - A2G Low legacy 数据审计；
