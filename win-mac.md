@@ -264,3 +264,28 @@ Mac 在 `WIN_OPTIONAL_DRL_MATRIX.md` 中指定的 PPO 配方只有「一次性 B
 - `journal_results/v4-baselines/{distance-tsp,eega,yang,drl-sa,sa-d3qn}/...`
 - 全部含 run_config / eval_history / training_history（或 UAV_TD3_improved）/ preflight / 训练图；已排除 models/ 与 logs/。
 - 注：TD3 high 三基线无 eval_history（预检即失败），其 preflight.json 记录了失败现场。
+
+## 14. 高负载 A2G-blind 基线 horizon 扩展 + 口径同步（2026-11-08）
+
+### 14.1 高负载 A2G-blind 失败根因与处理
+
+高负载（1500 MB）A2G-blind 基线失败根因是**超时而非中断**：G2A-only 教师/策略在 500s（1000 时隙）内传不完 1500 MB（预检只到 5/6 点、1209/1500 MB，最长连续中断仅 2.5s < 6s 预算）。
+
+按用户指示，**把高负载 A2G-blind 基线 horizon 扩到 2000 时隙（1000s）重跑**，保证能完成；完成后其 T+τ 应劣于我方 A2G-aware TD3（498.5s）。冒烟已验证：2000 时隙下预检成功（672.5s 完成 1500 MB）。
+
+重跑清单（5 组，3 路并发，进行中）：
+- TD3 distance-tsp / eega / yang high（A2G-blind，3000 episodes）
+- D3QN drl-sa / sa-d3qn high（A2G-blind，5000 episodes）
+
+代码：`Train_SINR.py` / `Train_D3QN.py` / `evaluate_policy.py` 新增 `--total_steps`（默认 1000）。
+
+### 14.2 PPO 实际代码已补推
+
+PPO 实际代码（含持续示范「方案B」）已提交并推送：`feat/mac @ fab24af`，含：
+- `PPO.py` / `Train_PPO.py`：guide_prob/demo_fraction/bc_weight 持续示范机制，预训练 40 回合/20000 步；
+- `Train_SINR.py` / `Train_D3QN.py` / `evaluate_policy.py`：`--total_steps` horizon 参数化。
+
+### 14.3 口径对齐（按 Mac 要求）
+
+1. **顺序消融暂时保留 Mac 口径**：论文仓 sequence-ablation.json 的数字（236.0/247.0/244.0）暂用，不用 Win 侧 eval_best（235.0/243.5/247.5）。
+2. **PPO 新配方只有在代码、测试和复现实验补齐后，才正式替换旧结果**（当前 PPO 三档新配方结果仅作内部参考，不覆盖旧 0/120 口径）。
