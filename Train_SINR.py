@@ -57,7 +57,8 @@ def create_parser():
     parser.add_argument("--outage_max_s", type=float, default=100.0,
                         help="hard maximum-continuous G2A outage budget")
     parser.add_argument("--total_steps", type=int, default=1000,
-                        help="simulation horizon in 0.5 s slots")
+                        help="mission horizon in slots (1000 slots = 500 s); "
+                             "2000 slots are used for the V5 1000 s protocol")
     parser.add_argument(
         "--qos_enforcement",
         choices=World.QOS_ENFORCEMENT_MODES,
@@ -372,6 +373,7 @@ if args.preflight_only:
     ),
     "state_schema": A2G_BLIND_STATE_SCHEMA if args.a2g_blind else STATE_SCHEMA,
     "qos_constraint": "max_contiguous_outage",
+    "total_steps": int(T),
     "model_selection": "eval_best: deterministic guide-free evaluation, feasible first, then minimum T + tau",
     "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; T_out only as hard constraint; x0.01",
     "base_agent": profile["base"],

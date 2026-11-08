@@ -76,12 +76,22 @@ def create_parser():
                         default="iga")
     parser.add_argument("--ga_iterations", type=int, default=500)
     parser.add_argument("--teacher", choices=("mapguide", "none"), default="mapguide")
-    parser.add_argument("--pretrain_demo_episodes", type=int, default=20)
-    parser.add_argument("--pretrain_updates", type=int, default=5000)
-    parser.add_argument("--guided_warmup_episodes", type=int, default=400)
-    parser.add_argument("--guide_prob", type=float, default=0.5)
-    parser.add_argument("--guide_min_prob", type=float, default=0.5)
+    parser.add_argument("--pretrain_demo_episodes", type=int, default=40,
+                        help="MapGuide demonstration episodes collected before online training")
+    parser.add_argument("--pretrain_updates", type=int, default=20000,
+                        help="supervised actor updates on demonstrations before online training")
     parser.add_argument("--demo_noise_scale", type=float, default=0.25)
+    parser.add_argument("--guide_prob", type=float, default=0.5,
+                        help="initial whole-episode MapGuide probability during online training")
+    parser.add_argument("--guide_min_prob", type=float, default=0.2,
+                        help="MapGuide probability kept for the rest of training")
+    parser.add_argument("--guided_warmup_episodes", type=int, default=400)
+    parser.add_argument("--demo_fraction", type=float, default=0.25,
+                        help="demonstration share of each BC auxiliary batch")
+    parser.add_argument("--bc_weight", type=float, default=1.0,
+                        help="initial behavior-cloning auxiliary weight")
+    parser.add_argument("--bc_min_weight", type=float, default=0.25)
+    parser.add_argument("--bc_decay_episodes", type=int, default=600)
     parser.add_argument("--net_width", type=int, default=256)
     parser.add_argument("--learning_rate", type=float, default=3e-4)
     parser.add_argument("--critic_learning_rate", type=float, default=1e-3)
@@ -182,7 +192,7 @@ def collect_mapguide_demonstrations(args, world, episodes):
     return np.asarray(states), np.asarray(actions)
 
 
-def train_from_buffer(agent, transitions, args):
+def train_from_buffer(agent, transitions, args, demo=None, bc_weight=0.0):
     values = np.asarray([row["value"] for row in transitions], dtype=np.float32)
     next_values = np.asarray([row["next_value"] for row in transitions], dtype=np.float32)
     rewards = np.asarray([row["reward"] for row in transitions], dtype=np.float32)
@@ -199,6 +209,9 @@ def train_from_buffer(agent, transitions, args):
         advantages=advantages,
         epochs=args.update_epochs,
         batch_size=args.batch_size,
+        demo=demo,
+        bc_weight=bc_weight,
+        demo_fraction=args.demo_fraction,
     )
     return metrics
 
@@ -274,10 +287,17 @@ def main():
         "reward_schema": "v4-seconds: -(T + tau) + 2x progress + milestones; max contiguous outage hard constraint; x0.01",
         "demonstration": (
             f"{args.pretrain_demo_episodes} MapGuide episodes followed by "
-            f"{args.pretrain_updates} supervised actor updates; "
-            f"online guided-episode probability decays {args.guide_prob}->{args.guide_min_prob}"
+            f"{args.pretrain_updates} supervised actor updates, then whole-episode "
+            f"MapGuide guidance with probability {args.guide_prob} -> {args.guide_min_prob} "
+            f"over {args.guided_warmup_episodes} episodes and a persistent demonstration "
+            f"BC auxiliary loss with weight {args.bc_weight} -> {args.bc_min_weight}"
             if args.teacher == "mapguide" else "none"
         ),
+        "guide_schedule": (f"{args.guide_prob} -> {args.guide_min_prob} over {args.guided_warmup_episodes} episodes, then constant"
+                           if args.teacher == "mapguide" else "none"),
+        "bc_schedule": (f"{args.bc_weight} -> {args.bc_min_weight} over {args.bc_decay_episodes} episodes, then constant"
+                        if args.teacher == "mapguide" else "none"),
+        "demo_sampling_fraction": args.demo_fraction if args.teacher == "mapguide" else 0.0,
         "training_objective": "clipped PPO surrogate with GAE",
     }
     (run_dir / "run_config.json").write_text(
@@ -354,109 +374,100 @@ def main():
         )
         writer.add_scalar("eval/max_contiguous_outage_s", report["outage_time_s"], episode)
 
-    def choose_guided(episode):
-        if args.teacher != "mapguide":
-            return False
-        probability = linear_decay(
-            args.guide_prob,
-            episode - 1,
-            args.guided_warmup_episodes,
-            floor=args.guide_min_prob,
-        )
-        return bool(np.random.random() < probability)
-
-    def guided_action(world, guide, episode):
-        uav = world.UAVs[0]
-        target_distance = float(np.linalg.norm(
-            np.asarray([uav.x, uav.y]) - world.target_loc
-        ))
-        angle_noise, distance_noise = exploration_scales(
-            episode, max(int(args.episodes), 1), target_distance
-        )
-        absolute = guide.action(
-            angle_noise * args.demo_noise_scale,
-            distance_noise * args.demo_noise_scale,
-            np.random,
-        )
-        return np.clip(
-            world.absolute_to_action(absolute),
-            [-np.pi, 0.0],
-            [np.pi, world.dist_max],
-        )
-
+    demo_states, demo_actions = [], []
     episode = 1
-    state, step = world.reset()
-    episode_is_guided = choose_guided(episode)
-    episode_guide = (
-        MapGuide(world, use_a2g=not args.a2g_blind)
-        if episode_is_guided
-        else None
-    )
-    episode_reward = 0.0
-    episode_length = 0
-    done = False
     while episode <= args.episodes:
-        if episode_is_guided:
-            action = guided_action(world, episode_guide, episode)
-            log_prob, value = agent.evaluate_state_action(state, action)
-        else:
-            action, log_prob, value = agent.sample_action(state)
-        previous_state = state
-        with contextlib.redirect_stdout(io.StringIO()):
-            state, reward, done, step, _ = world.step_inside(action, state, step)
-        global_step += 1
-        episode_reward += float(reward)
-        episode_length += 1
-        transitions.append({
-            "state": previous_state,
-            "action": action,
-            "log_prob": log_prob,
-            "value": value,
-            "next_value": 0.0 if done else agent.value_of(state),
-            "reward": float(reward),
-            "done": bool(done),
-        })
-        writer.add_scalar("rollout/action_heading", float(action[0]), global_step)
-        writer.add_scalar("rollout/action_distance", float(action[1]), global_step)
+        guide_probability = (
+            linear_decay(args.guide_prob, episode - 1, args.guided_warmup_episodes, floor=args.guide_min_prob)
+            if args.teacher == "mapguide" else 0.0
+        )
+        guided_run = np.random.random() < guide_probability
+        bc_weight = (
+            linear_decay(args.bc_weight, episode - 1, args.bc_decay_episodes, floor=args.bc_min_weight)
+            if args.teacher == "mapguide" else 0.0
+        )
+        state, step = world.reset()
+        episode_reward = 0.0
+        episode_length = 0
+        done = False
+        guide = MapGuide(world, use_a2g=not args.a2g_blind) if guided_run else None
 
-        if len(transitions) >= args.n_steps:
-            metrics = train_from_buffer(agent, transitions, args)
-            transitions.clear()
-            writer.add_scalar("train/policy_loss", metrics["policy_loss"], global_step)
-            writer.add_scalar("train/value_loss", metrics["value_loss"], global_step)
-            writer.add_scalar("train/entropy", metrics["entropy"], global_step)
-
-        if done:
-            rewards.append(episode_reward)
-            lengths.append(episode_length)
-            guided.append(bool(episode_is_guided))
-            global_steps.append(global_step)
-            writer.add_scalar("episode/reward", episode_reward, episode)
-            writer.add_scalar("episode/steps", episode_length, episode)
-            writer.add_scalar(
-                "episode/max_contiguous_outage_s",
-                world.max_contiguous_outage_s,
-                episode,
-            )
-            if episode % args.checkpoint_interval == 0:
-                save_actor(episode)
-            if episode % args.eval_interval == 0 or episode == args.episodes:
-                evaluate(episode)
-            episode += 1
-            if episode <= args.episodes:
-                state, step = world.reset()
-                episode_is_guided = choose_guided(episode)
-                episode_guide = (
-                    MapGuide(world, use_a2g=not args.a2g_blind)
-                    if episode_is_guided
-                    else None
+        while not done:
+            if guided_run:
+                uav = world.UAVs[0]
+                target_distance = float(np.linalg.norm(
+                    np.array([uav.x, uav.y]) - world.target_loc
+                ))
+                angle_noise, distance_noise = exploration_scales(
+                    episode, max(int(args.episodes), 1), target_distance
                 )
-                episode_reward = 0.0
-                episode_length = 0
-                done = False
+                absolute = guide.action(
+                    angle_noise * args.demo_noise_scale,
+                    distance_noise * args.demo_noise_scale,
+                    np.random,
+                )
+                action = world.absolute_to_action(absolute)
+                action = np.clip(action, [-np.pi, 0.0], [np.pi, world.dist_max])
+                demo_states.append(np.asarray(state, dtype=np.float32))
+                demo_actions.append(np.asarray(action, dtype=np.float32))
+                with contextlib.redirect_stdout(io.StringIO()):
+                    state, reward, done, step, _ = world.step_inside(action, state, step)
+                episode_reward += float(reward)
+                episode_length += 1
+            else:
+                action, log_prob, value = agent.sample_action(state)
+                previous_state = state
+                with contextlib.redirect_stdout(io.StringIO()):
+                    state, reward, done, step, _ = world.step_inside(action, state, step)
+                global_step += 1
+                episode_reward += float(reward)
+                episode_length += 1
+                transitions.append({
+                    "state": previous_state,
+                    "action": action,
+                    "log_prob": log_prob,
+                    "value": value,
+                    "next_value": 0.0 if done else agent.value_of(state),
+                    "reward": float(reward),
+                    "done": bool(done),
+                })
+                writer.add_scalar("rollout/action_heading", float(action[0]), global_step)
+                writer.add_scalar("rollout/action_distance", float(action[1]), global_step)
+
+                if len(transitions) >= args.n_steps:
+                    demo_pair = (
+                        (np.asarray(demo_states, dtype=np.float32), np.asarray(demo_actions, dtype=np.float32))
+                        if demo_states else None
+                    )
+                    metrics = train_from_buffer(agent, transitions, args, demo=demo_pair, bc_weight=bc_weight)
+                    transitions.clear()
+                    writer.add_scalar("train/policy_loss", metrics["policy_loss"], global_step)
+                    writer.add_scalar("train/value_loss", metrics["value_loss"], global_step)
+                    writer.add_scalar("train/entropy", metrics["entropy"], global_step)
+
+        rewards.append(episode_reward)
+        lengths.append(episode_length)
+        guided.append(bool(guided_run))
+        global_steps.append(global_step)
+        writer.add_scalar("episode/reward", episode_reward, episode)
+        writer.add_scalar("episode/steps", episode_length, episode)
+        writer.add_scalar(
+            "episode/max_contiguous_outage_s",
+            world.max_contiguous_outage_s,
+            episode,
+        )
+        if episode % args.checkpoint_interval == 0:
+            save_actor(episode)
+        if episode % args.eval_interval == 0 or episode == args.episodes:
+            evaluate(episode)
+        episode += 1
 
     if len(transitions) >= max(args.batch_size, 2):
-        train_from_buffer(agent, transitions, args)
+        demo_pair = (
+            (np.asarray(demo_states, dtype=np.float32), np.asarray(demo_actions, dtype=np.float32))
+            if demo_states else None
+        )
+        train_from_buffer(agent, transitions, args, demo=demo_pair, bc_weight=bc_weight)
     save_actor(args.episodes)
     np.savez(
         run_dir / "training_history.npz",

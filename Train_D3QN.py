@@ -58,7 +58,13 @@ def create_parser():
     parser.add_argument("--uav_h", type=float, default=1.0)
     parser.add_argument("--outage_max_s", type=float, default=100.0,
                         help="hard maximum-continuous G2A outage budget")
-    parser.add_argument("--total_steps", type=int, default=1000)
+    parser.add_argument(
+        "--total_steps",
+        type=int,
+        default=1000,
+        help="mission horizon in slots (1000 slots = 500 s); "
+             "2000 slots are used for the V5 1000 s protocol",
+    )
     parser.add_argument(
         "--qos_enforcement",
         choices=World.QOS_ENFORCEMENT_MODES,

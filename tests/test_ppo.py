@@ -82,6 +82,7 @@ def test_ppo_parser_defaults_match_fixed_training_budget():
     assert args.outage_max_s == 6.0
     assert args.sequence_method == "iga"
     assert args.teacher == "mapguide"
-    assert args.pretrain_updates == 5000
+    assert args.pretrain_demo_episodes == 40
+    assert args.pretrain_updates == 20000
     assert args.learning_rate == 3e-4
     assert args.gamma == 0.995
