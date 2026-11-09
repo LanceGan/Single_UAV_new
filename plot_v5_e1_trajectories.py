@@ -407,7 +407,12 @@ def plot(results):
     figure.savefig(output.with_suffix(".pdf"), bbox_inches=None)
     figure.savefig(output.with_suffix(".svg"), bbox_inches=None)
     figure.savefig(output.with_suffix(".png"), dpi=600, bbox_inches=None)
-    figure.savefig(output.with_suffix(".tiff"), dpi=600, bbox_inches=None)
+    figure.savefig(
+        output.with_suffix(".tiff"),
+        dpi=600,
+        bbox_inches=None,
+        pil_kwargs={"compression": "tiff_lzw"},
+    )
     plt.close(figure)
 
 
