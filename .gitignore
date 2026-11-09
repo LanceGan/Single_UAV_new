@@ -10,3 +10,4 @@ tmp_*.png
 
 # keep sync_bundles actor checkpoints trackable despite global *.pth ignore
 !sync_bundles/v4_eval_best_actors/*.pth
+!sync_bundles/v5_e1_low_trajectories/*.pth

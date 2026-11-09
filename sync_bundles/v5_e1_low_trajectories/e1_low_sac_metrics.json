@@ -1,0 +1,32 @@
+{
+  "label": "sac",
+  "algorithm": "sac",
+  "checkpoint": "F:\\Codes\\Python\\Single_UAV_mac\\journal_results\\v5-win\\E1\\sac\\A\\low\\sac\\models\\sac_sac_actoreval_best.pth",
+  "eval_best_episode": 925,
+  "task_time_s": 170.0,
+  "transmission_delay_s": 81.5,
+  "T_plus_tau_s": 251.5,
+  "outage_time_s": 4.0,
+  "visited_inspection_points": 6,
+  "uploaded_mb": 450.0,
+  "mission_complete": true,
+  "qos_feasible": true,
+  "success": true,
+  "termination_reason": "success",
+  "order": [
+    1,
+    6,
+    2,
+    3,
+    5,
+    4
+  ],
+  "payloads_mb": [
+    90.0,
+    90.0,
+    60.0,
+    60.0,
+    90.0,
+    60.0
+  ]
+}
