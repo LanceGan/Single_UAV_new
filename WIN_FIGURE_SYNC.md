@@ -134,6 +134,18 @@ journal_results/v4-qos/w50-50/qos5/A/low/td3_bc/models/
 journal_results/v4-qos/w50-50/qos8/A/low/td3_bc/models/
 ```
 
+原始日志显示的 Win 工作树为：
+
+```text
+F:\Codes\Python\Single_UAV_mac
+```
+
+请优先检查：
+
+```text
+F:\Codes\Python\Single_UAV_mac\journal_results\v4-qos\w50-50\qos{3,4,5,8}\A\low\td3_bc\models\
+```
+
 每个目录优先查找：
 
 ```text
@@ -163,6 +175,23 @@ td3_bc_td3_actor2425.pth   # QoS 8 s
 `[90,90,60,60,90,60]` MB、`(w_1,w_2)=(0.5,0.5)`、A2G/G2A 双地图、
 连续中断约束。评估必须关闭探索噪声和 MapGuide。
 
+这批旧 run 很可能使用 Win/CUDA 自动选择设备，跨设备重放可能因浮点路径
+不同而产生轨迹分支。因此请同时提供：
+
+1. 原始 `eval_best` actor；
+2. 在**原 Win 环境、原设备精度**下关闭噪声和 MapGuide 得到的确定性
+   `trajectory.npz`；
+3. 与该轨迹一致的指标 JSON 和 MANIFEST。
+
+`trajectory.npz` 至少包含：
+
+```text
+positions  # 或兼容的 x/y，单位 km
+time_s
+outage_s
+visited_points
+```
+
 如找到，请复制到 `feat/win` 的：
 
 ```text
@@ -171,10 +200,20 @@ sync_bundles/v4_eval_best_actors/
 ├── low_qos4_actor.pth
 ├── low_qos5_actor.pth
 ├── low_qos8_actor.pth
+├── low_qos3_trajectory.npz
+├── low_qos4_trajectory.npz
+├── low_qos5_trajectory.npz
+├── low_qos8_trajectory.npz
 └── LOW_QOS_ACTOR_MANIFEST.json
 ```
 
 `LOW_QOS_ACTOR_MANIFEST.json` 请记录原始 Win 路径、episode、actor SHA-256、
-模型结构、重放设备、四项指标、6/6、上传量以及是否与 `eval_history` 完全
-一致。Mac 收到后会再次在 CPU 上重放并统一绘制，不需要 Win 自己改论文或
-重画。若确实找不到，也请明确返回 `not_found` 和已搜索目录；不要为此重训。
+模型结构、重放设备、PyTorch 版本、四项指标、6/6、上传量以及是否与
+`eval_history` 完全一致。Mac 会校验 actor 哈希、轨迹数组、四项指标和
+`eval_history` 后再统一绘图；若 actor 在 Mac 上不能逐值复现，则以 Win
+原设备轨迹为准并在 provenance 中记录设备差异，不会用近似结果冒充原
+eval-best。Win 不需要改论文或重画。
+
+若确实找不到，也请明确返回 `not_found` 和已搜索目录；不要为此重训。当前
+论文已有完整的数值结果和 Medium/High 轨迹图，因此缺这四个 actor 不影响
+现有表格或结论，只影响把 QoS 轨迹图从 2 行扩展为 3 行。
