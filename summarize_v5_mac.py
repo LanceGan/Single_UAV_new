@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT = ROOT / "journal_results" / "v5-mac"
+DEFAULT_WIN_OUTPUT = ROOT / "journal_results" / "v5-win"
 STALL_MINUTES = 15.0
 
 
@@ -74,8 +75,12 @@ def summarize_run(run_dir, output_root, now=None):
     ]
     best = history_payload.get("eval_best") or history_payload.get("best") or {}
     best_complete = bool(best) and _complete(best, expected_points, expected_upload)
-    task_time = _finite_number(best.get("task_time_s"))
-    transmission_delay = _finite_number(best.get("transmission_delay_s"))
+    task_time = (
+        _finite_number(best.get("task_time_s")) if best_complete else None
+    )
+    transmission_delay = (
+        _finite_number(best.get("transmission_delay_s")) if best_complete else None
+    )
     outage = _finite_number(best.get("outage_time_s"))
     outage_limit = _finite_number(best.get("outage_limit_s"))
     if outage_limit is None:
@@ -119,6 +124,10 @@ def summarize_run(run_dir, output_root, now=None):
             else None
         ),
         "contiguous_outage_s": outage,
+        "diagnostic_task_time_s": _finite_number(best.get("task_time_s")),
+        "diagnostic_transmission_delay_s": _finite_number(
+            best.get("transmission_delay_s")
+        ),
         "visited_inspection_points": best.get("visited_inspection_points"),
         "uploaded_mb": _finite_number(best.get("uploaded_mb")),
         "expected_upload_mb": expected_upload,
@@ -127,21 +136,19 @@ def summarize_run(run_dir, output_root, now=None):
     }
 
 
-def collect(output_root=DEFAULT_OUTPUT, now=None):
+def collect(output_root=DEFAULT_OUTPUT, win_output_root=DEFAULT_WIN_OUTPUT, now=None):
     output_root = Path(output_root).resolve()
     records = []
-    for history_path in sorted((output_root / "E3").rglob("eval_history.json")):
-        record = summarize_run(history_path.parent, output_root, now=now)
-        if record is not None and record["level"] in {"medium", "high"}:
-            records.append(record)
-    for history_path in sorted((output_root / "E4").rglob("eval_history.json")):
-        record = summarize_run(history_path.parent, output_root, now=now)
-        if record is not None and record["level"] in {"medium", "high"}:
-            records.append(record)
-    for history_path in sorted((output_root / "E5").rglob("eval_history.json")):
-        record = summarize_run(history_path.parent, output_root, now=now)
-        if record is not None and record["level"] in {"medium", "high"}:
-            records.append(record)
+    for root in (output_root, Path(win_output_root).resolve()):
+        for history_path in sorted((root / "E1").rglob("eval_history.json")):
+            record = summarize_run(history_path.parent, root, now=now)
+            if record is not None:
+                records.append(record)
+        for group in ("E3", "E4", "E5"):
+            for history_path in sorted((root / group).rglob("eval_history.json")):
+                record = summarize_run(history_path.parent, root, now=now)
+                if record is not None and record["level"] in {"medium", "high"}:
+                    records.append(record)
     return records
 
 
@@ -173,8 +180,9 @@ def write_summary(records, output_root=DEFAULT_OUTPUT):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--win-output-root", type=Path, default=DEFAULT_WIN_OUTPUT)
     args = parser.parse_args()
-    records = collect(args.output_root)
+    records = collect(args.output_root, args.win_output_root)
     json_path, csv_path = write_summary(records, args.output_root)
     print(f"{len(records)} runs -> {json_path} {csv_path}")
 

@@ -67,4 +67,8 @@ def test_running_run_does_not_claim_completion(tmp_path):
     assert record["status"] == "running"
     assert record["completed_evaluations"] == 1
     assert record["feasible_evaluations"] == 0
+    assert record["eval_best_complete"] is True
+    assert record["task_time_s"] == 250.0
+    assert record["transmission_delay_s"] == 125.0
+    assert record["objective_s"] == 375.0
     assert record["eval_best_qos_feasible"] is False
