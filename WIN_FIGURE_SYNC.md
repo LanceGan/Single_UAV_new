@@ -11,6 +11,7 @@
 | E1 Low：CA-TD3、D3QN、PPO、DDPG、SAC 的 A2G/G2A 轨迹 | CA-TD3、D3QN 模型在 Mac；PPO、SAC、DDPG 的 `eval_best` actor 未随结果包推送 | Mac + Win |
 | E5 Low：七种方法的统一轨迹图 | MCO-A* 轨迹和其余 baseline actor 均在 Mac | Mac |
 | E4 Medium/High：代表 QoS/权重点的轨迹面板 | 12 组 V5 训练的 actor 均在 Mac | Mac |
+| E4 Low：QoS=3/4/5/8 s 轨迹 | 原始结果由 Win 提交 `822f4bf` 导入；四个 actor 被 `.gitignore` 排除，Git 历史和远端均未保存 | **请 Win 检查本机原工作树** |
 
 请 Win 只补 E1 Low 中 **PPO、SAC 和 DDPG** 的轨迹数据；D3QN 与
 CA-TD3 由 Mac 完成。
@@ -115,3 +116,65 @@ Mac 收到后会逐项核对：
   `e1_low_ddpg_metrics_macverified.json`。
 - 不需要 Win 再次执行训练或 3000 episode；除非上述 actor 哈希不一致，
   无需再补跑。
+
+## 追加请求：E4 Low QoS actor 恢复
+
+Mac 已完成 E4 Medium/High 的 10 格 QoS 轨迹和 Low/Medium/High 的 9 格权重
+轨迹，但 Low 档 QoS=3、4、5、8 s 的四个 `eval_best` actor 不在当前 Mac
+工作树、任何本地/远端 Git 分支或 Git 历史对象中。对应结果最初来自 Win
+提交 `822f4bf`，且仓库规则 `journal_results/**/models/` 会忽略模型文件，
+因此请优先检查 Win 的原工作树。
+
+请在 Win 仓库根目录及当时的结果归档中搜索：
+
+```text
+journal_results/v4-qos/w50-50/qos3/A/low/td3_bc/models/
+journal_results/v4-qos/w50-50/qos4/A/low/td3_bc/models/
+journal_results/v4-qos/w50-50/qos5/A/low/td3_bc/models/
+journal_results/v4-qos/w50-50/qos8/A/low/td3_bc/models/
+```
+
+每个目录优先查找：
+
+```text
+td3_bc_td3_actoreval_best.pth
+```
+
+若没有该别名，也可查找与 `eval_best.episode` 完全对应的：
+
+```text
+td3_bc_td3_actor2850.pth   # QoS 3 s
+td3_bc_td3_actor1625.pth   # QoS 4 s
+td3_bc_td3_actor2925.pth   # QoS 5 s
+td3_bc_td3_actor2425.pth   # QoS 8 s
+```
+
+不要使用 `best`、`final` 或其他 episode 的 actor 代替。验收指标必须与
+现有 `eval_history.json::eval_best` 一致：
+
+| QoS | episode | T (s) | tau_total (s) | outage (s) | 巡检/上传 |
+|---:|---:|---:|---:|---:|---|
+| 3 s | 2850 | 169.0 | 78.5 | 2.5 | 6/6, 450/450 MB |
+| 4 s | 1625 | 173.5 | 78.0 | 3.0 | 6/6, 450/450 MB |
+| 5 s | 2925 | 176.5 | 76.0 | 3.5 | 6/6, 450/450 MB |
+| 8 s | 2425 | 164.0 | 80.0 | 3.5 | 6/6, 450/450 MB |
+
+共同协议：seed 1、PRIGA 顺序 `[1,6,2,3,5,4]`、Low payload
+`[90,90,60,60,90,60]` MB、`(w_1,w_2)=(0.5,0.5)`、A2G/G2A 双地图、
+连续中断约束。评估必须关闭探索噪声和 MapGuide。
+
+如找到，请复制到 `feat/win` 的：
+
+```text
+sync_bundles/v4_eval_best_actors/
+├── low_qos3_actor.pth
+├── low_qos4_actor.pth
+├── low_qos5_actor.pth
+├── low_qos8_actor.pth
+└── LOW_QOS_ACTOR_MANIFEST.json
+```
+
+`LOW_QOS_ACTOR_MANIFEST.json` 请记录原始 Win 路径、episode、actor SHA-256、
+模型结构、重放设备、四项指标、6/6、上传量以及是否与 `eval_history` 完全
+一致。Mac 收到后会再次在 CPU 上重放并统一绘制，不需要 Win 自己改论文或
+重画。若确实找不到，也请明确返回 `not_found` 和已搜索目录；不要为此重训。
