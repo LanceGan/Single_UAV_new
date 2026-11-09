@@ -46,6 +46,8 @@ class D3QNRunContext:
     outage_max_s: float
     a2g_blind: bool = False
     total_steps: int = 1000
+    outage_probability_threshold: float = 0.5
+    qos_enforcement: str = "hard"
     length: float = 20.0
     width: float = 20.0
     delta_t: float = 0.5
@@ -90,6 +92,14 @@ def load_d3qn_run_context(run_dir):
         raise ValueError("D3QN run_config.json has inconsistent order and payloads")
     if config["map_hashes"] != _map_hashes():
         raise ValueError("fixed radio maps do not match this D3QN run")
+    outage_probability_threshold = float(
+        config.get("outage_probability_threshold", 0.5)
+    )
+    if not 0.0 < outage_probability_threshold <= 1.0:
+        raise ValueError("outage_probability_threshold must be in (0, 1]")
+    qos_enforcement = str(config.get("qos_enforcement", "hard"))
+    if qos_enforcement not in World.QOS_ENFORCEMENT_MODES:
+        raise ValueError(f"unsupported qos_enforcement {qos_enforcement!r}")
     return D3QNRunContext(
         run_dir=run_dir,
         config=config,
@@ -102,6 +112,8 @@ def load_d3qn_run_context(run_dir):
         payloads_mb=payloads,
         outage_max_s=float(config["outage_max_s"]),
         a2g_blind=a2g_blind,
+        outage_probability_threshold=outage_probability_threshold,
+        qos_enforcement=qos_enforcement,
     )
 
 
@@ -161,6 +173,8 @@ def _build_world(context):
         traverse_sequence=list(context.order),
         variant="A",
         a2g_blind=context.a2g_blind,
+        outage_probability_threshold=context.outage_probability_threshold,
+        qos_enforcement=context.qos_enforcement,
     )
 
 

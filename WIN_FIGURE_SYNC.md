@@ -98,3 +98,20 @@ Mac 收到后会逐项核对：
    地图和样式。
 
 完成推送后请告知 commit hash。
+
+## 接收与验收结果（Win commit `c9f74d9`）
+
+- PPO：actor SHA-256、episode 900、`T=190.0`、`tau=75.5`、
+  `T_out^cont=3.0`、6/6、450 MB，全部一致，**通过**。
+- SAC：actor SHA-256、episode 925、`T=170.0`、`tau=81.5`、
+  `T_out^cont=4.0`、6/6、450 MB，全部一致，**通过**。
+- DDPG：actor SHA-256 通过；使用该 actor 在 Mac 上确定性重放得到
+  episode 1750 对应的 `T=1000.0`、`tau=140.5`、`T_out^cont=20.0`、
+  4/6、300/450 MB，与 `eval_history.json` 一致。
+- Win 随附的 DDPG `trajectory.npz`/metrics 写的是 1/6、90 MB、
+  `tau=28.5`、`T_out^cont=5.5`，与其自身 `eval_history.json` 不一致，
+  因此**不采用该轨迹文件**。Mac 已根据经哈希校验的 DDPG actor 重新生成
+  `e1_low_ddpg_trajectory_macverified.npz` 和
+  `e1_low_ddpg_metrics_macverified.json`。
+- 不需要 Win 再次执行训练或 3000 episode；除非上述 actor 哈希不一致，
+  无需再补跑。

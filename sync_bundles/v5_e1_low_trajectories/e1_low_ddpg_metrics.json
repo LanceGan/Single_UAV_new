@@ -1,0 +1,32 @@
+{
+  "label": "ddpg",
+  "algorithm": "ddpg",
+  "checkpoint": "F:\\Codes\\Python\\Single_UAV_mac\\journal_results\\v5-win\\E1\\ddpg\\baseline\\low\\ddpg_bc\\models\\ddpg_bc_ddpg_actor1750.pth",
+  "eval_best_episode": 1750,
+  "task_time_s": 1000.0,
+  "transmission_delay_s": 28.5,
+  "T_plus_tau_s": 1028.5,
+  "outage_time_s": 5.5,
+  "visited_inspection_points": 1,
+  "uploaded_mb": 90.0,
+  "mission_complete": false,
+  "qos_feasible": false,
+  "success": false,
+  "termination_reason": "timeout",
+  "order": [
+    1,
+    6,
+    2,
+    3,
+    5,
+    4
+  ],
+  "payloads_mb": [
+    90.0,
+    90.0,
+    60.0,
+    60.0,
+    90.0,
+    60.0
+  ]
+}

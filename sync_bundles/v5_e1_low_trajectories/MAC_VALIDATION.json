@@ -1,0 +1,88 @@
+{
+  "source_commit": "c9f74d9",
+  "items": {
+    "PPO": {
+      "actor_sha256_match": true,
+      "actor_sha256": "52f1db235057ca78c54203f6b5760dad3501092f2e1f271563922988beb97f49",
+      "manifest_metrics": {
+        "task_time_s": 190.0,
+        "transmission_delay_s": 75.5,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6,
+        "uploaded_mb": 450.0
+      },
+      "manifest_matches_eval_history": true,
+      "eval_history_best": {
+        "task_time_s": 190.0,
+        "transmission_delay_s": 75.5,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6,
+        "uploaded_mb": 450.0
+      },
+      "actual": {
+        "task_time_s": 190.0,
+        "transmission_delay_s": 75.5,
+        "outage_time_s": 3.0,
+        "visited_inspection_points": 6,
+        "uploaded_mb": 450.0
+      },
+      "actual_matches_eval_history": true
+    },
+    "DDPG": {
+      "actor_sha256_match": true,
+      "actor_sha256": "bcfedcecc5675ead61199f2c3b74cdc506b5b8044179d57ca6e69b91c9a1ffae",
+      "manifest_metrics": {
+        "task_time_s": 1000.0,
+        "transmission_delay_s": 28.5,
+        "outage_time_s": 5.5,
+        "visited_inspection_points": 1,
+        "uploaded_mb": 90.0
+      },
+      "manifest_matches_eval_history": false,
+      "eval_history_best": {
+        "task_time_s": 1000.0,
+        "transmission_delay_s": 140.5,
+        "outage_time_s": 20.0,
+        "visited_inspection_points": 4,
+        "uploaded_mb": 300.0
+      },
+      "actual": {
+        "task_time_s": 1000.0,
+        "transmission_delay_s": 140.5,
+        "outage_time_s": 20.0,
+        "visited_inspection_points": 4,
+        "uploaded_mb": 300.0
+      },
+      "actual_matches_eval_history": true,
+      "supplied_trajectory_matches": false,
+      "note": "Supplied trajectory reports 1/6 visits and 90 MB, while eval-history episode 1750 reports 4/6 visits and 300 MB. The local actor replay reproduces the eval-history record and is used for the figure."
+    },
+    "SAC": {
+      "actor_sha256_match": true,
+      "actor_sha256": "aca73e84b17c59da20411ad628b6c6898c0465c9e510edb3ad288e819964f282",
+      "manifest_metrics": {
+        "task_time_s": 170.0,
+        "transmission_delay_s": 81.5,
+        "outage_time_s": 4.0,
+        "visited_inspection_points": 6,
+        "uploaded_mb": 450.0
+      },
+      "manifest_matches_eval_history": true,
+      "eval_history_best": {
+        "task_time_s": 170.0,
+        "transmission_delay_s": 81.5,
+        "outage_time_s": 4.0,
+        "visited_inspection_points": 6,
+        "uploaded_mb": 450.0
+      },
+      "actual": {
+        "task_time_s": 170.0,
+        "transmission_delay_s": 81.5,
+        "outage_time_s": 4.0,
+        "visited_inspection_points": 6,
+        "uploaded_mb": 450.0
+      },
+      "actual_matches_eval_history": true
+    }
+  }
+}
