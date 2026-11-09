@@ -12,13 +12,41 @@ from plot_v5_e4_trajectories import (
 )
 
 
-def test_e4_actor_paths_exist_for_every_selected_panel():
+def test_e4_sources_exist_for_every_selected_panel():
     qos_records, weight_records, unavailable = _select_records()
-    assert len(qos_records) == 2 * len(QOS_VALUES_S)
+    assert len(qos_records) == 3 * len(QOS_VALUES_S)
     assert len(weight_records) == 3 * len(WEIGHT_VALUES)
-    assert all(Path(item["actor"]).is_file() for item in qos_records)
+    assert unavailable == []
+    assert all(
+        (
+            item["actor"] is not None
+            and Path(item["actor"]).is_file()
+        )
+        or (
+            item["win_trajectory"] is not None
+            and Path(item["win_trajectory"]).is_file()
+        )
+        for item in qos_records
+    )
     assert all(Path(item["actor"]).is_file() for item in weight_records)
-    assert any("Low QoS 3 s" in item for item in unavailable)
+
+
+def test_recovered_win_low_qos_trajectories_match_eval_history():
+    qos_records, _, _ = _select_records()
+    recovered = [
+        item
+        for item in qos_records
+        if item["source_kind"] == "win_trajectory"
+    ]
+    assert {item["column"] for item in recovered} == {3.0, 4.0, 5.0, 8.0}
+    results = evaluate_all(recovered)
+    assert len(results) == 4
+    expected_time = {3.0: 169.0, 4.0: 173.5, 5.0: 176.5, 8.0: 164.0}
+    for item in recovered:
+        result = results[item["panel_id"] + "_qos"]
+        assert result["report"]["task_time_s"] == expected_time[item["column"]]
+        assert result["report"]["visited_inspection_points"] == 6
+        assert result["report"]["uploaded_mb"] == 450.0
 
 
 def test_qos6_balanced_actors_use_verified_v4_bundles():

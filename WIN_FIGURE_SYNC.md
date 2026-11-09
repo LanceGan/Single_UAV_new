@@ -11,7 +11,7 @@
 | E1 Low：CA-TD3、D3QN、PPO、DDPG、SAC 的 A2G/G2A 轨迹 | CA-TD3、D3QN 模型在 Mac；PPO、SAC、DDPG 的 `eval_best` actor 未随结果包推送 | Mac + Win |
 | E5 Low：七种方法的统一轨迹图 | MCO-A* 轨迹和其余 baseline actor 均在 Mac | Mac |
 | E4 Medium/High：代表 QoS/权重点的轨迹面板 | 12 组 V5 训练的 actor 均在 Mac | Mac |
-| E4 Low：QoS=3/4/5/8 s 轨迹 | 原始结果由 Win 提交 `822f4bf` 导入；四个 actor 被 `.gitignore` 排除，Git 历史和远端均未保存 | **请 Win 检查本机原工作树** |
+| E4 Low：QoS=3/4/5/8 s 轨迹 | 原始结果由 Win 提交 `822f4bf` 导入；四个 actor 与确定性轨迹已由 Win commit `5517943` 恢复并通过验收 | **Win 已补齐，Mac 已合成** |
 
 请 Win 只补 E1 Low 中 **PPO、SAC 和 DDPG** 的轨迹数据；D3QN 与
 CA-TD3 由 Mac 完成。
@@ -217,3 +217,24 @@ eval-best。Win 不需要改论文或重画。
 若确实找不到，也请明确返回 `not_found` 和已搜索目录；不要为此重训。当前
 论文已有完整的数值结果和 Medium/High 轨迹图，因此缺这四个 actor 不影响
 现有表格或结论，只影响把 QoS 轨迹图从 2 行扩展为 3 行。
+
+## 接收与验收结果（Win commit `5517943`）
+
+- `low_qos3_actor.pth`：SHA-256
+  `0a70b15d…9e3e8`，episode 2850，`T=169.0`、`tau=78.5`、
+  `T_out^cont=2.5`、6/6、450/450 MB，通过。
+- `low_qos4_actor.pth`：SHA-256
+  `0444cdc6…46a782`，episode 1625，`T=173.5`、`tau=78.0`、
+  `T_out^cont=3.0`、6/6、450/450 MB，通过。
+- `low_qos5_actor.pth`：SHA-256
+  `822422ad…89a07e`，episode 2925，`T=176.5`、`tau=76.0`、
+  `T_out^cont=3.5`、6/6、450/450 MB，通过。
+- `low_qos8_actor.pth`：SHA-256
+  `12f76207…a6c2e`，episode 2425，`T=164.0`、`tau=80.0`、
+  `T_out^cont=3.5`、6/6、450/450 MB，通过。
+- 四份 `trajectory.npz` 均包含 `positions/x/y/time_s/outage_s/
+  visited_points`；数组长度、终止时间、最大连续中断、最终巡检数、
+  `eval_history` 和 manifest 全部一致。
+- Mac 直接采用 Win 原设备轨迹，避免跨设备数值分支；figure source JSON
+  已记录 Win 源提交、actor SHA、trajectory SHA 和原设备 provenance。
+- E4 QoS 轨迹图已由 2×5 扩为完整 3×5；无需 Win 再补数据或重训。

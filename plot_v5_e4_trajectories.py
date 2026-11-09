@@ -42,11 +42,20 @@ SKILL_SCRIPTS = Path("/Users/ganruijie.1/.codex/skills/nature-figure/scripts")
 ACTOR_BUNDLE = ROOT / "sync_bundles" / "v4_eval_best_actors"
 QOS_RECORD_PATH = SOURCE_DIR / "e4_qos_sensitivity_v5.json"
 WEIGHT_RECORD_PATH = SOURCE_DIR / "e4_weight_sensitivity_v5.json"
+WIN_RECOVERY_COMMIT = "5517943a6d13660f0d1a3d3b177400e08fd667bf"
 
 QOS_VALUES_S = (3.0, 4.0, 5.0, 6.0, 8.0)
 WEIGHT_VALUES = ((0.8, 0.2), (0.5, 0.5), (0.2, 0.8))
-QOS_LEVELS = ("Medium", "High")
+QOS_LEVELS = ("Low", "Medium", "High")
 WEIGHT_LEVELS = ("Low", "Medium", "High")
+PANEL_IDS = "abcdefghijklmno"
+
+WIN_LOW_QOS_ACTOR_SHA256 = {
+    3.0: "0a70b15dd4c7822eb7d1f023af8a32c38a6446e95ba8f80047795c8f3898e3e8",
+    4.0: "0444cdc686bc704ea82f245ecf5a9bcddbda995ba743b07205ed43a36246a782",
+    5.0: "822422addb9a93f8564e92c969e7806ee7a5a0279484d68cb5f8c7fc2c89a07e",
+    8.0: "12f7620755e230eb67ae8e77d49be06779f1ca57303374ba26e17368494a6c2e",
+}
 
 STATUS_STYLE = {
     "feasible": {"color": "#FFFFFF", "linestyle": "-", "label": "Complete, feasible"},
@@ -186,40 +195,48 @@ def _actor_for_record(record: dict) -> Path | None:
     return None
 
 
+def _win_trajectory_for_record(record: dict) -> Path | None:
+    if record["level"] != "Low":
+        return None
+    if _weight_key(record["objective_weights"]) != (50, 50):
+        return None
+    qos_s = float(record["outage_limit_s"])
+    if qos_s not in WIN_LOW_QOS_ACTOR_SHA256:
+        return None
+    path = ACTOR_BUNDLE / f"low_qos{qos_s:g}_trajectory.npz"
+    return path if path.is_file() else None
+
+
 def _select_records() -> tuple[list[dict], list[dict], list[str]]:
     qos_lookup = _record_lookup(QOS_RECORD_PATH)
     weight_lookup = _record_lookup(WEIGHT_RECORD_PATH)
     qos_records = []
     weight_records = []
     unavailable = []
-    for qos_s in QOS_VALUES_S:
-        if qos_s == 6.0:
-            continue
-        record = qos_lookup[("Low", qos_s, 50, 50)]
-        if _actor_for_record(record) is None:
-            unavailable.append(
-                f"Low QoS {qos_s:g} s: eval-best actor not archived"
-            )
 
     for level in QOS_LEVELS:
         for qos_s in QOS_VALUES_S:
             record = qos_lookup[(level, qos_s, 50, 50)]
             actor = _actor_for_record(record)
-            if actor is None:
+            win_trajectory = _win_trajectory_for_record(record)
+            if actor is None and win_trajectory is None:
                 unavailable.append(
                     f"QoS {level} {qos_s:g} s: eval-best actor not archived"
                 )
                 continue
+            source_kind = "actor_replay" if actor is not None else "win_trajectory"
             qos_records.append(
                 {
                     "figure": "qos",
-                    "panel_id": "abcdefghij"[len(qos_records)],
+                    "panel_id": PANEL_IDS[len(qos_records)],
                     "row": level,
                     "column": qos_s,
                     "setting": f"QoS {qos_s:g} s",
                     "record": record,
                     "run": Path(record["source_path"]),
                     "actor": actor,
+                    "win_trajectory": win_trajectory,
+                    "source_kind": source_kind,
                 }
             )
 
@@ -237,13 +254,15 @@ def _select_records() -> tuple[list[dict], list[dict], list[str]]:
             weight_records.append(
                 {
                     "figure": "weight",
-                    "panel_id": "abcdefghi"[len(weight_records)],
+                    "panel_id": PANEL_IDS[len(weight_records)],
                     "row": level,
                     "column": weights,
                     "setting": f"({_weight_label(weights)})",
                     "record": record,
                     "run": Path(record["source_path"]),
                     "actor": actor,
+                    "win_trajectory": None,
+                    "source_kind": "actor_replay",
                 }
             )
 
@@ -358,19 +377,89 @@ def _evaluate_on_recorded_device(context, checkpoint):
     return report, trace
 
 
+def _load_win_trajectory(item: dict) -> tuple[dict, dict]:
+    record = item["record"]
+    trajectory_path = item["win_trajectory"]
+    metrics_path = (
+        ACTOR_BUNDLE / f"low_qos{float(record['outage_limit_s']):g}_metrics.json"
+    )
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    with np.load(trajectory_path) as payload:
+        trace = {key: payload[key] for key in payload.files}
+    report = {
+        "success": bool(metrics["success"]),
+        "mission_complete": bool(record["complete"]),
+        "qos_feasible": bool(record["qos_feasible"]),
+        "outage_budget_exceeded": (
+            float(metrics["outage_time_s"])
+            > float(record["outage_limit_s"])
+        ),
+        "termination_reason": metrics["termination_reason"],
+        "visited_inspection_points": int(
+            metrics["visited_inspection_points"]
+        ),
+        "expected_inspection_points": 6,
+        "uploaded_mb": float(metrics["uploaded_mb"]),
+        "expected_upload_mb": float(record["expected_upload_mb"]),
+        "task_time_s": float(metrics["task_time_s"]),
+        "transmission_delay_s": float(metrics["transmission_delay_s"]),
+        "outage_time_s": float(metrics["outage_time_s"]),
+        "outage_limit_s": float(record["outage_limit_s"]),
+        "replay_device": "original-win-run",
+    }
+    _validate_report(record, report)
+
+    positions = np.asarray(trace["positions"], dtype=float)
+    times = np.asarray(trace["time_s"], dtype=float)
+    outage = np.asarray(trace["outage_s"], dtype=float)
+    visited = np.asarray(trace["visited_points"], dtype=int)
+    if positions.ndim != 2 or positions.shape[1] != 2:
+        raise ValueError(f"{trajectory_path}: invalid positions shape")
+    if not (
+        len(positions) == len(times) == len(outage) == len(visited)
+    ):
+        raise ValueError(f"{trajectory_path}: trajectory arrays differ in length")
+    if not np.isclose(times[-1], report["task_time_s"], atol=1e-9):
+        raise ValueError(f"{trajectory_path}: final time mismatch")
+    if not np.isclose(outage.max(), report["outage_time_s"], atol=1e-9):
+        raise ValueError(f"{trajectory_path}: maximum outage mismatch")
+    if int(visited.max()) != report["visited_inspection_points"]:
+        raise ValueError(f"{trajectory_path}: visited-point mismatch")
+    if "x" in trace and "y" in trace:
+        if not np.allclose(
+            positions,
+            np.column_stack((trace["x"], trace["y"])),
+            atol=1e-12,
+        ):
+            raise ValueError(f"{trajectory_path}: x/y differ from positions")
+    return report, trace
+
+
 def evaluate_all(records: list[dict]) -> dict[str, dict]:
     results = {}
     for item in records:
-        context = load_run_context(item["run"])
-        with redirect_stdout(io.StringIO()):
-            report, trace = _evaluate_on_recorded_device(
-                context, item["actor"]
-            )
-        _validate_report(item["record"], report)
+        if item["source_kind"] == "win_trajectory":
+            report, trace = _load_win_trajectory(item)
+            actor_sha256 = WIN_LOW_QOS_ACTOR_SHA256[
+                float(item["record"]["outage_limit_s"])
+            ]
+        else:
+            context = load_run_context(item["run"])
+            with redirect_stdout(io.StringIO()):
+                report, trace = _evaluate_on_recorded_device(
+                    context, item["actor"]
+                )
+            _validate_report(item["record"], report)
+            actor_sha256 = _sha256(item["actor"])
         result = dict(item)
         result["report"] = report
         result["trace"] = trace
-        result["actor_sha256"] = _sha256(item["actor"])
+        result["actor_sha256"] = actor_sha256
+        result["trajectory_sha256"] = (
+            _sha256(item["win_trajectory"])
+            if item["win_trajectory"] is not None
+            else None
+        )
         result["status"] = _status(report)
         results[item["panel_id"] + "_" + item["figure"]] = result
     return results
@@ -437,9 +526,26 @@ def write_source(qos_records, weight_records, results, unavailable):
                     "level": item["row"],
                     "setting": item["setting"],
                     "status": result["status"],
+                    "source_kind": result["source_kind"],
                     "run": str(item["run"].resolve()),
-                    "actor": str(item["actor"].resolve()),
+                    "actor": (
+                        str(item["actor"].resolve())
+                        if item["actor"] is not None
+                        else None
+                    ),
                     "actor_sha256": result["actor_sha256"],
+                    "trajectory_source": (
+                        str(item["win_trajectory"].resolve())
+                        if item["win_trajectory"] is not None
+                        else str(item["run"].resolve())
+                    ),
+                    "trajectory_sha256": result["trajectory_sha256"],
+                    "replay_device": result["report"].get("replay_device"),
+                    "win_recovery_commit": (
+                        WIN_RECOVERY_COMMIT
+                        if result["source_kind"] == "win_trajectory"
+                        else None
+                    ),
                     "eval_best_episode": item["record"]["eval_best_episode"],
                     "mission_complete": bool(report["mission_complete"]),
                     "qos_feasible": bool(report["qos_feasible"]),
@@ -675,7 +781,7 @@ def plot_qos(records, results):
     figure, axes = plt.subplots(
         len(QOS_LEVELS),
         len(QOS_VALUES_S),
-        figsize=(7.15, 4.55),
+        figsize=(7.15, 6.15),
     )
     cax = _prepare_common(
         figure,
@@ -685,10 +791,10 @@ def plot_qos(records, results):
         records=records,
         results=results,
         figure_name="qos",
-        bottom=0.16,
-        top=0.76,
+        bottom=0.13,
+        top=0.80,
         wspace=0.22,
-        hspace=0.50,
+        hspace=0.48,
     )
     panel_axes = axes.ravel().tolist()
     panel_ids = [item["panel_id"] for item in records]
@@ -698,7 +804,7 @@ def plot_qos(records, results):
         output,
         panel_axes,
         panel_ids,
-        [panel_ids[:5], panel_ids[5:]],
+        [panel_ids[:5], panel_ids[5:10], panel_ids[10:]],
         [panel_ids[index::5] for index in range(5)],
         cax,
     )
