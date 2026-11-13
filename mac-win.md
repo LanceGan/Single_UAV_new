@@ -436,6 +436,14 @@ journal_results/v4-sequence-preflight/summary.json
 
 三档所有唯一顺序均通过当前 MapGuide 预检，完成 6/6 巡检和完整上传。
 
-后续待办：中断概率阈值鲁棒性实验，固定 Low、6 s、w50/50，比较
-`kappa_out = 0.5/0.3/0.2`。0.5 复用现有结果，0.3 和 0.2 各新跑一次。
-完整协议和代码参数化要求见 `DEFERRED_EXPERIMENTS.md`。
+中断概率阈值鲁棒性实验中，代码参数化已经完成，但原始协议因可行性预检
+失败而暂停：Low、6 s、w50/50 下，`kappa_out=0.3` 和 `0.2` 的 PRIGA 顺序
+均为 `[1,6,2,3,5,4]`，MapGuide 预检最长连续中断均为 6.5 s，分别只完成
+2/6 和 1/6 个巡检点。相同顺序的 6 s 约束 A* 搜索也没有找到可行路径。
+因此不能直接启动两组 3000 回合训练，也不能把超限值填成 6 s。完整证据和
+待决事项见 `DEFERRED_EXPERIMENTS.md`。
+
+用户最终决定仍采用 `kappa_out=0.50/0.30/0.20`，固定 6 s；0.3 和 0.2
+即使巡检不完整也继续训练。对应运行必须在配置中记录
+`preflight_success=false` 和 `preflight_allowed_failure=true`，结果表不得把
+未完成巡检写成成功。

@@ -1,0 +1,64 @@
+{
+  "level": "low",
+  "qos_constraint": "max_contiguous_outage",
+  "outage_probability_threshold": 0.3,
+  "success": false,
+  "order": [
+    1,
+    6,
+    2,
+    3,
+    5,
+    4
+  ],
+  "payloads_mb": [
+    90.0,
+    90.0,
+    60.0,
+    60.0,
+    90.0,
+    60.0
+  ],
+  "time_s": 60.0,
+  "outage_s": 6.5,
+  "total_outage_s": 15.5,
+  "uploaded_mb": 150.0,
+  "expected_upload_mb": 450.0,
+  "visited_points": 2,
+  "return": -9.13893190740628,
+  "reward_terms": {
+    "time": -0.6000000000000004,
+    "delay": -0.3250000000000002,
+    "progress": 0.5860680925937196,
+    "boundary": 0.0,
+    "upload": 0.20000000000000004,
+    "arrival": 1.0,
+    "completion": 0.0,
+    "incomplete_upload": 0.0,
+    "timeout": 0.0,
+    "qos": -10.0
+  },
+  "visits": [
+    {
+      "node": 1,
+      "time_s": 16.5,
+      "outage_s": 1.5,
+      "total_outage_s": 2.0,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 6,
+      "time_s": 42.5,
+      "outage_s": 6.0,
+      "total_outage_s": 9.0,
+      "pending_before_collection": 0.0
+    }
+  ],
+  "reward_accounting_error": 1.7763568394002505e-15,
+  "max_pending_data_at_visit": 0.0,
+  "map_hashes": {
+    "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+    "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+  },
+  "method": "map-aware reference guidance (no learned policy)"
+}

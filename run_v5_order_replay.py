@@ -222,7 +222,12 @@ def _replay_task(task):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--levels", nargs="+", choices=("medium", "high"), default=("medium", "high"))
+    parser.add_argument(
+        "--levels",
+        nargs="+",
+        choices=("low", "medium", "high"),
+        default=("medium", "high"),
+    )
     parser.add_argument("--methods", nargs="+", choices=NEW_METHODS, default=NEW_METHODS)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--stall-steps", type=int, default=100)

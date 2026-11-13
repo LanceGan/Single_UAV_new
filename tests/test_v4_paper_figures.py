@@ -43,6 +43,16 @@ def test_v4_dataset_keeps_pure_heuristic_failures_out_of_rankings():
     assert pure_pso["selected_evaluation"]["visited_inspection_points"] == 1
 
 
+def test_v4_dataset_includes_adapted_mco_astar_and_high_timeout():
+    dataset = figures.build_dataset()
+    mco = {row["level"]: row for row in dataset["load"]["mco_astar"]}
+
+    assert mco["low"]["best_feasible"]["objective_s"] == pytest.approx(457.5)
+    assert mco["medium"]["best_feasible"]["objective_s"] == pytest.approx(789.0)
+    assert mco["high"]["best_feasible"] is None
+    assert mco["high"]["selected_evaluation"]["visited_inspection_points"] == 5
+
+
 def test_load_schema_validation_rejects_legacy_cumulative_outage(tmp_path):
     run_dir = tmp_path / "run"
     run_dir.mkdir()
