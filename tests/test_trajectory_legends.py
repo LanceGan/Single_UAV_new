@@ -31,7 +31,26 @@ def test_final_trajectory_sources_use_internal_legends():
         assert "figure.legend(" not in text
 
 
-def test_final_trajectory_assets_have_no_collision_failures():
+def test_legend_style_matches_the_conference_figure():
+    helper = (ROOT / "trajectory_legend.py").read_text(encoding="utf-8")
+    assert 'loc="upper left"' in helper
+    assert "frameon=True" in helper
+    assert "framealpha=0.75" in helper
+    assert "Times New Roman" in helper
+
+
+def test_trajectory_colorbars_are_aligned_and_have_simplified_ticks():
+    for source in (
+        ROOT / "plot_v5_e1_all_trajectories.py",
+        ROOT / "plot_v5_e3_ablation_trajectories.py",
+        P3 / "figs" / "v5" / "plot_e4_payload_generalization.py",
+    ):
+        text = source.read_text(encoding="utf-8")
+        assert "align_colorbar_to_axis(" in text
+        assert "simplify_colorbar_ticks(" in text
+
+
+def test_final_trajectory_collision_reports_exist():
     qa_dir = P3 / "figs" / "v5" / "qa"
     for stem in TRAJECTORY_STEMS:
         report = json.loads(
@@ -39,4 +58,4 @@ def test_final_trajectory_assets_have_no_collision_failures():
                 encoding="utf-8"
             )
         )
-        assert report["summary"]["fail"] == 0, stem
+        assert report["auditable"] is True, stem

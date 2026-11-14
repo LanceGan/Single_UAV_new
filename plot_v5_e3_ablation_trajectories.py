@@ -27,7 +27,11 @@ from evaluate_policy import (
     rollout,
 )
 from plot_v4_trajectory_figures import _draw_map, _map_data, _map_layers
-from trajectory_legend import add_internal_legend
+from trajectory_legend import (
+    add_internal_legend,
+    align_colorbar_to_axis,
+    simplify_colorbar_ticks,
+)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -452,14 +456,15 @@ def write_panels(results: list[dict]) -> None:
         color_axis = figure.add_axes((0.84, 0.25, 0.035, 0.63))
         colorbar = figure.colorbar(mesh, cax=color_axis)
         colorbar.set_label("A2G SNR (dB)", fontsize=7.0)
-        colorbar.set_ticks([-5, 0, 5, 10, 15, 20, 25])
+        simplify_colorbar_ticks(colorbar, format_string="%.0f", nbins=6)
         colorbar.ax.tick_params(labelsize=6.5)
         add_internal_legend(
             axis,
             _legend_handles(level),
             ncol=1,
-            fontsize=6.2,
+            fontsize=6.0,
         )
+        align_colorbar_to_axis(axis, color_axis)
         _save_formats(
             figure,
             P3_FIGURE_DIR / f"{OUTPUT_STEM.name}_panel_{panel_id}",

@@ -663,8 +663,7 @@ def _plot(records):
             axis,
             _legend_handles(),
             ncol=1,
-            fontsize=6.5,
-            candidates=(("lower left", (0.015, 0.015)),),
+            fontsize=6.4,
         )
         _save_formats(
             figure,

@@ -35,7 +35,11 @@ from plot_v4_trajectory_figures import (
     _map_layers,
 )
 from plot_v5_e4_trajectories import _evaluate_on_recorded_device
-from trajectory_legend import add_internal_legend
+from trajectory_legend import (
+    add_internal_legend,
+    align_colorbar_to_axis,
+    simplify_colorbar_ticks,
+)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -683,6 +687,11 @@ def plot(results):
             colorbar.set_label(color_label)
             colorbar.ax.tick_params(labelsize=5.4)
             colorbar.ax.yaxis.label.set_size(6.0)
+            simplify_colorbar_ticks(
+                colorbar,
+                format_string="%.0f" if map_name == "a2g" else "%.1f",
+                nbins=6,
+            )
             figure.subplots_adjust(
                 left=0.17,
                 right=0.90,
@@ -692,9 +701,10 @@ def plot(results):
             add_internal_legend(
                 axis,
                 _legend_handles(),
-                ncol=2,
-                fontsize=5.2,
+                ncol=1,
+                fontsize=5.0,
             )
+            align_colorbar_to_axis(axis, color_axis)
             _save_formats(
                 figure,
                 FIGURE_DIR
