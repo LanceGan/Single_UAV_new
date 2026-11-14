@@ -54,6 +54,7 @@ def test_removed_final_figure_families_are_not_active_in_manuscript():
         "e3_a2g_ablation_v5_panel_",
         "e4_weight_trajectories_v5",
         "e4_weight_realtime_comm_v5",
+        "e5_time_series_v5",
         "e5_end_to_end_convergence_v5",
         "e5_method_payload_matrix_v5",
     ):

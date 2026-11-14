@@ -23,6 +23,7 @@ from evaluate_d3qn import (
 )
 from evaluate_policy import evaluate_checkpoint, load_run_context
 from discrete_actions import DiscreteActionCodec
+from fixed_radio_maps import FixedRadioMaps
 from plot_v5_e4_trajectories import _evaluate_on_recorded_device
 import torch
 
@@ -30,6 +31,7 @@ import torch
 ROOT = Path(__file__).resolve().parent
 FIGURE_DIR = ROOT.parent / "P3" / "figs" / "v5"
 SOURCE_DIR = FIGURE_DIR / "source_data"
+RADIO_MAPS = FixedRadioMaps(ROOT / "results" / "datas")
 
 LEVELS = ("Low", "Medium", "High")
 METHODS = (
@@ -196,19 +198,57 @@ def _evaluate_mco(level):
     return report, trace, run, None
 
 
-def _prefix_series(trace):
+def _time_series(trace):
     times = np.asarray(trace["time_s"], dtype=float)
     pending = np.asarray(trace["pending_mb"], dtype=float)
     outage = np.asarray(
         trace["current_contiguous_outage_s"], dtype=float
     )
-    if not (len(times) == len(pending) == len(outage)):
+    positions = np.asarray(trace["positions"], dtype=float)
+    if not (
+        len(times)
+        == len(pending)
+        == len(outage)
+        == len(positions)
+    ):
         raise ValueError("elapsed-time arrays have inconsistent lengths")
     if np.any(np.diff(times) < -1e-12):
         raise ValueError("flight time is not monotone")
+    outage_probability = np.asarray(
+        [
+            # World stores positions in 100 m units before converting to the
+            # FixedRadioMaps coordinate scale used by its radio lookup.
+            RADIO_MAPS.g2a_outage_probability(position / 10.0)
+            for position in positions
+        ],
+        dtype=float,
+    )
+    if "g2a_outage_probability" in trace:
+        recorded_probability = np.asarray(
+            trace["g2a_outage_probability"], dtype=float
+        )
+        if recorded_probability.shape != outage_probability.shape:
+            raise ValueError(
+                "recorded G2A outage-probability series has inconsistent length"
+            )
+        if not np.allclose(
+            recorded_probability,
+            outage_probability,
+            rtol=0.0,
+            atol=1e-12,
+        ):
+            raise ValueError(
+                "recorded G2A outage probability does not match the radio map"
+            )
     delay_prefix = np.cumsum((pending[:-1] > 0.0) * np.diff(times))
     objective_prefix = times[1:] + delay_prefix
-    return times, objective_prefix, outage
+    return (
+        times,
+        objective_prefix,
+        outage_probability,
+        outage,
+        positions,
+    )
 
 
 def evaluate_all():
@@ -267,67 +307,66 @@ def write_source(results):
     arrays = {}
     summaries = []
     for method in METHODS:
-        for level in LEVELS:
-            item = results[method][level]
-            times, objective, outage = _prefix_series(item["trace"])
-            if item["complete"]:
-                expected_final = float(
-                    item["report"]["task_time_s"]
-                    + item["report"]["transmission_delay_s"]
-                )
-                if abs(float(objective[-1]) - expected_final) > 1e-9:
-                    raise ValueError(
-                        f"{method} {level} objective-prefix mismatch: "
-                        f"{objective[-1]} vs {expected_final}"
-                    )
-            key = (
-                method.replace("*", "star")
-                .replace("+", "_")
-                .replace("-", "_")
-                .replace(" ", "_")
-                + f"_{level.lower()}"
+        item = results[method]["Low"]
+        times, objective, outage_probability, outage, positions = _time_series(
+            item["trace"]
+        )
+        if item["complete"]:
+            expected_final = float(
+                item["report"]["task_time_s"]
+                + item["report"]["transmission_delay_s"]
             )
-            arrays[f"{key}_time_s"] = times
-            arrays[f"{key}_objective_s"] = objective
-            arrays[f"{key}_current_contiguous_outage_s"] = outage
-            for index, time_s in enumerate(times, start=1):
-                objective_s = (
-                    float(objective[index - 1])
-                    if index <= len(objective)
-                    else None
+            if abs(float(objective[-1]) - expected_final) > 1e-9:
+                raise ValueError(
+                    f"{method} Low objective-prefix mismatch: "
+                    f"{objective[-1]} vs {expected_final}"
                 )
-                rows.append(
-                    {
-                        "method": method,
-                        "level": level,
-                        "step": index,
-                        "flight_time_s": float(time_s),
-                        "objective_s": objective_s,
-                        "current_contiguous_outage_s": float(
-                            outage[index - 1]
-                        ),
-                        "complete": item["complete"],
-                    }
-                )
-            summaries.append(
+        key = (
+            method.replace("*", "star")
+            .replace("+", "_")
+            .replace("-", "_")
+            .replace(" ", "_")
+        )
+        arrays[f"{key}_time_s"] = times
+        arrays[f"{key}_g2a_outage_probability"] = outage_probability
+        arrays[f"{key}_current_contiguous_outage_s"] = outage
+        arrays[f"{key}_positions_km"] = positions
+        for index, time_s in enumerate(times, start=1):
+            rows.append(
                 {
                     "method": method,
-                    "level": level,
-                    "complete": item["complete"],
-                    "status": item["source_status"],
-                    "run": str(item["run"].resolve()),
-                    "actor": (
-                        str(item["actor"].resolve())
-                        if item["actor"] is not None
-                        else None
+                    "level": "Low",
+                    "step": index,
+                    "flight_time_s": float(time_s),
+                    "g2a_outage_probability": float(
+                        outage_probability[index - 1]
                     ),
-                    "final_flight_time_s": float(times[-1]),
-                    "final_objective_s": float(objective[-1]),
-                    "final_current_contiguous_outage_s": float(outage[-1]),
+                    "current_contiguous_outage_s": float(outage[index - 1]),
+                    "complete": item["complete"],
                 }
             )
-    np.savez_compressed(SOURCE_DIR / "e5_time_series_v5.npz", **arrays)
-    with (SOURCE_DIR / "e5_time_series_v5.csv").open(
+        summaries.append(
+            {
+                "method": method,
+                "level": "Low",
+                "complete": item["complete"],
+                "status": item["source_status"],
+                "run": str(item["run"].resolve()),
+                "actor": (
+                    str(item["actor"].resolve())
+                    if item["actor"] is not None
+                    else None
+                ),
+                "final_flight_time_s": float(times[-1]),
+                "max_g2a_outage_probability": float(
+                    np.max(outage_probability)
+                ),
+                "max_current_contiguous_outage_s": float(np.max(outage)),
+            }
+        )
+    output_stem = SOURCE_DIR / "e5_low_realtime_v5"
+    np.savez_compressed(output_stem.with_suffix(".npz"), **arrays)
+    with output_stem.with_suffix(".csv").open(
         "w", newline="", encoding="utf-8"
     ) as stream:
         writer = csv.DictWriter(
@@ -337,15 +376,21 @@ def write_source(results):
         )
         writer.writeheader()
         writer.writerows(rows)
-    (SOURCE_DIR / "e5_time_series_v5.json").write_text(
+    output_stem.with_suffix(".json").write_text(
         json.dumps(
             {
                 "protocol": {
-                    "x_axis": "elapsed flight time within the deterministic rollout",
-                    "objective": (
-                        "J(t) = elapsed T(t) + cumulative transmission delay "
-                        "through time t"
+                    "scope": (
+                        "Low payload tier only for visualization; the complete "
+                        "21-row method-by-payload table is retained separately"
                     ),
+                    "x_axis": "elapsed flight time within the deterministic rollout",
+                    "g2a_outage_probability": (
+                        "Radio_datas.npz arr_0 sampled at each recorded UAV "
+                        "position through the World radio-map convention; "
+                        "values are not complemented"
+                    ),
+                    "outage_probability_threshold": 0.5,
                     "contiguous_outage": (
                         "current consecutive outage-run duration; resets to "
                         "zero in the first non-outage slot"
@@ -377,51 +422,50 @@ def _save_formats(figure, output):
 def _draw_panel(axis, results, level, metric):
     for method in METHODS:
         item = results[method][level]
-        times, objective, outage = _prefix_series(item["trace"])
-        if metric == "objective":
-            x = times[1:]
-            y = objective
+        times, _, outage_probability, outage, _ = _time_series(item["trace"])
+        if metric == "probability":
+            y = outage_probability
         else:
-            x = times
             y = outage
         axis.plot(
-            x,
+            times,
             y,
             color=COLORS[method],
             linestyle=LINE_STYLES[method],
             linewidth=1.35 if method == "DRM-HO" else 0.95,
             label=method,
         )
-        if not item["complete"]:
-            axis.plot(
-                x[-1],
-                y[-1],
-                marker="x",
-                markersize=4,
-                markeredgewidth=1.0,
-                color=COLORS[method],
-                linestyle="none",
-            )
 
     axis.set_xlabel("Flight time (s)")
-    axis.set_ylabel(
-        "Cumulative objective $J(t)$ (s)"
-        if metric == "objective"
-        else "Current contiguous outage (s)"
-    )
+    axis.set_xlim(0.0, 220.0)
+    axis.set_xticks([0, 50, 100, 150, 200])
     axis.grid(axis="y", color="#D9D9D9", linewidth=0.45)
     axis.set_axisbelow(True)
+    if metric == "probability":
+        axis.axhline(
+            0.5,
+            color="#6B6B6B",
+            linewidth=0.75,
+            linestyle=(0, (2.0, 2.0)),
+            zorder=0,
+        )
+        axis.set_ylim(0.0, 1.0)
+        axis.set_yticks([0.0, 0.25, 0.5, 0.75, 1.0])
+        axis.set_ylabel("G2A outage probability")
+    else:
+        axis.set_ylim(0.0, 6.5)
+        axis.set_yticks([0, 1, 2, 3, 4, 5, 6])
+        axis.set_ylabel("Current contiguous outage (s)")
 
 
 def plot(results):
-    for panel, level in zip("abcdef", [l for l in LEVELS for _ in range(2)]):
-        metric = "objective" if "ace".find(panel) >= 0 else "outage"
+    for panel, metric in (("a", "probability"), ("b", "outage")):
         figure, axis = plt.subplots(1, 1, figsize=(3.45, 2.3))
-        _draw_panel(axis, results, level, metric)
+        _draw_panel(axis, results, "Low", metric)
         figure.tight_layout(pad=0.6)
         _save_formats(
             figure,
-            FIGURE_DIR / f"e5_time_series_v5_panel_{panel}",
+            FIGURE_DIR / f"e5_low_realtime_v5_panel_{panel}",
         )
 
     handles = [
@@ -435,28 +479,28 @@ def plot(results):
         )
         for method in METHODS
     ]
-    handles.append(
-        Line2D(
-            [0],
-            [0],
-            marker="x",
-            linestyle="none",
-            color="#5C5C5C",
-            markersize=4.5,
-            markeredgewidth=1.0,
-            label="Incomplete rollout",
-        )
+    handles.extend(
+        [
+            Line2D(
+                [0],
+                [0],
+                color="#6B6B6B",
+                linewidth=0.75,
+                linestyle=(0, (2.0, 2.0)),
+                label="0.5 outage threshold",
+            ),
+        ]
     )
     legend = plt.figure(figsize=(7.15, 0.62))
     legend.legend(
         handles=handles,
         loc="center",
-        ncol=2,
+        ncol=4,
         frameon=False,
         fontsize=6.2,
         handlelength=2.1,
     )
-    _save_formats(legend, FIGURE_DIR / "e5_time_series_v5_legend")
+    _save_formats(legend, FIGURE_DIR / "e5_low_realtime_v5_legend")
     plt.close(legend)
 
 
@@ -466,8 +510,9 @@ def main():
     results = evaluate_all()
     write_source(results)
     plot(results)
-    print(SOURCE_DIR / "e5_time_series_v5.csv")
-    print(FIGURE_DIR / "e5_time_series_v5_panel_a.pdf")
+    print(SOURCE_DIR / "e5_low_realtime_v5.csv")
+    print(FIGURE_DIR / "e5_low_realtime_v5_panel_a.pdf")
+    print(FIGURE_DIR / "e5_low_realtime_v5_panel_b.pdf")
 
 
 if __name__ == "__main__":
