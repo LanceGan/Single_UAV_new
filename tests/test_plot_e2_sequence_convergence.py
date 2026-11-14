@@ -77,18 +77,18 @@ def test_eeap_pso_orders_are_ready_for_ca_td3_replay():
         assert "proxy" in record["metric_scope"]
 
 
-def test_e2_has_separate_panel_and_legend_assets():
+def test_retired_e2_convergence_panels_are_not_reintroduced():
     for suffix in (
         "a",
         "b",
         "c",
     ):
         stem = FIGURE_ROOT / f"e2_sequence_convergence_v5_panel_{suffix}"
-        assert stem.with_suffix(".pdf").is_file()
-        assert stem.with_suffix(".svg").is_file()
-        assert stem.with_suffix(".png").is_file()
+        assert not stem.with_suffix(".pdf").exists()
+        assert not stem.with_suffix(".svg").exists()
+        assert not stem.with_suffix(".png").exists()
     legend = FIGURE_ROOT / "e2_sequence_convergence_v5_legend"
-    assert legend.with_suffix(".pdf").is_file()
+    assert not legend.with_suffix(".pdf").exists()
 
 
 METHOD_BUDGETS = {
