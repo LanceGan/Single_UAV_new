@@ -6,7 +6,7 @@
 
 - 旧 PRIGA 边权已恢复；
 - E1 CA-TD3 三档全部复用；
-- E2 Low 七种顺序全部复用；
+- E2 最终保留 PRIGA、Yang-style、EEGA、DRL-SA、SA-D3QN 和 EEAP-PSO；
 - E2 Medium/High 不重新训练轨迹算法，只计算顺序并用现有 CA-TD3 actor 重放；
   停滞时由 MapGuide 接管；若混合控制在任务完成前终止，则明确执行整段
   MapGuide restart fallback；
@@ -20,7 +20,7 @@
 
 | ID | 实验内容 | 已完成/复用 | Mac 新增 | Win 新增 |
 |---|---|---|---|---|
-| E1 | 固定 PRIGA 的轨迹执行器比较 | CA-TD3 L/M/H；D3QN Low | — | PPO L/M/H；D3QN M/H；DDPG L/M/H；SAC L/M/H |
+| E1 | 固定 PRIGA 的轨迹执行器比较 | CA-TD3 L/M/H；D3QN Low；PPO/SAC Low | — | PPO M/H；D3QN M/H；SAC M/H（DDPG 已从最终稿移除） |
 | E2 | CA-TD3 + MapGuide assisted completion，比较巡检顺序算法 | Low 全部复用；PRIGA M/H 复用 | GA/PSO/SA/A*/EEGA/Yang 的 M/H 顺序计算与 assisted replay | — |
 | E3 | 固定 Distance-TSP 的 A2G 消融 | Low blind/visible | Medium/High blind/visible | — |
 | E4 | QoS 与目标权重稀疏扫描 | Low 全部；M/H balanced 6 s | M/H 其余 12 个稀疏条件 | — |
@@ -49,7 +49,8 @@ E5 five baselines Medium/High 10
 合计                          26
 ```
 
-E2 不包含神经网络重新训练，只有 12 个 Medium/High assisted replay。
+E2 不包含神经网络重新训练，只有 12 个 Medium/High assisted replay；
+与 Low 的 6 个结果共同构成最终 18 行顺序比较。
 E2 结果必须同时报告接管时刻、MapGuide 控制步数以及是否使用了整段重启兜底。
 
 ## V5 新训练统一约束
@@ -76,9 +77,9 @@ python run_v5_matrix.py \
   --execute
 ```
 
-## Mac 队列
+## 当前状态
 
-当前 E3 Medium/High 四组与 E5 Medium/High 十个学习型基线正在运行。
-槽位释放后继续 E4 Medium/High 的 12 个稀疏条件。E2 Medium/High 的
-12 个顺序重放不依赖新训练，可与 E4 后续队列一起执行。
+E1-E5 的最终论文数据均已归档，无待运行训练。E1 Medium/High actor 与轨迹
+已由 Win commit `7529dbc` 同步；最终论文使用同一批 validated rollout，
+SAC Medium 采用 actor 归档轨迹指标 `tau=328.0 s`、`T_out^cont=20.5 s`。
 

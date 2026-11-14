@@ -1,0 +1,121 @@
+{
+  "level": "High",
+  "qos_constraint": "max_contiguous_outage",
+  "outage_probability_threshold": 0.5,
+  "qos_enforcement": "continue",
+  "success": true,
+  "mission_complete": true,
+  "qos_feasible": true,
+  "constraint_satisfied": true,
+  "outage_budget_exceeded": false,
+  "order": [
+    2,
+    3,
+    5,
+    6,
+    1,
+    4
+  ],
+  "payloads_mb": [
+    210.0,
+    290.0,
+    290.0,
+    290.0,
+    210.0,
+    210.0
+  ],
+  "transmission_delay_s": 218.0,
+  "uploaded_mb": 1500.0,
+  "expected_upload_mb": 1500.0,
+  "return": 2.7112556826094476,
+  "reward_terms": {
+    "time": -3.3049999999999518,
+    "delay": -2.1799999999999757,
+    "progress": 2.0962556826094474,
+    "boundary": 0.0,
+    "upload": 0.5999999999999995,
+    "arrival": 3.5,
+    "completion": 2.0,
+    "incomplete_upload": 0.0,
+    "timeout": 0.0,
+    "qos": 0.0
+  },
+  "visits": [
+    {
+      "node": 2,
+      "time_s": 33.5,
+      "outage_s": 4.0,
+      "total_outage_s": 5.5,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 3,
+      "time_s": 96.5,
+      "outage_s": 4.0,
+      "total_outage_s": 9.0,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 5,
+      "time_s": 145.5,
+      "outage_s": 4.0,
+      "total_outage_s": 9.5,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 6,
+      "time_s": 186.0,
+      "outage_s": 4.0,
+      "total_outage_s": 14.0,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 1,
+      "time_s": 225.5,
+      "outage_s": 4.0,
+      "total_outage_s": 18.0,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": 4,
+      "time_s": 279.5,
+      "outage_s": 4.0,
+      "total_outage_s": 27.0,
+      "pending_before_collection": 0.0
+    },
+    {
+      "node": "end",
+      "time_s": 330.5,
+      "outage_s": 4.0,
+      "total_outage_s": 27.5,
+      "pending_before_collection": 0.0
+    }
+  ],
+  "reward_accounting_error": 7.194245199571014e-14,
+  "max_pending_data_at_visit": 0.0,
+  "map_hashes": {
+    "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+    "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+  },
+  "method": "Yang-style",
+  "task_time_s": 330.5,
+  "outage_time_s": 4.0,
+  "total_outage_time_s": 27.5,
+  "visited_inspection_points": 6,
+  "expected_inspection_points": 6,
+  "complete": true,
+  "feasible": true,
+  "objective_s": 548.5,
+  "inspection_order": [
+    2,
+    3,
+    5,
+    6,
+    1,
+    4
+  ],
+  "control": "Full MapGuide restart",
+  "source_run": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/v5-mac/E2-final/yang-style/high",
+  "shared_actor": "/Users/ganruijie.1/grj/Single_UAV_new/sync_bundles/v4_eval_best_actors/high_qos6_actor.pth",
+  "shared_actor_sha256": "b7e9486b7cf3d7b1132abb65671877047cee1c36dbe9dc9ca2ee11ba5e590646"
+}

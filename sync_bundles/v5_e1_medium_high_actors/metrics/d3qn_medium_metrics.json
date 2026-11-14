@@ -1,0 +1,29 @@
+{
+  "label": "d3qn_medium",
+  "order": [
+    1,
+    6,
+    5,
+    4,
+    2,
+    3
+  ],
+  "payloads_mb": [
+    180.0,
+    180.0,
+    180.0,
+    120.0,
+    120.0,
+    120.0
+  ],
+  "task_time_s": 248.5,
+  "transmission_delay_s": 153.0,
+  "T_plus_tau_s": 401.5,
+  "outage_time_s": 4.5,
+  "visited_inspection_points": 6,
+  "uploaded_mb": 900.0,
+  "mission_complete": true,
+  "qos_feasible": true,
+  "success": true,
+  "termination_reason": "success"
+}

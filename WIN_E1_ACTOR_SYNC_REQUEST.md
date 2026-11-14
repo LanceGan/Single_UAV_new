@@ -1,5 +1,6 @@
 # Win → Mac 同步请求：V5 E1 Medium/High eval-best 轨迹
 
+- 状态：已由 Win commit `7529dbc` 完成同步，Mac 已接收并复核
 - 请求方：Mac
 - 执行方：Win
 - 目标分支：`feat/win`
@@ -231,3 +232,19 @@ Mac 将：
 
 除非 Mac 验证发现不一致，Win 不需要重训、不需要重画论文图，也不需要修改
 论文仓库。
+
+## 10. 接收结果（2026-11-14）
+
+Win commit `7529dbc` 已通过接收检查：
+
+- 六个 actor 文件均存在、可加载，SHA-256 与 MANIFEST 一致；
+- 六份 trajectory 数组长度一致、位置有限、时间单调、最终均为 6/6 且完成上传；
+- D3QN Medium/High、PPO Medium/High、SAC High 与各自 eval-history 指标逐项一致；
+- SAC Medium 的 actor 归档轨迹为 `tau=328.0 s`、`T_out^cont=20.5 s`，
+  而存储的 eval-best aggregate 为 `tau=237.5 s`、`12.0 s`；
+- 按用户决定，最终论文对 SAC Medium 使用同一条 actor 归档轨迹及其一致指标，
+  即 `T+tau=1328.0 s`、`T_out^cont=20.5 s`；6/6、QoS 不可行状态不变；
+- `matches_eval_history=false`、actor SHA-256 和 trajectory SHA-256 已写入
+  Mac 生成的 `figs/v5/source_data/e1_payload_trajectories_v5.json`。
+
+本请求不再阻塞论文出图。
