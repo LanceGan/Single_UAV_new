@@ -20,31 +20,28 @@ SOURCE_DIR = FIGURE_DIR / "source_data"
 TRAJECTORY_SUMMARY = SOURCE_DIR / "e1_payload_trajectories_v5.json"
 
 LEVELS = ("Low", "Medium", "High")
-METHODS = ("CA-TD3", "D3QN", "PPO", "SAC")
+METHODS = ("CA-TD3", "D3QN", "PPO")
+TRAJECTORY_METHODS = (*METHODS, "MCO-A*")
 COLORS = {
     "CA-TD3": "#C23B3B",
     "D3QN": "#6A519A",
     "PPO": "#D08B28",
-    "SAC": "#2C8C76",
 }
 RUNS = {
     "Low": {
         "CA-TD3": "journal_results/v4-qos/w50-50/qos6/A/low/td3_bc",
         "D3QN": "journal_results/v4-models/layer1/d3qn/low/d3qn",
         "PPO": "journal_results/v5-win/E1/ppo/A/low/ppo",
-        "SAC": "journal_results/v5-win/E1/sac/A/low/sac",
     },
     "Medium": {
         "CA-TD3": "journal_results/v4-models/load/medium/A/medium/td3_bc",
         "D3QN": "journal_results/v5-win/E1/d3qn/medium/d3qn",
         "PPO": "journal_results/v5-win/E1/ppo/A/medium/ppo",
-        "SAC": "journal_results/v5-win/E1/sac/A/medium/sac",
     },
     "High": {
         "CA-TD3": "journal_results/v4-models/load/high/A/high/td3_bc",
         "D3QN": "journal_results/v5-win/E1/d3qn/high/d3qn",
         "PPO": "journal_results/v5-win/E1/ppo/A/high/ppo",
-        "SAC": "journal_results/v5-win/E1/sac/A/high/sac",
     },
 }
 
@@ -177,7 +174,7 @@ def load_histories():
         }
         selected = []
         for level in LEVELS:
-            for method in METHODS:
+            for method in TRAJECTORY_METHODS:
                 record = validated[(method, level)]
                 selected.append(
                     {

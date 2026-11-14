@@ -53,7 +53,7 @@ LOW_TRAJECTORY_SOURCE = FIGURE_DIR / "source_data" / "e1_low_trajectories_v5.npz
 LOW_METRICS_SOURCE = FIGURE_DIR / "source_data" / "e1_low_trajectory_metrics_v5.json"
 
 LEVELS = ("Low", "Medium", "High")
-METHODS = ("CA-TD3", "D3QN", "PPO", "SAC")
+METHODS = ("CA-TD3", "D3QN", "PPO", "MCO-A*")
 LEVEL_COLORS = {
     "Low": "#202020",
     "Medium": "#C2185B",
@@ -81,10 +81,10 @@ RUNS = {
         "Medium": "journal_results/v5-win/E1/ppo/A/medium/ppo",
         "High": "journal_results/v5-win/E1/ppo/A/high/ppo",
     },
-    "SAC": {
-        "Low": "journal_results/v5-win/E1/sac/A/low/sac",
-        "Medium": "journal_results/v5-win/E1/sac/A/medium/sac",
-        "High": "journal_results/v5-win/E1/sac/A/high/sac",
+    "MCO-A*": {
+        "Low": "journal_results/v5-deterministic/mco-astar/low",
+        "Medium": "journal_results/v5-deterministic/mco-astar/medium",
+        "High": "journal_results/v5-deterministic/mco-astar/high",
     },
 }
 
@@ -139,20 +139,8 @@ def _actor_for(method, level, run):
         raise FileNotFoundError(
             f"missing {level} PPO eval-best actor: {local}"
         )
-    if method == "SAC":
-        if level in {"Medium", "High"}:
-            return (
-                MEDIUM_HIGH_BUNDLE
-                / f"sac_{level.lower()}_actor_eval_best.pth"
-            )
-        local = run / "models" / "sac_sac_actoreval_best.pth"
-        if local.is_file():
-            return local
-        if level == "Low":
-            return ROOT / "sync_bundles/v5_e1_low_trajectories/sac_actor_eval_best.pth"
-        raise FileNotFoundError(
-            f"missing {level} SAC eval-best actor: {local}"
-        )
+    if method == "MCO-A*":
+        return None
     raise ValueError(method)
 
 
@@ -288,6 +276,42 @@ def evaluate_all():
         results[method] = {}
         for level in LEVELS:
             run = ROOT / RUNS[method][level]
+            if method == "MCO-A*":
+                report = json.loads(
+                    (run / "metrics.json").read_text(encoding="utf-8")
+                )
+                report["outage_time_s"] = float(
+                    report.get("outage_time_s", report["outage_s"])
+                )
+                with np.load(run / "trajectory.npz") as payload:
+                    trace = {key: payload[key] for key in payload.files}
+                actor = None
+                trajectory_source = run / "trajectory.npz"
+                metrics_source = run / "metrics.json"
+                replay_device = "deterministic search"
+                matches_eval_history = True
+                selected = {
+                    "episode": 0,
+                    "task_time_s": report["task_time_s"],
+                    "transmission_delay_s": report["transmission_delay_s"],
+                    "outage_time_s": report["outage_s"],
+                    "visited_inspection_points": report[
+                        "visited_inspection_points"
+                    ],
+                    "uploaded_mb": report["uploaded_mb"],
+                }
+                results[method][level] = {
+                    "run": run,
+                    "actor": actor,
+                    "report": report,
+                    "trace": trace,
+                    "selected": selected,
+                    "trajectory_source": trajectory_source,
+                    "metrics_source": metrics_source,
+                    "replay_device": replay_device,
+                    "matches_eval_history": matches_eval_history,
+                }
+                continue
             actor = _actor_for(method, level, run)
             if not actor.is_file():
                 raise FileNotFoundError(
@@ -332,22 +356,10 @@ def evaluate_all():
                     )
                 }
                 matches_eval_history = not mismatches
-                if mismatches and not (
-                    method == "SAC" and level == "Medium"
-                ):
+                if mismatches:
                     raise ValueError(
                         f"{method} {level} archive mismatch: {mismatches}"
                     )
-                if method == "SAC" and level == "Medium":
-                    allowed = {
-                        "transmission_delay_s": (328.0, 237.5),
-                        "outage_time_s": (20.5, 12.0),
-                    }
-                    if mismatches and mismatches != allowed:
-                        raise ValueError(
-                            "SAC Medium mismatch changed: "
-                            f"{mismatches}"
-                        )
             results[method][level] = {
                 "run": run,
                 "actor": actor,
@@ -372,7 +384,12 @@ def write_source(results):
         for level in LEVELS:
             item = results[method][level]
             trace = item["trace"]
-            key = f"{method.lower().replace('-', '_')}_{level.lower()}"
+            key = (
+                method.lower()
+                .replace("*", "star")
+                .replace("-", "_")
+                + f"_{level.lower()}"
+            )
             positions = np.asarray(trace["positions"], dtype=float) * 100.0
             times = np.asarray(trace["time_s"], dtype=float)
             outage = np.asarray(trace["outage_s"], dtype=float)
@@ -451,6 +468,7 @@ def write_source(results):
             objective = task_time + delay if complete else None
             feasible = bool(complete and float(report["outage_time_s"]) <= 6.0)
             actor = item["actor"]
+            actor_sha = _sha256(actor) if actor is not None else None
             trajectory_source = item["trajectory_source"]
             trajectory_sha = (
                 _sha256(trajectory_source)
@@ -476,8 +494,8 @@ def write_source(results):
                     ),
                     "eval_best_episode": int(selected.get("episode", 0)),
                     "run": str(item["run"].resolve()),
-                    "actor": str(actor.resolve()),
-                    "actor_sha256": _sha256(actor),
+                    "actor": str(actor.resolve()) if actor is not None else None,
+                    "actor_sha256": actor_sha,
                     "trajectory_source": (
                         str(trajectory_source.resolve())
                         if trajectory_source is not None
@@ -515,7 +533,7 @@ def write_source(results):
                         if trajectory_source is not None
                         else "Mac actor replay"
                     ),
-                    "actor_sha256": _sha256(actor),
+                    "actor_sha256": actor_sha,
                     "trajectory_sha256": trajectory_sha,
                     "matches_eval_history": item["matches_eval_history"],
                 }
@@ -545,8 +563,9 @@ def write_source(results):
                     "levels": list(LEVELS),
                     "policy_mode": (
                         "deterministic eval-best policies, no MapGuide; "
-                        "CA-TD3 is replayed locally and D3QN/PPO/SAC use "
-                        "validated archived trajectories"
+                        "CA-TD3 is replayed locally, D3QN/PPO use validated "
+                        "archived trajectories, and MCO-A* uses its "
+                        "deterministic archived metrics and trajectory"
                     ),
                     "map_backgrounds": {
                         "A2G": "SNR (dB)",

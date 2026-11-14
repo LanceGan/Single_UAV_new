@@ -71,9 +71,10 @@ def test_e5_current_outage_is_described_as_resetting():
     assert not re.search(r"cumulative outage series", caption)
 
 
-def test_e1_sac_medium_table_matches_archived_actor_replay():
+def test_e1_table_uses_mco_astar_instead_of_sac():
     text = _manuscript()
     assert (
-        "SAC & Medium & 1000.0 & 328.0 & 1328.0 & 20.5 & 6/6 & $\\times$"
+        "MCO-A* & Medium & 459.5 & 329.5 & 789.0 & 5.5 & 6/6 & \\checkmark"
         in text
     )
+    assert "SAC" not in text
