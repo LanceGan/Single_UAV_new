@@ -1,0 +1,192 @@
+{
+  "source_commit": "V5 E1 medium/high (Win)",
+  "items": [
+    {
+      "label": "d3qn_medium",
+      "actor": "d3qn_medium_actor_eval_best.pt",
+      "actor_sha256": "f124993ca0e1dbe41f9a1a57be35374ba0eddf77ff9baf931c5b9708ca82ccec",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "payloads_mb": [
+        180.0,
+        180.0,
+        180.0,
+        120.0,
+        120.0,
+        120.0
+      ],
+      "task_time_s": 248.5,
+      "transmission_delay_s": 153.0,
+      "T_plus_tau_s": 401.5,
+      "outage_time_s": 4.5,
+      "visited_inspection_points": 6,
+      "uploaded_mb": 900.0,
+      "mission_complete": true,
+      "qos_feasible": true,
+      "success": true,
+      "termination_reason": "success"
+    },
+    {
+      "label": "d3qn_high",
+      "actor": "d3qn_high_actor_eval_best.pt",
+      "actor_sha256": "b04885d4e6193dda23ad34e8d467e0f1750b6f08f9f640b06ac2e3197e25d8f0",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "payloads_mb": [
+        210.0,
+        290.0,
+        290.0,
+        290.0,
+        210.0,
+        210.0
+      ],
+      "task_time_s": 319.5,
+      "transmission_delay_s": 213.0,
+      "T_plus_tau_s": 532.5,
+      "outage_time_s": 3.0,
+      "visited_inspection_points": 6,
+      "uploaded_mb": 1500.0,
+      "mission_complete": true,
+      "qos_feasible": true,
+      "success": true,
+      "termination_reason": "success"
+    },
+    {
+      "label": "ppo_medium",
+      "actor": "ppo_medium_actor_eval_best.pth",
+      "actor_sha256": "eb31e15d1dbc55edf9d834ade3c17558f51cc3920ffe4486920073602539f49b",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "payloads_mb": [
+        180.0,
+        180.0,
+        180.0,
+        120.0,
+        120.0,
+        120.0
+      ],
+      "task_time_s": 732.0,
+      "transmission_delay_s": 212.0,
+      "T_plus_tau_s": 944.0,
+      "outage_time_s": 30.0,
+      "visited_inspection_points": 6,
+      "uploaded_mb": 900.0,
+      "mission_complete": true,
+      "qos_feasible": false,
+      "success": false,
+      "termination_reason": "qos_violation"
+    },
+    {
+      "label": "ppo_high",
+      "actor": "ppo_high_actor_eval_best.pth",
+      "actor_sha256": "b90833b3f7d673b18c2f1af8e9263d238de23bdaa191f50f73b90b3b41de6241",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "payloads_mb": [
+        210.0,
+        290.0,
+        290.0,
+        290.0,
+        210.0,
+        210.0
+      ],
+      "task_time_s": 643.0,
+      "transmission_delay_s": 298.5,
+      "T_plus_tau_s": 941.5,
+      "outage_time_s": 17.0,
+      "visited_inspection_points": 6,
+      "uploaded_mb": 1500.0,
+      "mission_complete": true,
+      "qos_feasible": false,
+      "success": false,
+      "termination_reason": "qos_violation"
+    },
+    {
+      "label": "sac_medium",
+      "actor": "sac_medium_actor_eval_best.pth",
+      "actor_sha256": "3516c241f4bc56fca5cc204eff69ee9f68fa0e8d016073275e1b905848202086",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "payloads_mb": [
+        180.0,
+        180.0,
+        180.0,
+        120.0,
+        120.0,
+        120.0
+      ],
+      "task_time_s": 1000.0,
+      "transmission_delay_s": 328.0,
+      "T_plus_tau_s": 1328.0,
+      "outage_time_s": 20.5,
+      "visited_inspection_points": 6,
+      "uploaded_mb": 900.0,
+      "mission_complete": false,
+      "qos_feasible": false,
+      "success": false,
+      "termination_reason": "qos_violation",
+      "replay_note": "Win 重放 tau=328.0/out=20.5，与 eval_history eval_best(ep1925) 的 tau=237.5/out=12.0 不一致（终态一致：6/6、900MB、未到终点）。疑为 SAC 确定性动作在重放时的数值差异；请 Mac 校验 actor SHA 后自行决定。"
+    },
+    {
+      "label": "sac_high",
+      "actor": "sac_high_actor_eval_best.pth",
+      "actor_sha256": "37fd34e0c480bc8b76f2cd3ea286d3f71e6998c9ce875845939b4f9cd07e01fd",
+      "order": [
+        1,
+        6,
+        5,
+        4,
+        2,
+        3
+      ],
+      "payloads_mb": [
+        210.0,
+        290.0,
+        290.0,
+        290.0,
+        210.0,
+        210.0
+      ],
+      "task_time_s": 459.5,
+      "transmission_delay_s": 290.5,
+      "T_plus_tau_s": 750.0,
+      "outage_time_s": 4.0,
+      "visited_inspection_points": 6,
+      "uploaded_mb": 1500.0,
+      "mission_complete": true,
+      "qos_feasible": true,
+      "success": true,
+      "termination_reason": "success"
+    }
+  ]
+}

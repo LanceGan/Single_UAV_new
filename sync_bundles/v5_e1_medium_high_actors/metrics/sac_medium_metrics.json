@@ -1,0 +1,29 @@
+{
+  "label": "sac_medium",
+  "order": [
+    1,
+    6,
+    5,
+    4,
+    2,
+    3
+  ],
+  "payloads_mb": [
+    180.0,
+    180.0,
+    180.0,
+    120.0,
+    120.0,
+    120.0
+  ],
+  "task_time_s": 1000.0,
+  "transmission_delay_s": 328.0,
+  "T_plus_tau_s": 1328.0,
+  "outage_time_s": 20.5,
+  "visited_inspection_points": 6,
+  "uploaded_mb": 900.0,
+  "mission_complete": false,
+  "qos_feasible": false,
+  "success": false,
+  "termination_reason": "qos_violation"
+}
