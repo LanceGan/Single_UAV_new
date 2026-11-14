@@ -581,7 +581,7 @@ def write_source(results):
     )
 
 
-def _legend_handles():
+def _legend_handles(method):
     handles = [
         Line2D(
             [0],
@@ -619,7 +619,9 @@ def _legend_handles():
             [0],
             [0],
             color=LEVEL_COLORS[level],
-            linestyle=LEVEL_LINESTYLES[level],
+                linestyle=(
+                    "-" if method == "MCO-A*" else LEVEL_LINESTYLES[level]
+                ),
             linewidth=1.4,
             label=f"{level} ({PAYLOAD_TOTAL_MB[level]} MB)",
         )
@@ -647,7 +649,7 @@ def _draw_level_path(axis, trace, method, level):
             positions[:, 0],
             positions[:, 1],
             color=LEVEL_COLORS[level],
-            linestyle=LEVEL_LINESTYLES[level],
+            linestyle="-",
             linewidth=2.4,
             label=level,
             zorder=3.0,
@@ -657,7 +659,7 @@ def _draw_level_path(axis, trace, method, level):
             positions[:, 0],
             positions[:, 1],
             color=LEVEL_COLORS[level],
-            linestyle=LEVEL_LINESTYLES[level],
+            linestyle="-",
             linewidth=1.0,
             label=level,
             zorder=4.0,
@@ -749,7 +751,7 @@ def plot(results):
             )
             add_internal_legend(
                 axis,
-                _legend_handles(),
+                _legend_handles(method),
                 ncol=1,
                 fontsize=5.0,
             )
