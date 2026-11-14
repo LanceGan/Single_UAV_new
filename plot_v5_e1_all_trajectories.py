@@ -696,9 +696,9 @@ def plot(results):
                 users=users,
                 show_numbering=False,
             )
-            # Keep the upper-left legend inside the plotting area without
-            # covering the radio map or trajectory strokes.
-            axis.set_ylim(0.0, 2400.0)
+            axis.set_xlim(0.0, 2000.0)
+            axis.set_ylim(0.0, 2000.0)
+            axis.set_aspect("equal")
             axis.set_title(
                 method,
                 fontsize=7.3,

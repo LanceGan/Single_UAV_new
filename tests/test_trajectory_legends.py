@@ -50,6 +50,15 @@ def test_trajectory_colorbars_are_aligned_and_have_simplified_ticks():
         assert "simplify_colorbar_ticks(" in text
 
 
+def test_e1_trajectory_legend_stays_inside_the_radio_map():
+    source = (ROOT / "plot_v5_e1_all_trajectories.py").read_text(
+        encoding="utf-8"
+    )
+    assert "axis.set_ylim(0.0, 2400.0)" not in source
+    assert "axis.set_ylim(0.0, 2000.0)" in source
+    assert "align_colorbar_to_axis(axis, color_axis)" in source
+
+
 def test_final_trajectory_collision_reports_exist():
     qa_dir = P3 / "figs" / "v5" / "qa"
     for stem in TRAJECTORY_STEMS:
