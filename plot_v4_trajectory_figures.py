@@ -116,8 +116,17 @@ def _draw_map(
     users,
     show_numbering=False,
 ):
-    mesh = axis.contourf(x_grid, y_grid, values, levels=np.linspace(vmin, vmax, 28),
-                         cmap=cmap, vmin=vmin, vmax=vmax)
+    mesh = axis.contourf(
+        x_grid,
+        y_grid,
+        values,
+        levels=np.linspace(vmin, vmax, 28),
+        cmap=cmap,
+        vmin=vmin,
+        vmax=vmax,
+        antialiased=False,
+    )
+    mesh.set_edgecolor("none")
     axis.set_xlim(0, 2000)
     axis.set_ylim(0, 2000)
     axis.set_aspect("equal")

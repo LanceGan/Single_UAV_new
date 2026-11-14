@@ -35,6 +35,7 @@ from plot_v4_trajectory_figures import (
     _map_layers,
 )
 from plot_v5_e4_trajectories import _evaluate_on_recorded_device
+from trajectory_legend import add_internal_legend
 
 
 ROOT = Path(__file__).resolve().parent
@@ -565,7 +566,7 @@ def _legend_handles():
             marker="o",
             linestyle="none",
             markerfacecolor="#D94B3D",
-            markeredgecolor="white",
+            markeredgewidth=0.0,
             markersize=4.8,
             label="Start",
         ),
@@ -575,7 +576,7 @@ def _legend_handles():
             marker="^",
             linestyle="none",
             markerfacecolor="#202020",
-            markeredgecolor="white",
+            markeredgewidth=0.0,
             markersize=4.8,
             label="Inspection point",
         ),
@@ -585,7 +586,7 @@ def _legend_handles():
             marker="o",
             linestyle="none",
             markerfacecolor="#E39A35",
-            markeredgecolor="white",
+            markeredgewidth=0.0,
             markersize=4.8,
             label="End",
         ),
@@ -682,24 +683,17 @@ def plot(results):
             colorbar.set_label(color_label)
             colorbar.ax.tick_params(labelsize=5.4)
             colorbar.ax.yaxis.label.set_size(6.0)
-            figure.legend(
-                handles=_legend_handles(),
-                loc="lower center",
-                ncol=2,
-                bbox_to_anchor=(0.5, 0.005),
-                fontsize=5.2,
-                handlelength=1.8,
-                columnspacing=0.9,
-                handletextpad=0.45,
-                borderpad=0.2,
-                labelspacing=0.28,
-                frameon=False,
-            )
             figure.subplots_adjust(
                 left=0.17,
                 right=0.90,
                 top=0.90,
-                bottom=0.27,
+                bottom=0.12,
+            )
+            add_internal_legend(
+                axis,
+                _legend_handles(),
+                ncol=2,
+                fontsize=5.2,
             )
             _save_formats(
                 figure,

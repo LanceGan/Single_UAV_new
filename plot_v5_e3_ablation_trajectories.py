@@ -27,6 +27,7 @@ from evaluate_policy import (
     rollout,
 )
 from plot_v4_trajectory_figures import _draw_map, _map_data, _map_layers
+from trajectory_legend import add_internal_legend
 
 
 ROOT = Path(__file__).resolve().parent
@@ -329,15 +330,15 @@ def _legend_handles(level):
     return [
         Line2D(
             [0], [0], marker="o", linestyle="none", markerfacecolor="#D94B3D",
-            markeredgecolor="white", markersize=5.2, label="Start",
+            markeredgewidth=0.0, markersize=5.2, label="Start",
         ),
         Line2D(
             [0], [0], marker="^", linestyle="none", markerfacecolor="#202020",
-            markeredgecolor="white", markersize=5.2, label="Inspection point",
+            markeredgewidth=0.0, markersize=5.2, label="Inspection point",
         ),
         Line2D(
             [0], [0], marker="o", linestyle="none", markerfacecolor="#E39A35",
-            markeredgecolor="white", markersize=5.2, label="End",
+            markeredgewidth=0.0, markersize=5.2, label="End",
         ),
         Line2D(
             [0], [0], color=color, linewidth=1.25,
@@ -348,8 +349,8 @@ def _legend_handles(level):
             linestyle=LINESTYLES["A2G-blind"], label="A2G-blind",
         ),
         Line2D(
-            [0], [0], marker="x", linestyle="none", color="#6B6B6B",
-            markersize=5.0, markeredgewidth=1.1,
+            [0], [0], marker="X", linestyle="none",
+            markerfacecolor="#6B6B6B", markersize=5.0, markeredgewidth=0.0,
             label="Incomplete rollout",
         ),
     ]
@@ -453,18 +454,11 @@ def write_panels(results: list[dict]) -> None:
         colorbar.set_label("A2G SNR (dB)", fontsize=7.0)
         colorbar.set_ticks([-5, 0, 5, 10, 15, 20, 25])
         colorbar.ax.tick_params(labelsize=6.5)
-        figure.legend(
-            handles=_legend_handles(level),
-            loc="lower center",
-            bbox_to_anchor=(0.51, 0.015),
-            ncol=3,
-            fontsize=6.4,
-            columnspacing=0.8,
-            handlelength=1.8,
-            handletextpad=0.45,
-            borderpad=0.3,
-            labelspacing=0.28,
-            frameon=False,
+        add_internal_legend(
+            axis,
+            _legend_handles(level),
+            ncol=1,
+            fontsize=6.2,
         )
         _save_formats(
             figure,

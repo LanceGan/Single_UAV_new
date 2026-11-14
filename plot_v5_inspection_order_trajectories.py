@@ -27,6 +27,7 @@ from run_v5_order_replay import ActorMapGuideController, _context
 from sequence_optimizers import yang_order
 from sequence_runner import load_planning_nodes
 from training_config import load_fixed_payloads
+from trajectory_legend import add_internal_legend
 
 
 ROOT = Path(__file__).resolve().parent
@@ -535,7 +536,7 @@ def _legend_handles():
             marker="o",
             linestyle="none",
             markerfacecolor="#D94B3D",
-            markeredgecolor="white",
+            markeredgewidth=0.0,
             markersize=4.8,
             label="Start",
         ),
@@ -545,7 +546,7 @@ def _legend_handles():
             marker="^",
             linestyle="none",
             markerfacecolor="#202020",
-            markeredgecolor="white",
+            markeredgewidth=0.0,
             markersize=4.8,
             label="Inspection point",
         ),
@@ -555,7 +556,7 @@ def _legend_handles():
             marker="o",
             linestyle="none",
             markerfacecolor="#E39A35",
-            markeredgecolor="white",
+            markeredgewidth=0.0,
             markersize=4.8,
             label="End",
         ),
@@ -657,20 +658,14 @@ def _plot(records):
         axis.set_ylabel("Y (m)")
         axis.grid(color="#D9D9D9", linewidth=0.35, alpha=0.7)
         axis.set_title(method, fontsize=7.0, pad=4)
-        figure.legend(
-            handles=_legend_handles(),
-            loc="lower center",
-            bbox_to_anchor=(0.5, 0.01),
-            ncol=2,
-            fontsize=6.8,
-            handlelength=1.8,
-            columnspacing=0.9,
-            handletextpad=0.45,
-            borderpad=0.2,
-            labelspacing=0.3,
-            frameon=False,
+        figure.tight_layout(pad=0.5)
+        add_internal_legend(
+            axis,
+            _legend_handles(),
+            ncol=1,
+            fontsize=6.5,
+            candidates=(("lower left", (0.015, 0.015)),),
         )
-        figure.tight_layout(rect=(0, 0.20, 1, 1), pad=0.5)
         _save_formats(
             figure,
             FIGURE_DIR / f"e2_inspection_order_trajectories_v5_panel_{panel}",
