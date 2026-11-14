@@ -6,7 +6,7 @@ This repository contains the implementation of a cellular-connected UAV inspecti
 
 ## 🖼 论文图与绘图代码对应关系
 
-下表对应当前论文仓 `P3` 的 `journal.tex` 中 10 张编号图。论文仓默认与本仓库位于同一父目录，因此下表中的 `../P3/...` 可直接使用。
+下表对应当前论文仓 `P3` 的 `journal.tex` 中 11 张编号图。论文仓默认与本仓库位于同一父目录，因此下表中的 `../P3/...` 可直接使用。
 
 | 论文图 | 内容 | 论文引用文件 | 绘图/生成代码 | 主要源数据 |
 |---|---|---|---|---|
@@ -20,6 +20,7 @@ This repository contains the implementation of a cellular-connected UAV inspecti
 | Fig. 8 | E2 巡检顺序算法轨迹多样性 | `../P3/figs/v5/e2_inspection_order_trajectories_v5_panel_{a,b,c,d,e,f}.pdf` | `plot_v5_inspection_order_trajectories.py` | `../P3/figs/v5/source_data/e2_inspection_order_trajectories_v5.{npz,csv,json}`, `e2_trajectory_panels_v5.json` |
 | Fig. 9 | E4 Low 档 QoS 与权重轨迹泛化 | `../P3/figs/v5/e4_low_qos_trajectories_v5_panel_a.pdf`, `e4_low_weight_trajectories_v5_panel_b.pdf` | `../P3/figs/v5/plot_e4_payload_generalization.py` | `../P3/figs/v5/source_data/e4_qos_trajectories_v5.{json,npz}`, `e4_weight_trajectories_v5.{json,npz}`, `e4_low_generalization_trajectories_v5.{csv,json}` |
 | Fig. 10 | E5 Low 档实时中断概率与连续中断时长 | `../P3/figs/v5/e5_low_realtime_v5_panel_{a,b}.pdf`, `e5_low_realtime_v5_legend.pdf` | `plot_v5_e5_time_series.py` | `../P3/figs/v5/source_data/e5_low_realtime_v5.{npz,csv,json}` |
+| Fig. 11 | E5 八个端到端算法的 Low/Medium/High 轨迹 | `../P3/figs/v5/e5_all_level_trajectories_v5_panel_{a,b,c,d,e,f,g,h}.pdf` | `../P3/figs/v5/plot_e5_all_level_trajectories.py` | `../P3/figs/v5/source_data/e5_all_level_trajectories_v5.{npz,csv,json}` |
 
 对应的复现命令：
 
@@ -36,7 +37,12 @@ python3 plot_v5_e5_time_series.py
 cd ../P3
 python3 figs/v5/plot_e4_payload_generalization.py
 
+# Fig. 11 的脚本位于论文仓，但必须从实验仓根目录运行。
+cd ../Single_UAV_new
+python3 ../P3/figs/v5/plot_e5_all_level_trajectories.py
+
 # Fig. 1 的旧版 TikZ 底稿可独立编译；它不是当前 PowerPoint PDF 的原样生成器。
+cd ../P3
 cd figs
 pdflatex system_model.tex
 ```

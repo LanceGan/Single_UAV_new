@@ -8,7 +8,7 @@ README = (ROOT / "README.md").read_text(encoding="utf-8")
 
 
 def test_readme_maps_every_manuscript_figure_to_its_generator():
-    for figure_number in range(1, 11):
+    for figure_number in range(1, 12):
         assert f"| Fig. {figure_number} |" in README
 
     expected_sources = (
@@ -19,6 +19,7 @@ def test_readme_maps_every_manuscript_figure_to_its_generator():
         "plot_v5_e3_ablation_trajectories.py",
         "plot_v5_inspection_order_trajectories.py",
         "../P3/figs/v5/plot_e4_payload_generalization.py",
+        "../P3/figs/v5/plot_e5_all_level_trajectories.py",
         "plot_v5_e5_time_series.py",
     )
     for source in expected_sources:
