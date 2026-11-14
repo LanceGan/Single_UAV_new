@@ -71,6 +71,13 @@
 
 ## 4. 跨机依赖（Win 侧欠 Mac 侧的 / 反之）
 
+### 当前阻塞：V5 E1 Medium/High eval-best actor
+
+Mac 缺少 D3QN、PPO、SAC 的 Medium/High 六份 actor，论文 E1 的 A2G/G2A
+轨迹图无法完成。精确文件、验收指标、轨迹 NPZ 格式、MANIFEST 字段和 Git
+推送步骤统一记录在 `WIN_E1_ACTOR_SYNC_REQUEST.md`。请 Win 按该文档执行，
+不要使用 preflight、最终 actor 或其他 episode 代替。
+
 **Mac 等 Win：**
 1. **课程版 Proposed**（IGA+TD3，low，course-final 配方）的产物——课程表的主行，且必须 ≤229.0s 才能闭环"Proposed 最优"的主张（IGA 序的 A\* 上界 214.0 支持这一点，若单种子没压过 229 需要加种子讨论）；
 2. 期刊高档：formal-v5 高档产物（39/120，501.0）随旧机结果分支同步；
