@@ -1,0 +1,134 @@
+{
+  "checkpoint": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/v4-baselines/distance-tsp/A/low/td3_bc/models/td3_bc_td3_actoreval_best.pth",
+  "algorithm": "td3_bc",
+  "policy_mode": "deterministic actor only (no MapGuide, no exploration noise)",
+  "qos_constraint": "max_contiguous_outage",
+  "outage_probability_threshold": 0.5,
+  "qos_enforcement": "hard",
+  "success": true,
+  "mission_complete": true,
+  "qos_feasible": true,
+  "constraint_satisfied": true,
+  "outage_budget_exceeded": false,
+  "termination_reason": "success",
+  "visited_inspection_points": 6,
+  "expected_inspection_points": 6,
+  "uploaded_mb": 450.0,
+  "expected_upload_mb": 450.0,
+  "task_time_s": 167.0,
+  "trajectory_steps": 334,
+  "flight_distance_m": 5425.801200419664,
+  "average_speed_mps": 32.48982754742314,
+  "outage_time_s": 3.5,
+  "total_outage_time_s": 21.0,
+  "current_contiguous_outage_s": 0.0,
+  "outage_limit_s": 6.0,
+  "outage_fraction": 0.020958083832335328,
+  "total_outage_fraction": 0.12574850299401197,
+  "transmission_delay_s": 124.5,
+  "boundary_violations": 0,
+  "stall_steps": 6,
+  "max_stall_run": 6,
+  "mean_a2g_snr_db": 10.703730305117785,
+  "min_a2g_snr_db": -7.431649335865059,
+  "mean_g2a_outage_probability": 0.3018,
+  "total_return": 4.860643994272488,
+  "reward_terms": {
+    "time": -1.6699999999999864,
+    "delay": -1.2449999999999954,
+    "progress": 1.6756439942724894,
+    "boundary": 0.0,
+    "upload": 0.6,
+    "arrival": 3.5,
+    "completion": 2.0,
+    "incomplete_upload": 0.0,
+    "timeout": 0.0,
+    "qos": 0.0
+  },
+  "reward_accounting_error": 1.9539925233402755e-14,
+  "inspection_order": [
+    1,
+    6,
+    5,
+    2,
+    3,
+    4
+  ],
+  "payloads_mb": [
+    90.0,
+    90.0,
+    60.0,
+    60.0,
+    90.0,
+    60.0
+  ],
+  "visits": [
+    {
+      "node": 1,
+      "time_s": 17.5,
+      "outage_s": 1.5,
+      "max_contiguous_outage_s": 1.0,
+      "uploaded_total_mb": 0.0
+    },
+    {
+      "node": 6,
+      "time_s": 48.0,
+      "outage_s": 6.0,
+      "max_contiguous_outage_s": 3.5,
+      "uploaded_total_mb": 89.99999999999994
+    },
+    {
+      "node": 5,
+      "time_s": 73.5,
+      "outage_s": 10.5,
+      "max_contiguous_outage_s": 3.5,
+      "uploaded_total_mb": 149.99999999999994
+    },
+    {
+      "node": 2,
+      "time_s": 100.5,
+      "outage_s": 15.5,
+      "max_contiguous_outage_s": 3.5,
+      "uploaded_total_mb": 240.00000000000006
+    },
+    {
+      "node": 3,
+      "time_s": 129.0,
+      "outage_s": 19.5,
+      "max_contiguous_outage_s": 3.5,
+      "uploaded_total_mb": 330.0000000000001
+    },
+    {
+      "node": 4,
+      "time_s": 149.0,
+      "outage_s": 21.0,
+      "max_contiguous_outage_s": 3.5,
+      "uploaded_total_mb": 390.0000000000002
+    },
+    {
+      "node": "end",
+      "time_s": 167.0,
+      "outage_s": 21.0,
+      "max_contiguous_outage_s": 3.5,
+      "uploaded_total_mb": 450.0000000000002
+    }
+  ],
+  "map_hashes": {
+    "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+    "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+  },
+  "replay_device": "mps",
+  "level": "Low",
+  "method": "Distance-TSP+CA-TD3",
+  "control": "Actor only",
+  "complete": true,
+  "feasible": true,
+  "objective_s": 291.5,
+  "source_run": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/v5-mac/E2-final/distance-tsp-ca-td3/low",
+  "source_actor": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/v4-baselines/distance-tsp/A/low/td3_bc/models/td3_bc_td3_actoreval_best.pth",
+  "source_actor_sha256": "99c121a4a4fc3ebfb2225938eba8b527d3c0cd792b9ad5e21a443fd5b688904a",
+  "source_pipeline": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/v4-baselines/distance-tsp/A/low/td3_bc",
+  "source_eval_history": "/Users/ganruijie.1/grj/Single_UAV_new/journal_results/v4-baselines/distance-tsp/A/low/td3_bc/eval_history.json",
+  "source_commit": "v4-baselines",
+  "display_note": "Additional complete-pipeline spatial reference; not added to the 18-row order comparison table."
+}

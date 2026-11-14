@@ -44,3 +44,37 @@ def test_inspection_order_trajectories_are_independent_panels():
         assert (
             FIGURES / f"e2_inspection_order_trajectories_v5_panel_{panel}.pdf"
         ).is_file()
+
+
+def test_display_panels_replace_drl_sa_with_distance_tsp_reference():
+    display = json.loads(
+        (
+            FIGURES
+            / "source_data"
+            / "e2_trajectory_panels_v5.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert display["protocol"]["display_methods"] == [
+        "Proposed PRIGA",
+        "Yang-style",
+        "EEGA-style GA",
+        "Distance-TSP+CA-TD3",
+        "SA-D3QN (distance-only SA)",
+        "EEAP-PSO",
+    ]
+    assert "DRL-SA (G2A-aware SA)" in display["protocol"]["table_methods"]
+    assert "DRL-SA (G2A-aware SA)" not in display["protocol"]["display_methods"]
+    assert {
+        record["method"] for record in display["records"]
+    } == set(display["protocol"]["display_methods"])
+    distance = [
+        record
+        for record in display["records"]
+        if record["method"] == "Distance-TSP+CA-TD3"
+    ]
+    assert {record["level"] for record in distance} == {
+        "Low",
+        "Medium",
+        "High",
+    }
+    assert any(not record["complete"] for record in distance)

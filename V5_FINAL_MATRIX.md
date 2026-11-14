@@ -93,3 +93,9 @@ E4 新增 Medium/High 均使用 V5 `qos_enforcement=continue` 和 1000 s
 QoS 表与权重表中，但不绘制空间轨迹，以避免用独立训练造成的经验倒挂解释
 数据量难度。
 
+E2 的 18 行顺序表保持不变；轨迹展示中 DRL-SA 因与 SA-D3QN 选择相同顺序且
+共享 replay trajectory 而省略，其位置由额外标注为
+`Distance-TSP+CA-TD3` 的完整 pipeline 空间参照替代。该 Distance-TSP 轨迹
+不进入顺序表，来源与 actor SHA-256 记录在
+`e2_trajectory_panels_v5.json`。
+
