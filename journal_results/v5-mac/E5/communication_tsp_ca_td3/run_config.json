@@ -1,0 +1,30 @@
+{
+  "algorithm": "communication_tsp_ca_td3",
+  "levels": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "inspection_order": [
+    1,
+    6,
+    5,
+    2,
+    3,
+    4
+  ],
+  "edge_formula": "distance_m * max(total_g2a_outage_s, one_slot_s) / mean_a2g_rate",
+  "uses_g2a": true,
+  "uses_a2g": true,
+  "uses_payloads": false,
+  "optimality_proven": true,
+  "qos_constraint": "max_contiguous_outage",
+  "outage_max_s": 6.0,
+  "total_steps": 2000,
+  "evaluation_protocol": "deterministic CA-TD3 actor with MapGuide completion assistance; full MapGuide restart only if the assisted rollout remains incomplete",
+  "actors": {
+    "low": "sync_bundles/v4_eval_best_actors/w50-50_qos6_actor.pth",
+    "medium": "sync_bundles/v4_eval_best_actors/medium_qos6_actor.pth",
+    "high": "sync_bundles/v4_eval_best_actors/high_qos6_actor.pth"
+  }
+}

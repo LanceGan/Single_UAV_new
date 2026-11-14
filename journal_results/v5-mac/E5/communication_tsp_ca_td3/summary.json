@@ -1,0 +1,65 @@
+{
+  "low": {
+    "inspection_order": [
+      1,
+      6,
+      5,
+      2,
+      3,
+      4
+    ],
+    "task_time_s": 179.0,
+    "transmission_delay_s": 85.5,
+    "objective_s": 264.5,
+    "contiguous_outage_s": 2.5,
+    "visited_inspection_points": 6,
+    "expected_inspection_points": 6,
+    "uploaded_mb": 450.0,
+    "expected_upload_mb": 450.0,
+    "complete": true,
+    "feasible": true,
+    "control": "Full MapGuide restart"
+  },
+  "medium": {
+    "inspection_order": [
+      1,
+      6,
+      5,
+      2,
+      3,
+      4
+    ],
+    "task_time_s": 400.0,
+    "transmission_delay_s": 153.0,
+    "objective_s": 553.0,
+    "contiguous_outage_s": 32.0,
+    "visited_inspection_points": 6,
+    "expected_inspection_points": 6,
+    "uploaded_mb": 900.0,
+    "expected_upload_mb": 900.0,
+    "complete": true,
+    "feasible": false,
+    "control": "Actor + MapGuide assistance"
+  },
+  "high": {
+    "inspection_order": [
+      1,
+      6,
+      5,
+      2,
+      3,
+      4
+    ],
+    "task_time_s": 352.0,
+    "transmission_delay_s": 263.0,
+    "objective_s": 615.0,
+    "contiguous_outage_s": 37.5,
+    "visited_inspection_points": 6,
+    "expected_inspection_points": 6,
+    "uploaded_mb": 1500.0,
+    "expected_upload_mb": 1500.0,
+    "complete": true,
+    "feasible": false,
+    "control": "Actor + MapGuide assistance"
+  }
+}

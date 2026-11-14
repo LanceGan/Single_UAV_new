@@ -1,0 +1,4 @@
+level,inspection_order,task_time_s,transmission_delay_s,objective_s,contiguous_outage_s,visited_inspection_points,expected_inspection_points,uploaded_mb,expected_upload_mb,complete,feasible,control
+low,1-6-5-2-3-4,179.0,85.5,264.5,2.5,6,6,450.0,450.0,true,true,Full MapGuide restart
+medium,1-6-5-2-3-4,400.0,153.0,553.0,32.0,6,6,900.0,900.0,true,false,Actor + MapGuide assistance
+high,1-6-5-2-3-4,352.0,263.0,615.0,37.5,6,6,1500.0,1500.0,true,false,Actor + MapGuide assistance
