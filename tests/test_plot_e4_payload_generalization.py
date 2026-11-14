@@ -58,12 +58,32 @@ def test_payload_weight_table_covers_three_levels_and_three_weights():
     }
 
 
-def test_qos_trajectory_panels_are_independent_artifacts():
-    for panel in "abc":
-        stem = FIGURE / f"e4_payload_qos_trajectories_v5_panel_{panel}"
+def test_low_qos_and_weight_trajectory_panels_are_independent_artifacts():
+    stems = (
+        FIGURE / "e4_low_qos_trajectories_v5_panel_a",
+        FIGURE / "e4_low_weight_trajectories_v5_panel_b",
+    )
+    for stem in stems:
         for suffix in (".pdf", ".svg", ".png", ".tiff"):
             path = stem.with_suffix(suffix)
             assert path.is_file() and path.stat().st_size > 0
+
+
+def test_spatial_panels_use_only_low_tier_and_matching_maps():
+    payload = json.loads(
+        (
+            SOURCE / "e4_low_generalization_trajectories_v5.json"
+        ).read_text(encoding="utf-8")
+    )
+    rows = payload["records"]
+    assert len(rows) == 8
+    assert {row["level"] for row in rows} == {"Low"}
+    assert {
+        (row["panel"], row["map_background"]) for row in rows
+    } == {
+        ("a", "G2A coverage probability"),
+        ("b", "A2G SNR"),
+    }
 
 
 def test_payload_generalization_sources_keep_all_rollout_statuses():

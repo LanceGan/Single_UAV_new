@@ -88,3 +88,8 @@ E4 新增 Medium/High 均使用 V5 `qos_enforcement=continue` 和 1000 s
 不会提前终止 rollout。因此这些结果不是由 v4 严格约束提前截断造成，无需按
 原配置盲目重跑。Medium/QoS=4 s 是约束满足但 4/6 超时的直接例证。
 
+最终论文的空间轨迹图只展示 Low：五档 QoS 轨迹叠加 G2A coverage map，
+三组目标权重轨迹叠加 A2G SNR map。Medium/High 的完整数值结果仍保留在
+QoS 表与权重表中，但不绘制空间轨迹，以避免用独立训练造成的经验倒挂解释
+数据量难度。
+
