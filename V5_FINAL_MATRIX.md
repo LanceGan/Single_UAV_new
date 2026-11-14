@@ -83,3 +83,8 @@ E1-E5 的最终论文数据均已归档，无待运行训练。E1 Medium/High ac
 已由 Win commit `7529dbc` 同步；最终论文使用同一批 validated rollout，
 SAC Medium 采用 actor 归档轨迹指标 `tau=328.0 s`、`T_out^cont=20.5 s`。
 
+E4 新增 Medium/High 均使用 V5 `qos_enforcement=continue` 和 1000 s
+（2000-slot）horizon。表中 4/6 的未完成结果都耗尽 horizon；QoS 违约只记录，
+不会提前终止 rollout。因此这些结果不是由 v4 严格约束提前截断造成，无需按
+原配置盲目重跑。Medium/QoS=4 s 是约束满足但 4/6 超时的直接例证。
+

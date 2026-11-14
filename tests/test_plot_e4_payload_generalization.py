@@ -77,3 +77,33 @@ def test_payload_generalization_sources_keep_all_rollout_statuses():
         row["complete"] and not row["feasible"]
         for row in payload["records"]
     )
+
+
+def test_incomplete_e4_runs_record_horizon_vs_qos_failure_mode():
+    qos = json.loads(
+        (SOURCE / "e4_qos_table_v5.json").read_text(encoding="utf-8")
+    )
+    medium_qos4 = next(
+        row
+        for row in qos["records"]
+        if row["level"] == "Medium" and row["qos_budget_s"] == 4.0
+    )
+    assert medium_qos4["termination_reason"] == "timeout"
+    assert medium_qos4["horizon_exhausted"] is True
+    assert (
+        medium_qos4["failure_mode"]
+        == "horizon_exhausted_constraint_satisfied"
+    )
+
+    weights = json.loads(
+        (SOURCE / "e4_weight_table_v5.json").read_text(encoding="utf-8")
+    )
+    incomplete = [
+        row for row in weights["records"] if not row["complete"]
+    ]
+    assert len(incomplete) == 3
+    assert all(row["horizon_exhausted"] for row in incomplete)
+    assert all(
+        row["failure_mode"] == "horizon_exhausted_with_qos_violation"
+        for row in incomplete
+    )

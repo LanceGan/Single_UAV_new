@@ -101,9 +101,10 @@ RUNS = {
     ),
 }
 
-COLORS = {
-    "A2G-visible": "#175A9C",
-    "A2G-blind": "#D95F4B",
+LEVEL_COLORS = {
+    "Low": "#202020",
+    "Medium": "#C2185B",
+    "High": "#1565C0",
 }
 LINESTYLES = {
     "A2G-visible": "-",
@@ -323,7 +324,8 @@ def write_source(results: list[dict], arrays: dict[str, np.ndarray]) -> None:
     )
 
 
-def _legend_handles():
+def _legend_handles(level):
+    color = LEVEL_COLORS[level]
     return [
         Line2D(
             [0], [0], marker="o", linestyle="none", markerfacecolor="#D94B3D",
@@ -338,11 +340,11 @@ def _legend_handles():
             markeredgecolor="white", markersize=5.2, label="End",
         ),
         Line2D(
-            [0], [0], color=COLORS["A2G-visible"], linewidth=1.5,
+            [0], [0], color=color, linewidth=1.25,
             label="A2G-aware",
         ),
         Line2D(
-            [0], [0], color=COLORS["A2G-blind"], linewidth=1.5,
+            [0], [0], color=color, linewidth=1.25,
             linestyle=LINESTYLES["A2G-blind"], label="A2G-blind",
         ),
         Line2D(
@@ -411,16 +413,13 @@ def write_panels(results: list[dict]) -> None:
                 continue
             positions = np.asarray(item["trace"]["positions"], dtype=float) * 100.0
             method = item["method"]
-            line = axis.plot(
+            axis.plot(
                 positions[:, 0],
                 positions[:, 1],
-                color=COLORS[method],
+                color=LEVEL_COLORS[level],
                 linestyle=LINESTYLES[method],
-                linewidth=1.55,
+                linewidth=1.25,
                 zorder=6 if method == "A2G-visible" else 5,
-            )[0]
-            line.set_path_effects(
-                [path_effects.withStroke(linewidth=2.8, foreground="#202020")]
             )
             if not item["complete"]:
                 axis.plot(
@@ -429,7 +428,7 @@ def write_panels(results: list[dict]) -> None:
                     marker="x",
                     markersize=6.0,
                     markeredgewidth=1.3,
-                    color=COLORS[method],
+                    color=LEVEL_COLORS[level],
                     linestyle="none",
                     zorder=8,
                 )
@@ -455,7 +454,7 @@ def write_panels(results: list[dict]) -> None:
         colorbar.set_ticks([-5, 0, 5, 10, 15, 20, 25])
         colorbar.ax.tick_params(labelsize=6.5)
         figure.legend(
-            handles=_legend_handles(),
+            handles=_legend_handles(level),
             loc="lower center",
             bbox_to_anchor=(0.51, 0.015),
             ncol=3,

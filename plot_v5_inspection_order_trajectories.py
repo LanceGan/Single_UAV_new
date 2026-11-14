@@ -367,7 +367,7 @@ def _legend_handles():
                 [0],
                 color=LEVEL_COLORS[level],
                 linestyle=LEVEL_LINESTYLES[level],
-                linewidth=1.4,
+                linewidth=1.25,
                 label=f"{level} ({PAYLOAD_TOTAL_MB[level]} MB)",
             )
             for level in LEVELS
@@ -434,7 +434,7 @@ def _plot(records):
                 positions[:, 1],
                 color=LEVEL_COLORS[level],
                 linestyle=LEVEL_LINESTYLES[level],
-                linewidth=1.35,
+                linewidth=1.25,
                 zorder=4,
             )
             if not record["complete"]:
