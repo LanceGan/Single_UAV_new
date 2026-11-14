@@ -71,10 +71,10 @@ def test_e5_current_outage_is_described_as_resetting():
     assert not re.search(r"cumulative outage series", caption)
 
 
-def test_e1_table_uses_mco_astar_instead_of_sac():
+def test_e1_table_uses_dual_map_astar_instead_of_sac():
     text = _manuscript()
     assert (
-        "MCO-A* & Medium & 459.5 & 329.5 & 789.0 & 5.5 & 6/6 & \\checkmark"
+        "Dual-map A* & Medium & 189.5 & 127.0 & 316.5 & 4.0 & 6/6 & \\checkmark"
         in text
     )
     assert "SAC" not in text

@@ -53,7 +53,8 @@ LOW_TRAJECTORY_SOURCE = FIGURE_DIR / "source_data" / "e1_low_trajectories_v5.npz
 LOW_METRICS_SOURCE = FIGURE_DIR / "source_data" / "e1_low_trajectory_metrics_v5.json"
 
 LEVELS = ("Low", "Medium", "High")
-METHODS = ("CA-TD3", "D3QN", "PPO", "MCO-A*")
+A_STAR_METHOD = "Dual-map A*"
+METHODS = ("CA-TD3", "D3QN", "PPO", A_STAR_METHOD)
 LEVEL_COLORS = {
     "Low": "#202020",
     "Medium": "#C2185B",
@@ -81,10 +82,10 @@ RUNS = {
         "Medium": "journal_results/v5-win/E1/ppo/A/medium/ppo",
         "High": "journal_results/v5-win/E1/ppo/A/high/ppo",
     },
-    "MCO-A*": {
-        "Low": "journal_results/v5-deterministic/mco-astar/low",
-        "Medium": "journal_results/v5-deterministic/mco-astar/medium",
-        "High": "journal_results/v5-deterministic/mco-astar/high",
+    A_STAR_METHOD: {
+        "Low": "journal_results/v5-deterministic/dual-map-astar/low",
+        "Medium": "journal_results/v5-deterministic/dual-map-astar/medium",
+        "High": "journal_results/v5-deterministic/dual-map-astar/high",
     },
 }
 
@@ -139,7 +140,7 @@ def _actor_for(method, level, run):
         raise FileNotFoundError(
             f"missing {level} PPO eval-best actor: {local}"
         )
-    if method == "MCO-A*":
+    if method == A_STAR_METHOD:
         return None
     raise ValueError(method)
 
@@ -276,13 +277,15 @@ def evaluate_all():
         results[method] = {}
         for level in LEVELS:
             run = ROOT / RUNS[method][level]
-            if method == "MCO-A*":
-                report = json.loads(
+            if method == A_STAR_METHOD:
+                metrics = json.loads(
                     (run / "metrics.json").read_text(encoding="utf-8")
                 )
-                report["outage_time_s"] = float(
-                    report.get("outage_time_s", report["outage_s"])
-                )
+                report = dict(metrics["world_replay"])
+                if not report.get("success", False):
+                    raise ValueError(
+                        f"{level} {method} did not complete the V5 protocol"
+                    )
                 with np.load(run / "trajectory.npz") as payload:
                     trace = {key: payload[key] for key in payload.files}
                 actor = None
@@ -294,7 +297,7 @@ def evaluate_all():
                     "episode": 0,
                     "task_time_s": report["task_time_s"],
                     "transmission_delay_s": report["transmission_delay_s"],
-                    "outage_time_s": report["outage_s"],
+                    "outage_time_s": report["outage_time_s"],
                     "visited_inspection_points": report[
                         "visited_inspection_points"
                     ],
@@ -388,6 +391,7 @@ def write_source(results):
                 method.lower()
                 .replace("*", "star")
                 .replace("-", "_")
+                .replace(" ", "_")
                 + f"_{level.lower()}"
             )
             positions = np.asarray(trace["positions"], dtype=float) * 100.0
@@ -564,8 +568,8 @@ def write_source(results):
                     "policy_mode": (
                         "deterministic eval-best policies, no MapGuide; "
                         "CA-TD3 is replayed locally, D3QN/PPO use validated "
-                        "archived trajectories, and MCO-A* uses its "
-                        "deterministic archived metrics and trajectory"
+                        "archived trajectories, and Dual-map A* uses its "
+                        "deterministic World-replayed search artifacts"
                     ),
                     "map_backgrounds": {
                         "A2G": "SNR (dB)",
@@ -619,9 +623,7 @@ def _legend_handles(method):
             [0],
             [0],
             color=LEVEL_COLORS[level],
-                linestyle=(
-                    "-" if method == "MCO-A*" else LEVEL_LINESTYLES[level]
-                ),
+            linestyle=LEVEL_LINESTYLES[level],
             linewidth=1.4,
             label=f"{level} ({PAYLOAD_TOTAL_MB[level]} MB)",
         )
@@ -631,39 +633,13 @@ def _legend_handles(method):
 
 
 def _draw_level_path(axis, trace, method, level):
-    if method != "MCO-A*" or level == "Low":
-        _draw_path(
-            axis,
-            trace,
-            LEVEL_COLORS[level],
-            label=level,
-            linewidth=1.25,
-        )
-        return
-
-    positions = np.asarray(trace["positions"], dtype=float) * 100.0
-    if level == "Medium":
-        # Medium and High share the same MCO-A* spatial route. A wide magenta
-        # underlay keeps Medium visible while the narrower High line sits on top.
-        axis.plot(
-            positions[:, 0],
-            positions[:, 1],
-            color=LEVEL_COLORS[level],
-            linestyle="-",
-            linewidth=2.4,
-            label=level,
-            zorder=3.0,
-        )
-    else:
-        axis.plot(
-            positions[:, 0],
-            positions[:, 1],
-            color=LEVEL_COLORS[level],
-            linestyle="-",
-            linewidth=1.0,
-            label=level,
-            zorder=4.0,
-        )
+    _draw_path(
+        axis,
+        trace,
+        LEVEL_COLORS[level],
+        label=level,
+        linewidth=1.25,
+    )
 
 
 def _save_formats(figure, output, axis, color_axis):
@@ -720,6 +696,9 @@ def plot(results):
                 users=users,
                 show_numbering=False,
             )
+            # Keep the upper-left legend inside the plotting area without
+            # covering the radio map or trajectory strokes.
+            axis.set_ylim(0.0, 2400.0)
             axis.set_title(
                 method,
                 fontsize=7.3,

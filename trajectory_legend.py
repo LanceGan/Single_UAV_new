@@ -74,7 +74,7 @@ def add_internal_legend(
         handlelength=0.0,
         columnspacing=0.8,
         handletextpad=0.0,
-        borderpad=0.0,
+        borderpad=0.25,
         labelspacing=0.10,
     )
     legend.get_frame().set_linewidth(0.5)

@@ -63,7 +63,7 @@ Win 在收到 v5 代码的明确 commit 和启动指令前，不启动新训练�
 
 | ID | 实验 | 固定条件 | 对比 | 网格 | 结果 |
 |---|---|---|---|---|---|
-| E1 | Trajectory executor | PRIGA, A2G-aware, 6 s | CA-TD3, D3QN, DDPG, PPO, SAC | 5 x 3 | Low figures; M/H table |
+| E1 | Trajectory executor | PRIGA, A2G-aware, 6 s | CA-TD3, D3QN, PPO, Dual-map A* | 4 x 3 | figures + table |
 | E2 | Inspection order | Same CA-TD3, A2G-aware, 6 s | PRIGA, GA, PSO, SA, A*, EEGA-style, Yang-style | 7 x 3 | Low proxy table; all-tier E2E table |
 | E3 | A2G ablation | Distance-TSP, 6 s | A2G-blind / A2G-visible | 2 x 3 | Low reuse; M/H 4 new runs |
 | E4A | QoS scan | PRIGA+CA-TD3, balanced weight | 3/4/5/6/8 s | 3 x 5 | tables + representative trajectories |
@@ -77,14 +77,13 @@ Distance-TSP 不进入 E2 正式顺序比较，只在 E3 作为固定顺序的�
 
 ### E1
 
-Low：
+All tiers：
 
 - raw reward + moving average；
 - deterministic feasibility curve；
-- 五个方法在 A2G map 上的 eval-best trajectory；
-- 五个方法在 G2A map 上的同一 trajectory。
-
-Medium/High：
+- 四个方法在 A2G map 上的 eval-best trajectory；
+- 四个方法在 G2A map 上的同一 trajectory；
+- A2G/G2A 同时参与搜索的 Dual-map A* 三档结果；
 
 | Method | T | tau | T+tau | T_out_cont | Complete | Constraint |
 |---|---:|---:|---:|---:|---|---|

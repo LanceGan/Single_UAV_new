@@ -21,7 +21,7 @@ TRAJECTORY_SUMMARY = SOURCE_DIR / "e1_payload_trajectories_v5.json"
 
 LEVELS = ("Low", "Medium", "High")
 METHODS = ("CA-TD3", "D3QN", "PPO")
-TRAJECTORY_METHODS = (*METHODS, "MCO-A*")
+TRAJECTORY_METHODS = (*METHODS, "Dual-map A*")
 COLORS = {
     "CA-TD3": "#C23B3B",
     "D3QN": "#6A519A",

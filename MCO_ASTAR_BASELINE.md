@@ -6,6 +6,14 @@
 > optional reference and should not be presented as the paper's pure A*
 > baseline.
 
+> **Terminology guard:** this MCO-A* adaptation is not the repository's
+> dual-map QoS-constrained A* in `astar_planner.py`. MCO-A* follows the
+> G2A-only outage-state formulation of the source work and uses an A2G-blind
+> upload-hub rule. The dual-map A* uses both the A2G uplink-rate map and the G2A
+> outage map. The final E1 trajectory-executor comparison uses the dual-map A*;
+> the final E5 complete-pipeline comparison retains MCO-A* as the adapted
+> literature reference.
+
 ## 1. What Was Added
 
 The supplied ICCT-2025 source implements a radio-map-driven hierarchical

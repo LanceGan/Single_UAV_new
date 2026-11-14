@@ -46,7 +46,12 @@ def load_users() -> np.ndarray:
     return np.loadtxt(ROOT / "results" / "datas" / "Users_6.txt")[:, :2]
 
 
-def build_world(order: Sequence[int], payloads_mb: np.ndarray, outage_max_s: float = 100.0) -> World:
+def build_world(
+    order: Sequence[int],
+    payloads_mb: np.ndarray,
+    outage_max_s: float = 100.0,
+    total_steps: int = 1000,
+) -> World:
     with contextlib.redirect_stdout(io.StringIO()):
         return World(
             length=20,
@@ -54,7 +59,7 @@ def build_world(order: Sequence[int], payloads_mb: np.ndarray, outage_max_s: flo
             uav_num=1,
             dist_max=0.25,
             delta_t=0.5,
-            t=1000,
+            t=int(total_steps),
             uav_h=1.0,
             data_size=300,
             data_sizes=np.asarray(payloads_mb, dtype=float),
@@ -242,6 +247,7 @@ def save_level_artifacts(
     replay_report: dict,
     trace: dict[str, np.ndarray],
     draw_background: bool = True,
+    total_steps: int = 1000,
 ) -> dict:
     target = Path(output_dir) / level
     target.mkdir(parents=True, exist_ok=True)
@@ -259,11 +265,17 @@ def save_level_artifacts(
     metrics = {
         "algorithm": "qos_constrained_astar_25m_4neighbor_hover",
         "qos_constraint": "max_contiguous_outage",
+        "total_steps": int(total_steps),
+        "task_horizon_s": float(total_steps) * 0.5,
         "search_mode": planner_mode,
         "data_level": level,
         "inspection_order": list(order),
         "payloads_mb": np.asarray(payloads_mb, dtype=float).tolist(),
         "map_hashes": _map_hashes(),
+        "information_use": {
+            "A2G": "per-slot uplink rate enters upload time and edge cost",
+            "G2A": "per-slot outage enters contiguous-outage state and hard pruning",
+        },
         "planner": planner_metrics,
         "world_replay": replay_report,
         "comparison_metrics_source": "world_replay",
@@ -317,6 +329,7 @@ def run_level(level: str, args) -> dict:
             snr_db_by_node=snr,
             outage_by_node=outage,
             qos_slots=int(round(args.outage_max_s / 0.5)),
+            horizon_slots=int(args.total_steps),
             max_expansions=args.max_expansions,
             max_labels=args.max_labels,
             max_runtime_s=args.max_runtime_s,
@@ -341,13 +354,19 @@ def run_level(level: str, args) -> dict:
             outage_by_node=outage,
             bucket_mb=args.bucket_mb,
             qos_slots=int(round(args.outage_max_s / 0.5)),
+            horizon_slots=int(args.total_steps),
             max_expansions=args.max_expansions,
             max_labels=args.max_labels,
             max_runtime_s=args.max_runtime_s,
         )
         result = planner.plan_sequential() if args.mode == "sequential" else planner.plan()
     if result.success and len(order) == len(payloads):
-        world = build_world(order, payloads, outage_max_s=args.outage_max_s)
+        world = build_world(
+            order,
+            payloads,
+            outage_max_s=args.outage_max_s,
+            total_steps=args.total_steps,
+        )
         replay_report, trace = replay_node_path(world, graph, result.node_path)
     else:
         replay_report, trace = _planner_failure_replay(
@@ -367,6 +386,7 @@ def run_level(level: str, args) -> dict:
         planner_mode=args.mode,
         replay_report=replay_report,
         trace=trace,
+        total_steps=args.total_steps,
     )
 
 
@@ -387,12 +407,20 @@ def main() -> None:
     )
     parser.add_argument("--outage-max-s", type=float, default=100.0,
                         help="hard maximum-continuous G2A outage budget for planner and replay")
+    parser.add_argument(
+        "--total-steps",
+        type=int,
+        default=1000,
+        help="World and planner slot horizon",
+    )
     parser.add_argument("--bucket-mb", type=float, default=1.0)
     parser.add_argument("--max-expansions", type=int, default=500_000)
     parser.add_argument("--max-labels", type=int, default=1_000_000)
     parser.add_argument("--max-runtime-s", type=float, default=600.0)
     parser.add_argument("--progress-every", type=int, default=100_000)
     args = parser.parse_args()
+    if args.total_steps <= 0:
+        parser.error("--total-steps must be positive")
     args.output_dir = args.output_dir.resolve()
     if args.order and sorted(args.order) != [1, 2, 3, 4, 5, 6]:
         parser.error("--order must be a permutation of inspection users 1..6")

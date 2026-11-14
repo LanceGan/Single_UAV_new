@@ -1,0 +1,63 @@
+{
+  "algorithm": "qos_constrained_astar_25m_4neighbor_hover",
+  "qos_constraint": "max_contiguous_outage",
+  "total_steps": 2000,
+  "task_horizon_s": 1000.0,
+  "search_mode": "sequential",
+  "data_level": "high",
+  "inspection_order": [
+    1,
+    6,
+    5,
+    4,
+    2,
+    3
+  ],
+  "payloads_mb": [
+    210.0,
+    290.0,
+    290.0,
+    290.0,
+    210.0,
+    210.0
+  ],
+  "map_hashes": {
+    "Radio_datas.npz": "f41cec267f323822022307e2935fe702eba84e7a3dbbbcc08ae002b16aa0f437",
+    "Radio_datas_A2G.npz": "c68e1514b5742348f1349c6981a702b138042ff79a5021d5a586ccf3f2559956"
+  },
+  "information_use": {
+    "A2G": "per-slot uplink rate enters upload time and edge cost",
+    "G2A": "per-slot outage enters contiguous-outage state and hard pruning"
+  },
+  "planner": {
+    "status": "success",
+    "message": "feasible path found leg by leg; each leg optimal given its start",
+    "success": true,
+    "optimality_proven": false,
+    "quantized_objective_s": 445.5,
+    "expansions": 310952,
+    "generated_labels": 492612,
+    "runtime_s": 11.602210083045065,
+    "path_slots": 509
+  },
+  "world_replay": {
+    "success": true,
+    "termination_reason": "success",
+    "task_time_s": 254.5,
+    "transmission_delay_s": 191.0,
+    "objective_s": 445.5,
+    "outage_time_s": 4.0,
+    "total_outage_time_s": 32.5,
+    "current_contiguous_outage_s": 0.0,
+    "outage_limit_s": 6.0,
+    "flight_distance_m": 7341.401219466857,
+    "uploaded_mb": 1499.9999999999984,
+    "expected_upload_mb": 1500.0,
+    "trajectory_steps": 509,
+    "visited_inspection_points": 6,
+    "expected_inspection_points": 6,
+    "variant": "A",
+    "metrics_source": "real World replay"
+  },
+  "comparison_metrics_source": "world_replay"
+}

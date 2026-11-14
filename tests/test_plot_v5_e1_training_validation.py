@@ -27,17 +27,22 @@ def test_moving_average_preserves_leading_missing_values():
 def test_histories_have_three_learned_executors_and_four_final_rows():
     rewards, evaluations, selected = load_histories()
     assert set(METHODS) == {"CA-TD3", "D3QN", "PPO"}
-    assert set(TRAJECTORY_METHODS) == {"CA-TD3", "D3QN", "PPO", "MCO-A*"}
+    assert set(TRAJECTORY_METHODS) == {
+        "CA-TD3",
+        "D3QN",
+        "PPO",
+        "Dual-map A*",
+    }
     assert set(LEVELS) == {"Low", "Medium", "High"}
     assert len(rewards) == 3 * 3 * 3000
     assert len(evaluations) == 3 * 3 * 120
     assert len(selected) == 3 * 4
     assert "DDPG" not in {row["method"] for row in rewards}
     assert "SAC" not in {row["method"] for row in rewards}
-    assert "MCO-A*" in {row["method"] for row in selected}
+    assert "Dual-map A*" in {row["method"] for row in selected}
 
 
-def test_final_e1_table_retains_mco_astar_instead_of_sac():
+def test_final_e1_table_uses_dual_map_astar_instead_of_sac():
     with (P3_SOURCE / "e1_trajectory_results_v5.csv").open(
         newline="", encoding="utf-8"
     ) as stream:
@@ -48,16 +53,16 @@ def test_final_e1_table_retains_mco_astar_instead_of_sac():
         "CA-TD3",
         "D3QN",
         "PPO",
-        "MCO-A*",
+        "Dual-map A*",
     }
-    mco_medium = next(
+    astar_medium = next(
         row
         for row in rows
-        if row["method"] == "MCO-A*" and row["level"] == "Medium"
+        if row["method"] == "Dual-map A*" and row["level"] == "Medium"
     )
-    assert float(mco_medium["task_time_s"]) == 459.5
-    assert float(mco_medium["transmission_delay_s"]) == 329.5
-    assert float(mco_medium["objective_s"]) == 789.0
-    assert float(mco_medium["contiguous_outage_s"]) == 5.5
-    assert mco_medium["complete"] == "True"
-    assert mco_medium["feasible"] == "True"
+    assert float(astar_medium["task_time_s"]) == 189.5
+    assert float(astar_medium["transmission_delay_s"]) == 127.0
+    assert float(astar_medium["objective_s"]) == 316.5
+    assert float(astar_medium["contiguous_outage_s"]) == 4.0
+    assert astar_medium["complete"] == "True"
+    assert astar_medium["feasible"] == "True"

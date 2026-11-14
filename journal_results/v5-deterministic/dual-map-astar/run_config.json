@@ -1,0 +1,50 @@
+{
+  "algorithm": "dual_map_qos_constrained_astar",
+  "planner": "AStarPlanner.plan_sequential",
+  "levels": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "total_steps": 2000,
+  "task_horizon_s": 1000.0,
+  "delta_t_s": 0.5,
+  "qos_constraint": "max_contiguous_outage",
+  "outage_max_s": 6.0,
+  "search_graph": {
+    "spacing_m": 25.0,
+    "connectivity": "4-neighbor cardinal moves",
+    "trajectory_mode": "fixed inspection order with sequential per-leg A*"
+  },
+  "information_use": {
+    "A2G": "per-slot uplink rate determines pending-payload reduction and upload delay",
+    "G2A": "per-slot outage determines the contiguous-outage state and feasibility pruning"
+  },
+  "inspection_orders": {
+    "low": [
+      1,
+      6,
+      2,
+      3,
+      5,
+      4
+    ],
+    "medium": [
+      1,
+      6,
+      5,
+      4,
+      2,
+      3
+    ],
+    "high": [
+      1,
+      6,
+      5,
+      4,
+      2,
+      3
+    ]
+  },
+  "source_implementation": "run_astar.py and astar_planner.py"
+}

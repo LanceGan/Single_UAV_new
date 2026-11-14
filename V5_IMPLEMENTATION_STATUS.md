@@ -36,6 +36,31 @@
 journal_results/v5-deterministic/mco-astar/
 ```
 
+### Dual-map QoS-constrained A*
+
+E1 uses the repository's dual-map A* rather than MCO-A*. Its state transition
+uses the A2G uplink rate to determine payload reduction and upload delay, and
+the G2A outage map to track and prune the maximum contiguous outage. It keeps
+the PRIGA order fixed and solves each leg sequentially, so the result is a
+feasible trajectory baseline rather than a joint-order optimum.
+
+1000 s, `T_out_cont<=6 s`, `N=2000` slots:
+
+| Level | T | tau | T+tau | T_out_cont | Constraint |
+|---|---:|---:|---:|---:|---|
+| Low | 138.0 | 78.0 | 216.0 | 5.0 | pass |
+| Medium | 189.5 | 127.0 | 316.5 | 4.0 | pass |
+| High | 254.5 | 191.0 | 445.5 | 4.0 | pass |
+
+结果目录：
+
+```text
+journal_results/v5-deterministic/dual-map-astar/
+```
+
+MCO-A* remains in E5 as the adapted, G2A-only literature baseline. It must not
+be relabelled as the dual-map A* used in E1.
+
 ### Sequence proxy
 
 七种顺序方法的三档结果：
@@ -134,7 +159,8 @@ E5 的 15 个基线训练格。
 
 Mac 当前承担的完整实验块：
 
-- MCO-A*：Low/Medium/High，共 3 组，已完成；
+- Dual-map A*（E1）：Low/Medium/High，共 3 组，已完成；
+- MCO-A*（E5）：Low/Medium/High，共 3 组，已完成；
 - sequence-only proxy：7 种顺序 x 3 档，共 21 个确定性评估，已完成；
 - E3 A2G ablation：Medium/High x blind/visible，共 4 组，正在运行；
 - E5 literature baselines：6 种方法 x 3 档，共 15 组，复用 Win Proposed。
