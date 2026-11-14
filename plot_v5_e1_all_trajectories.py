@@ -628,6 +628,42 @@ def _legend_handles():
     return handles
 
 
+def _draw_level_path(axis, trace, method, level):
+    if method != "MCO-A*" or level == "Low":
+        _draw_path(
+            axis,
+            trace,
+            LEVEL_COLORS[level],
+            label=level,
+            linewidth=1.25,
+        )
+        return
+
+    positions = np.asarray(trace["positions"], dtype=float) * 100.0
+    if level == "Medium":
+        # Medium and High share the same MCO-A* spatial route. A wide magenta
+        # underlay keeps Medium visible while the narrower High line sits on top.
+        axis.plot(
+            positions[:, 0],
+            positions[:, 1],
+            color=LEVEL_COLORS[level],
+            linestyle=LEVEL_LINESTYLES[level],
+            linewidth=2.4,
+            label=level,
+            zorder=3.0,
+        )
+    else:
+        axis.plot(
+            positions[:, 0],
+            positions[:, 1],
+            color=LEVEL_COLORS[level],
+            linestyle=LEVEL_LINESTYLES[level],
+            linewidth=1.0,
+            label=level,
+            zorder=4.0,
+        )
+
+
 def _save_formats(figure, output, axis, color_axis):
     figure.canvas.draw()
     sys.path.insert(0, str(SKILL_SCRIPTS))
@@ -695,13 +731,7 @@ def plot(results):
             axis.yaxis.label.set_size(6.0)
             for level in LEVELS:
                 trace = results[method][level]["trace"]
-                _draw_path(
-                    axis,
-                    trace,
-                    LEVEL_COLORS[level],
-                    label=level,
-                    linewidth=1.25,
-                )
+                _draw_level_path(axis, trace, method, level)
             colorbar = figure.colorbar(mesh, cax=color_axis)
             colorbar.set_label(color_label)
             colorbar.ax.tick_params(labelsize=5.4)
