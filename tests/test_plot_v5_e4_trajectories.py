@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from plot_v5_e4_trajectories import (
@@ -71,3 +72,27 @@ def test_weight_replays_match_all_nine_recorded_outcomes():
     assert len(results) == 9
     assert sum(result["status"] == "feasible" for result in results.values()) == 6
     assert sum(result["status"] == "incomplete" for result in results.values()) == 3
+
+
+def test_e4_spatial_panel_artifacts_are_independent_and_complete():
+    root = (
+        Path(__file__).resolve().parents[2]
+        / "P3"
+        / "figs"
+        / "v5"
+        / "panels"
+    )
+    expected = {
+        "e4_qos_trajectories_v5": list("abcdefghijklmno"),
+        "e4_weight_trajectories_v5": list("abcdefghi"),
+    }
+    for stem, panel_ids in expected.items():
+        folder = root / stem
+        metadata = json.loads(
+            (folder / "metadata.json").read_text(encoding="utf-8")
+        )
+        assert [item["panel"] for item in metadata["panels"]] == panel_ids
+        for item in metadata["panels"]:
+            assert all(Path(path).is_file() for path in item["files"].values())
+        for path in metadata["shared_assets"].values():
+            assert Path(path).is_file()

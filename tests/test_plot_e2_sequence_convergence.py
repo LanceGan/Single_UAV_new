@@ -13,6 +13,7 @@ SOURCE = (
     / "v5"
     / "source_data"
 )
+FIGURE_ROOT = SOURCE.parent
 
 
 def _load_json(name):
@@ -74,6 +75,20 @@ def test_eeap_pso_orders_are_ready_for_ca_td3_replay():
         assert "payload-capacity limit" in record["removed_constraints"]
         assert "onboard-energy limit" in record["removed_constraints"]
         assert "proxy" in record["metric_scope"]
+
+
+def test_e2_has_separate_panel_and_legend_assets():
+    for suffix in (
+        "a",
+        "b",
+        "c",
+    ):
+        stem = FIGURE_ROOT / f"e2_sequence_convergence_v5_panel_{suffix}"
+        assert stem.with_suffix(".pdf").is_file()
+        assert stem.with_suffix(".svg").is_file()
+        assert stem.with_suffix(".png").is_file()
+    legend = FIGURE_ROOT / "e2_sequence_convergence_v5_legend"
+    assert legend.with_suffix(".pdf").is_file()
 
 
 METHOD_BUDGETS = {

@@ -41,3 +41,15 @@ def test_weight_realtime_series_cover_all_tiers_and_settings():
         for level in ("Low", "Medium", "High")
         for weight in ("0.8/0.2", "0.5/0.5", "0.2/0.8")
     }
+
+
+def test_realtime_figures_have_separate_panel_assets():
+    root = module.HERE
+    for stem in (
+        "e4_qos_realtime_comm_v5",
+        "e4_weight_realtime_comm_v5",
+    ):
+        for suffix in ("a", "b", "c", "d", "e", "f"):
+            path = root / f"{stem}_panel_{suffix}.pdf"
+            assert path.is_file()
+        assert (root / f"{stem}_legend.pdf").is_file()

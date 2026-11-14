@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 
@@ -42,3 +43,32 @@ def test_invalid_task_times_are_not_treated_as_objectives():
                 if not record["complete"]:
                     assert record["task_time_s"] is None
                     assert record["objective_s"] is None
+
+
+def test_e1_and_e5_have_independent_panel_files():
+    figure_dir = SCRIPT.parent
+    stems = [
+        *(f"e1_trajectory_convergence_v5_panel_{panel}" for panel in "abcdef"),
+        "e1_trajectory_convergence_v5_legend",
+        *(f"e5_end_to_end_convergence_v5_panel_{panel}" for panel in "abc"),
+        "e5_end_to_end_convergence_v5_legend",
+    ]
+    for stem in stems:
+        for suffix in (".pdf", ".svg", ".png", ".tiff"):
+            path = figure_dir / f"{stem}{suffix}"
+            assert path.is_file() and path.stat().st_size > 0
+
+
+def test_e1_protocol_records_connected_raw_observations():
+    payload = json.loads(
+        (
+            SCRIPT.parent
+            / "source_data"
+            / "e1_trajectory_convergence_v5.json"
+        ).read_text(encoding="utf-8")
+    )
+    protocol = payload["protocol"]
+
+    assert "observed task time" in protocol["panel_left"]
+    assert "connected in episode order" in protocol["panel_left"]
+    assert protocol["lines_break_at_missing_evaluations"] is True

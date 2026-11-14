@@ -18,6 +18,8 @@ import matplotlib.patheffects as path_effects
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
 
 from evaluate_policy import (
@@ -38,6 +40,7 @@ P3 = ROOT.parent / "P3"
 FIGURE_DIR = P3 / "figs" / "v5"
 SOURCE_DIR = FIGURE_DIR / "source_data"
 QA_DIR = FIGURE_DIR / "qa"
+PANEL_ROOT = FIGURE_DIR / "panels"
 SKILL_SCRIPTS = Path("/Users/ganruijie.1/.codex/skills/nature-figure/scripts")
 ACTOR_BUNDLE = ROOT / "sync_bundles" / "v4_eval_best_actors"
 QOS_RECORD_PATH = SOURCE_DIR / "e4_qos_sensitivity_v5.json"
@@ -629,16 +632,20 @@ def _draw_status_path(axis, trace, status):
 
 
 def _panel_label_external(axis, panel_id):
-    axis.annotate(
+    axis.text(
+        0.03,
+        0.98,
         panel_id,
-        xy=(0, 1),
-        xycoords="axes fraction",
-        xytext=(-10, 8),
-        textcoords="offset points",
+        transform=axis.transAxes,
         ha="left",
-        va="bottom",
+        va="top",
         fontsize=8,
         fontweight="bold",
+        color="#FFFFFF",
+        path_effects=[
+            path_effects.withStroke(linewidth=2.0, foreground="#202020")
+        ],
+        zorder=8,
     )
 
 
@@ -777,6 +784,219 @@ def _save(figure, output: Path, panel_axes, panel_ids, row_groups, column_groups
     plt.close(figure)
 
 
+def _save_panel_asset(figure, output):
+    figure.savefig(output.with_suffix(".pdf"), dpi=600, bbox_inches="tight")
+    figure.savefig(output.with_suffix(".svg"), bbox_inches="tight")
+    figure.savefig(output.with_suffix(".png"), dpi=600, bbox_inches="tight")
+    figure.savefig(
+        output.with_suffix(".tiff"),
+        dpi=600,
+        bbox_inches="tight",
+        pil_kwargs={"compression": "tiff_lzw"},
+    )
+    plt.close(figure)
+
+
+def _serialized_panel_results(figure_name):
+    stem = f"e4_{figure_name}_trajectories_v5"
+    metadata = json.loads(
+        (SOURCE_DIR / f"{stem}.json").read_text(encoding="utf-8")
+    )
+    records = []
+    with np.load(SOURCE_DIR / f"{stem}.npz") as payload:
+        for metric in metadata["records"]:
+            if figure_name == "qos":
+                column = float(
+                    re.search(r"(\d+(?:\.\d+)?)", metric["setting"]).group(1)
+                )
+            else:
+                weights = re.search(
+                    r"\((\d+(?:\.\d+)?)/(\d+(?:\.\d+)?)\)",
+                    metric["setting"],
+                )
+                column = (float(weights.group(1)), float(weights.group(2)))
+            item = {
+                "figure": figure_name,
+                "row": metric["level"],
+                "column": column,
+            }
+            key = _safe_key(item)
+            trace = {
+                "positions": (
+                    np.asarray(payload[f"{key}_positions_m"], dtype=float)
+                    / 100.0
+                ),
+                "time_s": np.asarray(payload[f"{key}_time_s"], dtype=float),
+                "outage_s": np.asarray(payload[f"{key}_outage_s"], dtype=float),
+                "visited_points": np.asarray(
+                    payload[f"{key}_visited_points"], dtype=int
+                ),
+            }
+            report = {
+                "task_time_s": metric["task_time_s"],
+                "transmission_delay_s": metric["transmission_delay_s"],
+                "outage_time_s": metric["contiguous_outage_s"],
+                "visited_inspection_points": metric[
+                    "visited_inspection_points"
+                ],
+                "expected_inspection_points": 6,
+                "uploaded_mb": metric["uploaded_mb"],
+                "expected_upload_mb": metric["expected_upload_mb"],
+                "outage_budget_exceeded": (
+                    float(metric["contiguous_outage_s"])
+                    > float(metric["outage_limit_s"])
+                ),
+            }
+            records.append(
+                {
+                    "panel_id": metric["panel"],
+                    "row": metric["level"],
+                    "setting": metric["setting"],
+                    "status": metric["status"],
+                    "report": report,
+                    "trace": trace,
+                }
+            )
+    return records
+
+
+def _draw_standalone_trace(axis, item, users, snr):
+    g2a, a2g = _map_data()
+    x_grid, y_grid, _, _ = _map_layers(g2a, a2g)
+    mesh = _draw_map(
+        axis,
+        x_grid,
+        y_grid,
+        snr,
+        cmap="viridis",
+        vmin=float(snr.min()),
+        vmax=float(snr.max()),
+        title="",
+        users=users,
+        show_numbering=False,
+    )
+    mesh.set_rasterized(True)
+    _draw_status_path(axis, item["trace"], item["status"])
+    first_status, second_status = _status_lines(item["report"])
+    axis.set_title(
+        f"{item['row']}: {item['setting']}\n"
+        f"{first_status}\n{second_status}",
+        fontsize=5.6,
+        pad=5.0,
+        linespacing=1.18,
+    )
+    axis.set_xlabel("x (m)")
+    axis.set_ylabel("y (m)")
+    _panel_label_external(axis, item["panel_id"])
+
+
+def _save_shared_colorbar(output_dir, snr):
+    figure, axis = plt.subplots(figsize=(3.2, 0.55))
+    colorbar = figure.colorbar(
+        ScalarMappable(
+            norm=Normalize(vmin=float(snr.min()), vmax=float(snr.max())),
+            cmap="viridis",
+        ),
+        cax=axis,
+        orientation="horizontal",
+    )
+    colorbar.set_label("A2G SNR (dB)")
+    _save_panel_asset(figure, output_dir / "snr_colorbar")
+
+
+def _save_shared_status_legend(output_dir):
+    figure = plt.figure(figsize=(4.2, 0.55))
+    handles = [
+        Line2D(
+            [0],
+            [0],
+            color=style["color"],
+            linestyle=style["linestyle"],
+            linewidth=1.4,
+            label=style["label"],
+            path_effects=[
+                path_effects.withStroke(linewidth=2.2, foreground="#202020")
+            ],
+        )
+        for style in STATUS_STYLE.values()
+    ]
+    figure.legend(
+        handles=handles,
+        loc="center",
+        ncol=3,
+        handlelength=2.1,
+        columnspacing=1.4,
+        fontsize=6.2,
+    )
+    _save_panel_asset(figure, output_dir / "path_status_legend")
+
+
+def write_separate_panels(figure_name):
+    """Redraw every E4 spatial panel as an independent artifact."""
+    stem = f"e4_{figure_name}_trajectories_v5"
+    output_dir = PANEL_ROOT / stem
+    output_dir.mkdir(parents=True, exist_ok=True)
+    users = np.loadtxt(
+        ROOT / "results" / "datas" / "Users_6.txt"
+    )[:, :2] * 100.0
+    g2a, a2g = _map_data()
+    _, _, _, snr = _map_layers(g2a, a2g)
+    records = _serialized_panel_results(figure_name)
+    panel_metadata = []
+    panel_width_in = 2.15 if figure_name == "weight" else 1.25
+    for item in records:
+        figure, axis = plt.subplots(
+            1,
+            1,
+            figsize=(panel_width_in, panel_width_in),
+        )
+        _draw_standalone_trace(axis, item, users, snr)
+        axis.set_xticks([0, 1000, 2000])
+        axis.set_yticks([0, 1000, 2000])
+        axis.tick_params(axis="both", labelsize=5.3)
+        axis.xaxis.label.set_size(6.0)
+        axis.yaxis.label.set_size(6.0)
+        axis.title.set_fontsize(5.6)
+        figure.tight_layout(pad=0.45)
+        output = output_dir / item["panel_id"]
+        _save_panel_asset(figure, output)
+        panel_metadata.append(
+            {
+                "panel": item["panel_id"],
+                "level": item["row"],
+                "setting": item["setting"],
+                "status": item["status"],
+                "files": {
+                    suffix: str(output.with_suffix(f".{suffix}"))
+                    for suffix in ("pdf", "svg", "png", "tiff")
+                },
+            }
+        )
+    _save_shared_colorbar(output_dir, snr)
+    _save_shared_status_legend(output_dir)
+    payload = {
+        "protocol": {
+            "source": str((SOURCE_DIR / f"{stem}.json").resolve()),
+            "trajectory_arrays": str(
+                (SOURCE_DIR / f"{stem}.npz").resolve()
+            ),
+            "note": (
+                "Each panel was redrawn independently; the composite figure "
+                "was not cropped."
+            ),
+        },
+        "panels": panel_metadata,
+        "shared_assets": {
+            "snr_colorbar": str(output_dir / "snr_colorbar.pdf"),
+            "path_status_legend": str(output_dir / "path_status_legend.pdf"),
+        },
+    }
+    (output_dir / "metadata.json").write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
 def plot_qos(records, results):
     figure, axes = plt.subplots(
         len(QOS_LEVELS),
@@ -851,6 +1071,8 @@ def main():
     write_source(qos_records, weight_records, results, unavailable)
     plot_qos(qos_records, results)
     plot_weight(weight_records, results)
+    write_separate_panels("qos")
+    write_separate_panels("weight")
     print(FIGURE_DIR / "e4_qos_trajectories_v5.pdf")
     print(FIGURE_DIR / "e4_weight_trajectories_v5.pdf")
 

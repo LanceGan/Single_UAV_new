@@ -16,6 +16,9 @@ mpl.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
+from matplotlib.lines import Line2D
 
 from evaluate_d3qn import (
     evaluate_checkpoint as evaluate_d3qn_checkpoint,
@@ -36,6 +39,7 @@ P3 = ROOT.parent / "P3"
 FIGURE_DIR = P3 / "figs" / "v5"
 SOURCE_DIR = FIGURE_DIR / "source_data"
 QA_DIR = FIGURE_DIR / "qa"
+PANEL_ROOT = FIGURE_DIR / "panels"
 SKILL_SCRIPTS = Path("/Users/ganruijie.1/.codex/skills/nature-figure/scripts")
 
 CONTINUOUS_RUNS = {
@@ -299,6 +303,210 @@ def write_bundle_validation(results):
     )
 
 
+def _panel_title(method, report, row):
+    if row == 1:
+        return f"{method}: G2A coverage"
+    if report.get("success"):
+        objective = float(report["task_time_s"]) + float(
+            report["transmission_delay_s"]
+        )
+        return f"{method}: T+τ = {objective:.1f} s"
+    return (
+        f"{method}: {int(report['visited_inspection_points'])}/6, "
+        f"outage {float(report['outage_time_s']):.1f} s"
+    )
+
+
+def _draw_single_panel(
+    axis,
+    *,
+    field,
+    vmin,
+    vmax,
+    title,
+    users,
+    trace,
+    path_color,
+    panel_id,
+):
+    g2a, a2g = _map_data()
+    x_grid, y_grid, coverage, snr = _map_layers(g2a, a2g)
+    values = snr if field == "snr" else coverage
+    _draw_map(
+        axis,
+        x_grid,
+        y_grid,
+        values,
+        cmap="viridis",
+        vmin=float(vmin),
+        vmax=float(vmax),
+        title=title,
+        users=users,
+        show_numbering=False,
+    )
+    _draw_path(axis, trace, path_color)
+    axis.set_xlabel("x (m)")
+    axis.set_ylabel("y (m)")
+    _panel_label(axis, panel_id)
+
+
+def _save_asset(figure, output):
+    figure.savefig(output.with_suffix(".pdf"), dpi=600, bbox_inches="tight")
+    figure.savefig(output.with_suffix(".svg"), bbox_inches="tight")
+    figure.savefig(output.with_suffix(".png"), dpi=600, bbox_inches="tight")
+    figure.savefig(
+        output.with_suffix(".tiff"),
+        dpi=600,
+        bbox_inches="tight",
+        pil_kwargs={"compression": "tiff_lzw"},
+    )
+    plt.close(figure)
+
+
+def _save_colorbars():
+    g2a, a2g = _map_data()
+    _, _, coverage, snr = _map_layers(g2a, a2g)
+    for name, values, label, formatter in (
+        ("snr_colorbar", snr, "A2G SNR (dB)", None),
+        (
+            "coverage_colorbar",
+            coverage,
+            "G2A coverage probability",
+            mtick.FormatStrFormatter("%.1f"),
+        ),
+    ):
+        figure, axis = plt.subplots(figsize=(3.2, 0.55))
+        colorbar = figure.colorbar(
+            ScalarMappable(
+                norm=Normalize(vmin=float(values.min()), vmax=float(values.max())),
+                cmap="viridis",
+            ),
+            cax=axis,
+            orientation="horizontal",
+        )
+        colorbar.set_label(label)
+        if formatter is not None:
+            colorbar.ax.yaxis.set_major_formatter(formatter)
+        _save_asset(
+            figure,
+            PANEL_ROOT / "e1_low_trajectories_v5" / name,
+        )
+
+
+def _save_status_legend():
+    figure = plt.figure(figsize=(3.8, 0.55))
+    handles = [
+        Line2D([0], [0], color="#FFFFFF", linewidth=2.0, label="Complete, feasible"),
+        Line2D([0], [0], color="#FF7F50", linewidth=2.0, label="Incomplete"),
+    ]
+    figure.legend(
+        handles=handles,
+        loc="center",
+        ncol=2,
+        handlelength=2.1,
+        columnspacing=1.4,
+        fontsize=6.2,
+    )
+    _save_asset(
+        figure,
+        PANEL_ROOT / "e1_low_trajectories_v5" / "path_status_legend",
+    )
+
+
+def write_separate_panels():
+    """Regenerate one standalone PDF/vector/raster file per spatial panel."""
+    output_dir = PANEL_ROOT / "e1_low_trajectories_v5"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    metrics = json.loads(
+        (SOURCE_DIR / "e1_low_trajectory_metrics_v5.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    users = np.loadtxt(
+        ROOT / "results" / "datas" / "Users_6.txt"
+    )[:, :2] * 100.0
+    g2a, a2g = _map_data()
+    _, _, coverage, snr = _map_layers(g2a, a2g)
+    records = []
+    with np.load(SOURCE_DIR / "e1_low_trajectories_v5.npz") as payload:
+        for column, method in enumerate(METHOD_ORDER):
+            trace = {
+                "positions": np.column_stack(
+                    (
+                        payload[f"{method}_x_km"],
+                        payload[f"{method}_y_km"],
+                    )
+                ),
+                "time_s": payload[f"{method}_time_s"],
+                "outage_s": payload[f"{method}_outage_s"],
+                "visited_points": payload[f"{method}_visited_points"],
+            }
+            report = metrics["methods"][method]
+            path_color = "#FFFFFF" if report.get("success") else "#FF7F50"
+            for row, field in enumerate(("snr", "coverage")):
+                panel_id = "abcdefghij"[row * 5 + column]
+                values = snr if field == "snr" else coverage
+                figure, axis = plt.subplots(1, 1, figsize=(1.25, 1.25))
+                _draw_single_panel(
+                    axis,
+                    field=field,
+                    vmin=float(values.min()),
+                    vmax=float(values.max()),
+                    title=_panel_title(method, report, row),
+                    users=users,
+                    trace=trace,
+                    path_color=path_color,
+                    panel_id=panel_id,
+                )
+                axis.set_xticks([0, 1000, 2000])
+                axis.set_yticks([0, 1000, 2000])
+                axis.tick_params(axis="both", labelsize=7.0)
+                axis.xaxis.label.set_size(7.0)
+                axis.yaxis.label.set_size(7.0)
+                axis.title.set_fontsize(6.7)
+                figure.tight_layout(pad=0.45)
+                _save_asset(figure, output_dir / panel_id)
+                records.append(
+                    {
+                        "panel": panel_id,
+                        "method": method,
+                        "field": field,
+                        "title": _panel_title(method, report, row),
+                        "status": "feasible" if report.get("success") else "incomplete",
+                        "files": {
+                            suffix: str((output_dir / panel_id).with_suffix(f".{suffix}"))
+                            for suffix in ("pdf", "svg", "png", "tiff")
+                        },
+                    }
+                )
+    _save_colorbars()
+    _save_status_legend()
+    records.sort(key=lambda item: item["panel"])
+    metadata = {
+        "protocol": {
+            "layout_rows": 2,
+            "layout_columns": 5,
+            "source": str(
+                (SOURCE_DIR / "e1_low_trajectories_v5.npz").resolve()
+            ),
+            "note": (
+                "Each panel is redrawn independently from the trajectory "
+                "source; no composite-page cropping is used."
+            ),
+        },
+        "panels": records,
+        "shared_assets": {
+            "snr_colorbar": str(output_dir / "snr_colorbar.pdf"),
+            "coverage_colorbar": str(output_dir / "coverage_colorbar.pdf"),
+            "path_status_legend": str(output_dir / "path_status_legend.pdf"),
+        },
+    }
+    (output_dir / "metadata.json").write_text(
+        json.dumps(metadata, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
 def plot(results):
     g2a, a2g = _map_data()
     x_grid, y_grid, coverage, snr = _map_layers(g2a, a2g)
@@ -423,6 +631,7 @@ def main():
     write_source(results)
     write_bundle_validation(results)
     plot(results)
+    write_separate_panels()
     print(FIGURE_DIR / "e1_low_trajectories_v5.pdf")
 
 
