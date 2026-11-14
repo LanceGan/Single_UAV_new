@@ -170,6 +170,245 @@ def distance_pso_order(nodes_km=None, seed=1, particles=80, iterations=250,
     }
 
 
+def _eeap_particle_update(current, personal_best, global_best, inertia,
+                          cognitive, social, rng):
+    """Update one permutation particle with the EEAP-PSO parent rule."""
+    total = float(inertia) + float(cognitive) + float(social)
+    draw = float(rng.random()) * total
+    if draw <= float(inertia):
+        second_parent = list(reversed(current))
+    elif draw <= float(inertia) + float(cognitive):
+        second_parent = list(personal_best)
+    else:
+        second_parent = list(global_best)
+
+    start, end = sorted(rng.choice(len(current), size=2, replace=False))
+    child = [None] * len(current)
+    child[int(start):int(end) + 1] = current[int(start):int(end) + 1]
+    fill = [gene for gene in second_parent if gene not in child]
+    for index in range(len(child)):
+        if child[index] is None:
+            child[index] = fill.pop(0)
+    return [int(gene) for gene in child]
+
+
+def _eeap_two_opt(order, fitness):
+    """Return the best reverse-segment neighbour until no improvement remains."""
+    incumbent = [int(node) for node in order]
+    incumbent_cost = float(fitness(incumbent))
+    improved = True
+    while improved:
+        improved = False
+        best_order = incumbent
+        best_cost = incumbent_cost
+        for start in range(len(incumbent) - 1):
+            for end in range(start + 2, len(incumbent) + 1):
+                candidate = (
+                    incumbent[:start]
+                    + list(reversed(incumbent[start:end]))
+                    + incumbent[end:]
+                )
+                candidate_cost = float(fitness(candidate))
+                if candidate_cost < best_cost - 1e-12:
+                    best_order = candidate
+                    best_cost = candidate_cost
+        if best_cost < incumbent_cost - 1e-12:
+            incumbent = [int(node) for node in best_order]
+            incumbent_cost = best_cost
+            improved = True
+    return incumbent, incumbent_cost
+
+
+def eeap_pso_order(
+    payloads_mb,
+    nodes_km=None,
+    maps=None,
+    seed=1,
+    particles=80,
+    iterations=200,
+    inertia_start=0.9,
+    inertia_end=0.4,
+    cognitive_start=0.8,
+    social_start=2.2,
+    two_opt_interval=20,
+):
+    """EEAP-PSO sequence adaptation with cargo-side constraints removed.
+
+    The source algorithm is the energy-oriented PSO layer in the MCO-A*
+    study. For the single-mission inspection problem, payload-capacity limits,
+    onboard-energy limits, warehouse returns, and the multi-trip dynamic
+    program are removed. The retained particle operators optimize one
+    permutation on the source paper's rotary-wing energy model, using the V5
+    payload vector as relative load in the absence of a mass estimate. The
+    start and end remain the fixed inspection endpoints. This is an
+    adaptation, not an exact reproduction of the multi-trip cargo model.
+    """
+    nodes = (
+        load_planning_nodes()
+        if nodes_km is None
+        else np.asarray(nodes_km, dtype=float)
+    )
+    if len(nodes) < 3:
+        raise ValueError("EEAP-PSO needs start, inspection, and end nodes")
+
+    distance_matrix = distance_matrix_m(nodes)
+    inspection = tuple(range(1, len(nodes) - 1))
+    payloads = np.asarray(payloads_mb, dtype=float)
+    if len(payloads) != len(inspection):
+        raise ValueError("payload vector must align with inspection nodes")
+    rng = np.random.default_rng(seed)
+
+    def leg_energy(distance_m, current_load):
+        rho, rotor_radius, rotor_area = 1.225, 0.4, 0.503
+        rotor_speed, tip_speed = 300.0, 120.0
+        solidity, drag_ratio, induced_factor = 0.05, 0.6, 0.1
+        profile_coefficient, reference_speed = 0.012, 50.0
+        base_weight = 200.0
+        profile_power = (
+            profile_coefficient
+            / 8.0
+            * rho
+            * solidity
+            * rotor_area
+            * rotor_speed**3
+            * rotor_radius**3
+        )
+        weight = base_weight + float(current_load)
+        induced_base = (
+            (1.0 + induced_factor)
+            * weight**1.5
+            / math.sqrt(2.0 * rho * rotor_area)
+        )
+        effective_speed = math.sqrt(weight / (2.0 * rho * rotor_area))
+        parasite_power = (
+            drag_ratio
+            / 2.0
+            * rho
+            * solidity
+            * rotor_area
+            * reference_speed**3
+        )
+        blade_power = profile_power * (
+            1.0 + 3.0 * reference_speed**2 / tip_speed**2
+        )
+        induced_term = max(
+            0.0,
+            math.sqrt(
+                1.0
+                + reference_speed**4 / (4.0 * effective_speed**4)
+            )
+            - reference_speed**2 / (2.0 * effective_speed**2),
+        )
+        induced_power = induced_base * math.sqrt(induced_term)
+        return (
+            (parasite_power + induced_power + blade_power)
+            / reference_speed
+            * float(distance_m)
+            + weight * 100.0
+        )
+
+    def fitness(order):
+        current_load = 0.0
+        total = 0.0
+        previous = 0
+        for node in [int(value) for value in order]:
+            total += leg_energy(distance_matrix[previous, node], current_load)
+            current_load += float(payloads[node - 1])
+            previous = node
+        total += leg_energy(
+            distance_matrix[previous, len(nodes) - 1], current_load
+        )
+        return total
+
+    nearest = []
+    remaining = set(inspection)
+    current = 0
+    while remaining:
+        current = min(remaining, key=lambda node: distance_matrix[current, node])
+        nearest.append(int(current))
+        remaining.remove(current)
+
+    population = [nearest]
+    population.extend(
+        [int(node) for node in rng.permutation(inspection)]
+        for _ in range(max(0, int(particles) - 1))
+    )
+    personal_best = [list(particle) for particle in population]
+    personal_cost = np.asarray(
+        [fitness(particle) for particle in population], dtype=float
+    )
+    best_index = int(np.argmin(personal_cost))
+    global_best = list(personal_best[best_index])
+    global_cost = float(personal_cost[best_index])
+    incumbent_orders = [
+        (0, list(global_best), global_cost),
+    ]
+
+    for iteration in range(1, int(iterations) + 1):
+        fraction = iteration / max(int(iterations), 1)
+        inertia = float(inertia_start) + fraction * (
+            float(inertia_end) - float(inertia_start)
+        )
+        population = [
+            _eeap_particle_update(
+                particle,
+                personal_best[index],
+                global_best,
+                inertia,
+                cognitive_start,
+                social_start,
+                rng,
+            )
+            for index, particle in enumerate(population)
+        ]
+        costs = np.asarray([fitness(particle) for particle in population])
+        for index, (particle, cost) in enumerate(zip(population, costs)):
+            if cost < personal_cost[index] - 1e-12:
+                personal_cost[index] = float(cost)
+                personal_best[index] = list(particle)
+
+        current_index = int(np.argmin(costs))
+        if costs[current_index] < global_cost - 1e-12:
+            global_cost = float(costs[current_index])
+            global_best = list(population[current_index])
+            global_best, global_cost = _eeap_two_opt(global_best, fitness)
+        if (
+            int(two_opt_interval) > 0
+            and iteration % int(two_opt_interval) == 0
+        ):
+            global_best, global_cost = _eeap_two_opt(global_best, fitness)
+        incumbent_orders.append(
+            (iteration, list(global_best), float(global_cost))
+        )
+
+    return [int(node) for node in global_best], {
+        "method": "EEAP-PSO sequence adaptation",
+        "source_algorithm": "EEAP-PSO from the MCO-A* study",
+        "seed": int(seed),
+        "objective": float(global_cost),
+        "particles": int(particles),
+        "iterations": int(iterations),
+        "inertia_start": float(inertia_start),
+        "inertia_end": float(inertia_end),
+        "cognitive": float(cognitive_start),
+        "social": float(social_start),
+        "two_opt_interval": int(two_opt_interval),
+        "uses_g2a": False,
+        "uses_a2g": False,
+        "uses_payloads": True,
+        "removed_constraints": [
+            "payload-capacity limit",
+            "onboard-energy limit",
+            "warehouse returns and multi-trip dynamic programming",
+        ],
+        "objective_note": (
+            "single-tour rotary-wing energy; V5 payload values used as relative "
+            "load because the scenario provides data volume rather than mass"
+        ),
+        "incumbent_orders": incumbent_orders,
+    }
+
+
 def priga_cost_matrix(
     nodes_km,
     payloads_mb,

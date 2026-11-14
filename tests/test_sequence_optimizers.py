@@ -8,6 +8,7 @@ from sequence_optimizers import (
     distance_tsp_order,
     eega_cost_matrix,
     eega_order,
+    eeap_pso_order,
     g2a_edge_seconds,
     ga_proxy_order,
     sa_order,
@@ -27,6 +28,9 @@ class _StubMaps:
             return 0.0
         x = float(np.asarray(point_km).reshape(2)[0])
         return 1.0 if self.blocked[0] <= x <= self.blocked[1] else 0.0
+
+    def a2g_snr_db(self, point_km):
+        return 10.0
 
 
 def _square_nodes():
@@ -128,6 +132,42 @@ def test_ga_proxy_finds_the_line_optimum():
 
     assert order == exact
     assert meta["distance_m"] == pytest.approx(exact_meta["distance_m"])
+
+
+def test_eeap_pso_is_reproducible_and_removes_cargo_constraints():
+    payloads = [10.0, 20.0, 30.0, 40.0]
+    first, meta = eeap_pso_order(
+        payloads,
+        _square_nodes(),
+        maps=_StubMaps(),
+        seed=3,
+        particles=8,
+        iterations=12,
+        two_opt_interval=4,
+    )
+    second, _ = eeap_pso_order(
+        payloads,
+        _square_nodes(),
+        maps=_StubMaps(),
+        seed=3,
+        particles=8,
+        iterations=12,
+        two_opt_interval=4,
+    )
+
+    assert first == second
+    assert sorted(first) == [1, 2, 3, 4]
+    assert meta["seed"] == 3
+    assert meta["particles"] == 8
+    assert meta["iterations"] == 12
+    assert len(meta["incumbent_orders"]) == 13
+    assert meta["incumbent_orders"][0][0] == 0
+    assert meta["incumbent_orders"][-1][0] == 12
+    assert "payload-capacity limit" in meta["removed_constraints"]
+    assert "onboard-energy limit" in meta["removed_constraints"]
+    assert any(
+        "multi-trip" in item for item in meta["removed_constraints"]
+    )
 
 
 class _FlatSnrMaps:

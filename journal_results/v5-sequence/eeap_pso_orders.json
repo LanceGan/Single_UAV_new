@@ -1,0 +1,111 @@
+{
+  "protocol": {
+    "seed": 1,
+    "method": "EEAP-PSO sequence adaptation",
+    "source_algorithm": "Algorithm in Cao et al.",
+    "removed_constraints": [
+      "payload-capacity limit",
+      "onboard-energy limit",
+      "warehouse returns and multi-trip dynamic programming"
+    ],
+    "note": "These orders are sequence-proxy artifacts and are ready for CA-TD3 replay under the common E2 evaluation protocol."
+  },
+  "levels": {
+    "Low": {
+      "payloads_mb": [
+        90.0,
+        90.0,
+        60.0,
+        60.0,
+        90.0,
+        60.0
+      ],
+      "inspection_order": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "proxy_t_plus_tau_s": 307.25996454382476,
+      "max_contiguous_g2a_outage_s": 11.797905340110214,
+      "mean_a2g_rate_payload_weighted": 2.6340529456208666,
+      "mean_leg_max_contiguous_g2a_outage_s": 4.702259789554086,
+      "seed": 1,
+      "particles": 80,
+      "generations": 200,
+      "two_opt_interval": 20,
+      "removed_constraints": [
+        "payload-capacity limit",
+        "onboard-energy limit",
+        "warehouse returns and multi-trip dynamic programming"
+      ],
+      "metric_scope": "common straight-line sequence proxy; CA-TD3 replay is required before end-to-end ranking"
+    },
+    "Medium": {
+      "payloads_mb": [
+        180.0,
+        180.0,
+        180.0,
+        120.0,
+        120.0,
+        120.0
+      ],
+      "inspection_order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "proxy_t_plus_tau_s": 414.77267179687226,
+      "max_contiguous_g2a_outage_s": 9.275860734245159,
+      "mean_a2g_rate_payload_weighted": 2.8494780914971436,
+      "mean_leg_max_contiguous_g2a_outage_s": 3.4775561953838845,
+      "seed": 1,
+      "particles": 80,
+      "generations": 200,
+      "two_opt_interval": 20,
+      "removed_constraints": [
+        "payload-capacity limit",
+        "onboard-energy limit",
+        "warehouse returns and multi-trip dynamic programming"
+      ],
+      "metric_scope": "common straight-line sequence proxy; CA-TD3 replay is required before end-to-end ranking"
+    },
+    "High": {
+      "payloads_mb": [
+        210.0,
+        290.0,
+        290.0,
+        290.0,
+        210.0,
+        210.0
+      ],
+      "inspection_order": [
+        1,
+        6,
+        5,
+        2,
+        3,
+        4
+      ],
+      "proxy_t_plus_tau_s": 636.947532343486,
+      "max_contiguous_g2a_outage_s": 9.275860734245159,
+      "mean_a2g_rate_payload_weighted": 2.823479271930279,
+      "mean_leg_max_contiguous_g2a_outage_s": 3.4775561953838845,
+      "seed": 1,
+      "particles": 80,
+      "generations": 200,
+      "two_opt_interval": 20,
+      "removed_constraints": [
+        "payload-capacity limit",
+        "onboard-energy limit",
+        "warehouse returns and multi-trip dynamic programming"
+      ],
+      "metric_scope": "common straight-line sequence proxy; CA-TD3 replay is required before end-to-end ranking"
+    }
+  }
+}
